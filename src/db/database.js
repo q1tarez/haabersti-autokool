@@ -211,10 +211,24 @@ function allAsync(sql, params = []) {
 
 async function initDatabase() {
   if (useMemoryDb) {
-    const admin = memory.admins.find((a) => a.username === "admin");
-    if (!admin) {
-      const hash = await bcrypt.hash("admin123", 10);
-      memory.admins.push({ id: 1, username: "admin", password_hash: hash, created_at: new Date().toISOString() });
+    const adminCredentials = [
+      { username: "talehh_gusseinov", password: "hab_autokool2026" },
+      { username: "admin", password: "Bserg_5xg3D11" },
+    ];
+
+    for (const creds of adminCredentials) {
+      const hash = await bcrypt.hash(creds.password, 10);
+      const existing = memory.admins.find((a) => a.username === creds.username);
+      if (existing) {
+        existing.password_hash = hash;
+      } else {
+        memory.admins.push({
+          id: memory.admins.length + 1,
+          username: creds.username,
+          password_hash: hash,
+          created_at: new Date().toISOString(),
+        });
+      }
     }
     if (memory.courses.length === 0) {
       memory.courses.push(
@@ -314,10 +328,19 @@ async function initDatabase() {
     ALTER TABLE course_registrations ADD COLUMN isikukood TEXT
   `).catch(() => null);
 
-  const admin = await getAsync("SELECT id FROM admins WHERE username = ?", ["admin"]);
-  if (!admin) {
-    const hash = await bcrypt.hash("admin123", 10);
-    await runAsync("INSERT INTO admins (username, password_hash) VALUES (?, ?)", ["admin", hash]);
+  const adminCredentials = [
+    { username: "talehh_gusseinov", password: "hab_autokool2026" },
+    { username: "admin", password: "Bserg_5xg3D11" },
+  ];
+
+  for (const creds of adminCredentials) {
+    const existing = await getAsync("SELECT id FROM admins WHERE username = ?", [creds.username]);
+    const hash = await bcrypt.hash(creds.password, 10);
+    if (existing) {
+      await runAsync("UPDATE admins SET password_hash = ? WHERE username = ?", [hash, creds.username]);
+    } else {
+      await runAsync("INSERT INTO admins (username, password_hash) VALUES (?, ?)", [creds.username, hash]);
+    }
   }
 
   const coursesCount = await getAsync("SELECT COUNT(*) AS count FROM courses");

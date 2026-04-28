@@ -15,7 +15,7 @@ function slugify(text) {
 }
 
 router.get("/", (req, res) => {
-  res.redirect("/admin/login");
+  res.redirect(303, "/admin/login");
 });
 
 router.get("/login", (req, res) => {
@@ -45,7 +45,7 @@ router.post("/login", async (req, res, next) => {
       maxAge: oneWeekMs,
       path: "/",
     });
-    res.redirect("/admin/dashboard");
+    res.redirect(303, "/admin/dashboard");
   } catch (error) {
     next(error);
   }
@@ -53,7 +53,7 @@ router.post("/login", async (req, res, next) => {
 
 router.post("/logout", (req, res) => {
   res.clearCookie("admin_auth", { path: "/" });
-  res.redirect("/admin/login");
+  res.redirect(303, "/admin/login");
 });
 
 router.get("/dashboard", requireAdmin, async (req, res, next) => {
@@ -81,7 +81,7 @@ router.get("/dashboard", requireAdmin, async (req, res, next) => {
 });
 
 router.post("/dashboard", requireAdmin, (req, res) => {
-  res.redirect("/admin/dashboard");
+  res.redirect(303, "/admin/dashboard");
 });
 
 router.get("/courses", requireAdmin, async (req, res, next) => {
@@ -140,7 +140,7 @@ router.post("/courses", requireAdmin, async (req, res, next) => {
         is_active ? 1 : 0,
       ]
     );
-    res.redirect("/admin/courses");
+    res.redirect(303, "/admin/courses");
   } catch (error) {
     next(error);
   }
@@ -183,7 +183,7 @@ router.post("/courses/:id/update", requireAdmin, async (req, res, next) => {
         req.params.id,
       ]
     );
-    res.redirect("/admin/courses");
+    res.redirect(303, "/admin/courses");
   } catch (error) {
     next(error);
   }
@@ -192,7 +192,7 @@ router.post("/courses/:id/update", requireAdmin, async (req, res, next) => {
 router.post("/courses/:id/delete", requireAdmin, async (req, res, next) => {
   try {
     await runAsync("DELETE FROM courses WHERE id = ?", [req.params.id]);
-    res.redirect("/admin/courses");
+    res.redirect(303, "/admin/courses");
   } catch (error) {
     next(error);
   }
@@ -227,7 +227,7 @@ router.get("/students", requireAdmin, async (req, res, next) => {
 router.post("/students/:id/status", requireAdmin, async (req, res, next) => {
   try {
     await runAsync("UPDATE course_registrations SET status = ? WHERE id = ?", [req.body.status, req.params.id]);
-    res.redirect("/admin/students");
+    res.redirect(303, "/admin/students");
   } catch (error) {
     next(error);
   }
@@ -245,7 +245,7 @@ router.get("/contacts", requireAdmin, async (req, res, next) => {
 router.post("/contacts/:id/status", requireAdmin, async (req, res, next) => {
   try {
     await runAsync("UPDATE contacts SET status = ? WHERE id = ?", [req.body.status, req.params.id]);
-    res.redirect("/admin/contacts");
+    res.redirect(303, "/admin/contacts");
   } catch (error) {
     next(error);
   }
@@ -254,7 +254,7 @@ router.post("/contacts/:id/status", requireAdmin, async (req, res, next) => {
 router.post("/contacts/:id/delete", requireAdmin, async (req, res, next) => {
   try {
     await runAsync("DELETE FROM contacts WHERE id = ?", [req.params.id]);
-    res.redirect("/admin/contacts");
+    res.redirect(303, "/admin/contacts");
   } catch (error) {
     next(error);
   }
