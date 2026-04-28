@@ -4,6 +4,7 @@ const { getAsync, allAsync, runAsync } = require("../db/database");
 const { requireAdmin } = require("../middleware/auth");
 
 const router = express.Router();
+const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
 
 function slugify(text) {
   return String(text || "")
@@ -37,8 +38,14 @@ router.post("/login", async (req, res, next) => {
       return;
     }
 
-    req.session.adminId = admin.id;
-    req.session.adminUsername = admin.username;
+    res.cookie("admin_auth", `${admin.id}:${admin.username}`, {
+      httpOnly: true,
+      signed: true,
+      sameSite: "lax",
+      secure: true,
+      maxAge: oneWeekMs,
+      path: "/",
+    });
     res.redirect("/admin/dashboard");
   } catch (error) {
     next(error);
@@ -46,9 +53,8 @@ router.post("/login", async (req, res, next) => {
 });
 
 router.post("/logout", (req, res) => {
-  req.session.destroy(() => {
-    res.redirect("/admin/login");
-  });
+  res.clearCookie("admin_auth", { path: "/" });
+  res.redirect("/admin/login");
 });
 
 router.get("/dashboard", requireAdmin, async (req, res, next) => {
@@ -62,7 +68,7 @@ router.get("/dashboard", requireAdmin, async (req, res, next) => {
 
     res.render("admin/dashboard", {
       title: req.t("dashboardTitle"),
-      username: req.session.adminUsername,
+      username: req.admin.username,
       stats: {
         coursesCount: coursesCount.count,
         studentsCount: studentsCount.count,

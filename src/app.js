@@ -1,6 +1,7 @@
 const path = require("path");
 const express = require("express");
 const session = require("express-session");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 const { initDatabase } = require("./db/database");
@@ -11,15 +12,17 @@ const adminRoutes = require("./routes/adminRoutes");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const initPromise = initDatabase();
+const appSecret = process.env.SESSION_SECRET || "change-this-secret";
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "../views"));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "../public")));
+app.use(cookieParser(appSecret));
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "change-this-secret",
+    secret: appSecret,
     resave: false,
     saveUninitialized: false,
   })
@@ -41,6 +44,10 @@ app.use((req, res, next) => {
 
 app.use("/", siteRoutes);
 app.use("/admin", adminRoutes);
+
+app.use((req, res) => {
+  res.status(404).render("pages/404", { title: "404" });
+});
 
 app.use((err, req, res, next) => {
   // eslint-disable-next-line no-console

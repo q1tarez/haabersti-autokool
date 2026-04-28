@@ -74,6 +74,9 @@ const translations = {
     dashboardText: "See on admin-paneeli esimene versioon. Jargmisena lisame kontaktide nimekirja ja kursuste halduse.",
     signOut: "Logi valja",
     serverError: "Serveri viga. Proovi hiljem uuesti.",
+    notFoundTitle: "Lehte ei leitud",
+    notFoundText: "Vabandust, soovitud leht puudub voi on teisaldatud.",
+    backHome: "Tagasi avalehele",
   },
   ru: {
     navHome: "Главная",
@@ -147,6 +150,9 @@ const translations = {
     dashboardText: "Это первая версия админ-панели. Следующим шагом добавим список заявок и управление курсами.",
     signOut: "Выйти",
     serverError: "Ошибка сервера. Попробуйте позже.",
+    notFoundTitle: "Страница не найдена",
+    notFoundText: "Извините, такой страницы нет или она была перемещена.",
+    backHome: "На главную",
   },
   en: {
     navHome: "Home",
@@ -220,6 +226,9 @@ const translations = {
     dashboardText: "This is the first admin panel version. Next we will add contact requests and course management.",
     signOut: "Sign out",
     serverError: "Server error. Please try again later.",
+    notFoundTitle: "Page not found",
+    notFoundText: "Sorry, this page does not exist or has been moved.",
+    backHome: "Back to home",
   },
 };
 

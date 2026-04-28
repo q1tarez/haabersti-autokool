@@ -1,0 +1,10 @@
+<%- include("../partials/header", { title }) %>
+
+<section class="not-found card">
+  <p class="not-found-code">404</p>
+  <h1><%= t("notFoundTitle") %></h1>
+  <p class="section-lead"><%= t("notFoundText") %></p>
+  <a class="btn" href="/"><%= t("backHome") %></a>
+</section>
+
+<%- include("../partials/footer") %>
