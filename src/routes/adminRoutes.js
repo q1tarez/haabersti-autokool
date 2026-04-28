@@ -13,6 +13,10 @@ function slugify(text) {
     .replace(/(^-|-$)/g, "");
 }
 
+router.get("/", (req, res) => {
+  res.redirect("/admin/login");
+});
+
 router.get("/login", (req, res) => {
   res.render("admin/login", { title: req.t("adminLoginTitle"), error: null });
 });
@@ -69,6 +73,10 @@ router.get("/dashboard", requireAdmin, async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+});
+
+router.post("/dashboard", requireAdmin, (req, res) => {
+  res.redirect("/admin/dashboard");
 });
 
 router.get("/courses", requireAdmin, async (req, res, next) => {

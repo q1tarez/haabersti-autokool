@@ -10,6 +10,7 @@ const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const initPromise = initDatabase();
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "../views"));
@@ -47,15 +48,20 @@ app.use((err, req, res, next) => {
   res.status(500).send(req.t ? req.t("serverError") : "Server error");
 });
 
-initDatabase()
-  .then(() => {
-    app.listen(PORT, () => {
+if (require.main === module) {
+  initPromise
+    .then(() => {
+      app.listen(PORT, () => {
+        // eslint-disable-next-line no-console
+        console.log(`Server started at http://localhost:${PORT}`);
+      });
+    })
+    .catch((error) => {
       // eslint-disable-next-line no-console
-      console.log(`Server started at http://localhost:${PORT}`);
+      console.error("Database init failed:", error);
+      process.exit(1);
     });
-  })
-  .catch((error) => {
-    // eslint-disable-next-line no-console
-    console.error("Database init failed:", error);
-    process.exit(1);
-  });
+}
+
+module.exports = app;
+module.exports.initPromise = initPromise;
