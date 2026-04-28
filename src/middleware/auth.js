@@ -1,5 +1,5 @@
 function requireAdmin(req, res, next) {
-  const cookieValue = req.signedCookies?.admin_auth;
+  const cookieValue = req.signedCookies?.admin_auth || req.cookies?.admin_auth;
   if (!cookieValue) {
     res.redirect("/admin/login");
     return;

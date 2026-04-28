@@ -40,7 +40,6 @@ router.post("/login", async (req, res, next) => {
 
     res.cookie("admin_auth", `${admin.id}:${admin.username}`, {
       httpOnly: true,
-      signed: true,
       sameSite: "lax",
       secure: true,
       maxAge: oneWeekMs,
