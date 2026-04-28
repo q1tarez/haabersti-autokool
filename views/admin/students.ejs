@@ -1,0 +1,60 @@
+<%- include("../partials/header", { title }) %>
+
+<section>
+  <h1>Записавшиеся ученики</h1>
+  <p class="section-lead">Просмотр регистраций, поиск и смена статуса заявки.</p>
+  <%- include("./_nav") %>
+
+  <form class="card filter-bar" method="GET" action="/admin/students">
+    <input type="text" name="search" placeholder="Поиск: имя, исикукод, телефон, email, курс" value="<%= search %>" />
+    <select name="status">
+      <option value="">Все статусы</option>
+      <option value="new" <%= status === "new" ? "selected" : "" %>>Новая</option>
+      <option value="contacted" <%= status === "contacted" ? "selected" : "" %>>Связались</option>
+      <option value="closed" <%= status === "closed" ? "selected" : "" %>>Закрыта</option>
+    </select>
+    <button class="btn" type="submit">Фильтровать</button>
+  </form>
+
+  <div class="card table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Дата</th>
+          <th>Ученик</th>
+          <th>Контакты</th>
+          <th>Курс</th>
+          <th>Комментарий</th>
+          <th>Статус</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% students.forEach((item) => { %>
+          <tr>
+            <td><%= item.created_at %></td>
+            <td><strong><%= item.full_name %></strong></td>
+            <td>
+              IK: <%= item.isikukood || "-" %><br />
+              <%= item.phone %><br />
+              <%= item.email %>
+            </td>
+            <td><%= item.course_name %><br /><small>Start: <%= item.start_date || "-" %></small></td>
+            <td><%= item.comment || "-" %></td>
+            <td>
+              <form method="POST" action="/admin/students/<%= item.id %>/status" class="inline-form">
+                <select name="status">
+                  <option value="new" <%= item.status === "new" ? "selected" : "" %>>Новая</option>
+                  <option value="contacted" <%= item.status === "contacted" ? "selected" : "" %>>Связались</option>
+                  <option value="closed" <%= item.status === "closed" ? "selected" : "" %>>Закрыта</option>
+                </select>
+                <button class="btn secondary" type="submit">OK</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<%- include("../partials/footer") %>

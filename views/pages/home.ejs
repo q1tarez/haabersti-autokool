@@ -1,0 +1,38 @@
+<%- include("../partials/header", { title }) %>
+
+<section class="hero">
+  <div>
+    <p class="eyebrow">Haabersti Autokool</p>
+    <h1><%= t("heroTitle") %></h1>
+    <p class="hero-text"><%= t("heroText") %></p>
+    <div class="hero-actions">
+      <a class="btn" href="/register"><%= t("registerCourse") %></a>
+      <a class="btn secondary" href="/courses"><%= t("viewCourses") %></a>
+    </div>
+  </div>
+  <aside class="hero-card">
+    <h2><%= t("whyChooseUs") %></h2>
+    <ul>
+      <li><%= t("heroPoint1") %></li>
+      <li><%= t("heroPoint2") %></li>
+      <li><%= t("heroPoint3") %></li>
+    </ul>
+  </aside>
+</section>
+
+<section class="stats">
+  <article>
+    <p class="number">95%</p>
+    <p><%= t("stat1") %></p>
+  </article>
+  <article>
+    <p class="number">12+</p>
+    <p><%= t("stat2") %></p>
+  </article>
+  <article>
+    <p class="number">500+</p>
+    <p><%= t("stat3") %></p>
+  </article>
+</section>
+
+<%- include("../partials/footer") %>

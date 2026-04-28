@@ -1,0 +1,19 @@
+<%- include("../partials/header", { title }) %>
+
+<section class="auth-box">
+  <h1><%= t("adminLoginTitle") %></h1>
+  <% if (error) { %>
+    <p class="alert error"><%= error %></p>
+  <% } %>
+  <form class="form" method="POST" action="/admin/login">
+    <label for="username"><%= t("username") %></label>
+    <input id="username" name="username" type="text" required />
+
+    <label for="password"><%= t("password") %></label>
+    <input id="password" name="password" type="password" required />
+
+    <button class="btn" type="submit"><%= t("signIn") %></button>
+  </form>
+</section>
+
+<%- include("../partials/footer") %>

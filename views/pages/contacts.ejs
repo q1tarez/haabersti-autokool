@@ -1,0 +1,27 @@
+<%- include("../partials/header", { title }) %>
+
+<section>
+  <h1><%= t("contactsTitle") %></h1>
+  <p class="section-lead"><%= t("contactsLead") %></p>
+  <% if (error) { %>
+    <p class="alert error"><%= error %></p>
+  <% } %>
+  <% if (success) { %>
+    <p class="alert success"><%= success %></p>
+  <% } %>
+
+  <form class="form card form-card" method="POST" action="/contacts">
+    <label for="fullName"><%= t("name") %></label>
+    <input id="fullName" name="fullName" type="text" required />
+
+    <label for="phone"><%= t("phone") %></label>
+    <input id="phone" name="phone" type="text" required />
+
+    <label for="message"><%= t("message") %></label>
+    <textarea id="message" name="message" rows="5"></textarea>
+
+    <button class="btn" type="submit"><%= t("send") %></button>
+  </form>
+</section>
+
+<%- include("../partials/footer") %>

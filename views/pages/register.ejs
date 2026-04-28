@@ -1,0 +1,169 @@
+<%- include("../partials/header", { title }) %>
+
+<section>
+  <h1><%= t("registerTitle") %></h1>
+  <p class="section-lead"><%= t("registerLead") %></p>
+
+  <% if (error) { %>
+    <p class="alert error"><%= error %></p>
+  <% } %>
+  <% if (success) { %>
+    <p class="alert success"><%= success %></p>
+  <% } %>
+
+  <div class="registration-layout">
+    <form class="form card form-card step-form" method="POST" action="/register" id="stepForm">
+      <div class="stepper" id="stepper">
+        <button type="button" class="step-dot active" data-step="1">1</button>
+        <button type="button" class="step-dot" data-step="2">2</button>
+        <button type="button" class="step-dot" data-step="3">3</button>
+      </div>
+
+      <div class="step-panel active" data-step="1">
+        <h3><%= t("step1Title") %></h3>
+        <label for="courseId"><%= t("selectCourse") %></label>
+        <select id="courseId" name="courseId" required>
+          <option value=""><%= t("pickCourse") %></option>
+          <% courses.forEach((course) => { %>
+            <option value="<%= course.id %>" data-price="<%= course.price %>" <%= selectedCourseId === course.id ? "selected" : "" %>>
+              <%= course.name %> - <%= course.price %>
+            </option>
+          <% }) %>
+        </select>
+
+        <label for="startDate"><%= t("startDate") %></label>
+        <input id="startDate" name="startDate" type="date" />
+
+        <label for="lessonTime"><%= t("lessonTime") %></label>
+        <select id="lessonTime" name="lessonTime">
+          <option value="morning"><%= t("lessonMorning") %></option>
+          <option value="evening"><%= t("lessonEvening") %></option>
+          <option value="weekend"><%= t("lessonWeekend") %></option>
+        </select>
+      </div>
+
+      <div class="step-panel" data-step="2">
+        <h3><%= t("step2Title") %></h3>
+        <label for="fullName"><%= t("fullName") %></label>
+        <input id="fullName" name="fullName" type="text" required />
+
+        <label for="isikukood"><%= t("isikukood") %></label>
+        <input id="isikukood" name="isikukood" type="text" required />
+
+        <label for="phone"><%= t("phone") %></label>
+        <input id="phone" name="phone" type="text" required />
+
+        <label for="email"><%= t("email") %></label>
+        <input id="email" name="email" type="email" required />
+      </div>
+
+      <div class="step-panel" data-step="3">
+        <h3><%= t("step3Title") %></h3>
+        <label for="paymentMethod"><%= t("paymentMethod") %></label>
+        <select id="paymentMethod" name="paymentMethod">
+          <option value="full"><%= t("paymentFull") %></option>
+          <option value="installment"><%= t("paymentInstallment") %></option>
+        </select>
+
+        <label for="comment"><%= t("extraInfo") %></label>
+        <textarea id="comment" name="comment" rows="4" placeholder="<%= t('extraPlaceholder') %>"></textarea>
+
+        <label class="check-label">
+          <input type="checkbox" id="agreeTerms" required />
+          <span><%= t("agreeTerms") %></span>
+        </label>
+      </div>
+
+      <div class="step-actions">
+        <button type="button" class="btn secondary" id="prevStep"><%= t("back") %></button>
+        <button type="button" class="btn" id="nextStep"><%= t("next") %></button>
+        <button class="btn" type="submit" id="submitStep"><%= t("submitRegistration") %></button>
+      </div>
+    </form>
+
+    <aside class="card price-summary" id="priceSummary">
+      <p class="summary-label"><%= t("selectedCourse") %></p>
+      <h3 id="summaryCourse"><%= t("notSelected") %></h3>
+      <p class="summary-price" id="summaryPrice">-</p>
+      <p class="summary-hint"><%= t("priceHint") %></p>
+      <hr />
+      <p><strong><%= t("includes") %></strong></p>
+      <ul>
+        <li><%= t("include1") %></li>
+        <li><%= t("include2") %></li>
+        <li><%= t("include3") %></li>
+      </ul>
+    </aside>
+  </div>
+</section>
+
+<script>
+  (function () {
+    const form = document.getElementById("stepForm");
+    if (!form) return;
+
+    const panels = Array.from(form.querySelectorAll(".step-panel"));
+    const dots = Array.from(form.querySelectorAll(".step-dot"));
+    const prevBtn = document.getElementById("prevStep");
+    const nextBtn = document.getElementById("nextStep");
+    const submitBtn = document.getElementById("submitStep");
+    const select = document.getElementById("courseId");
+    const summaryCourse = document.getElementById("summaryCourse");
+    const summaryPrice = document.getElementById("summaryPrice");
+    let current = 1;
+
+    function updateSummary() {
+      const selected = select.options[select.selectedIndex];
+      if (!selected || !selected.value) {
+        summaryCourse.textContent = "<%= t('notSelected') %>";
+        summaryPrice.textContent = "-";
+        return;
+      }
+      summaryCourse.textContent = selected.textContent.split(" - ")[0];
+      summaryPrice.textContent = selected.dataset.price || "-";
+    }
+
+    function setStep(step) {
+      current = step;
+      panels.forEach((panel) => panel.classList.toggle("active", Number(panel.dataset.step) === step));
+      dots.forEach((dot) => dot.classList.toggle("active", Number(dot.dataset.step) <= step));
+      prevBtn.style.display = step === 1 ? "none" : "inline-block";
+      nextBtn.style.display = step === panels.length ? "none" : "inline-block";
+      submitBtn.style.display = step === panels.length ? "inline-block" : "none";
+    }
+
+    function validateCurrentStep() {
+      const panel = panels.find((p) => Number(p.dataset.step) === current);
+      const fields = Array.from(panel.querySelectorAll("input, select, textarea"));
+      for (const field of fields) {
+        if (!field.checkValidity()) {
+          field.reportValidity();
+          return false;
+        }
+      }
+      return true;
+    }
+
+    nextBtn.addEventListener("click", () => {
+      if (!validateCurrentStep()) return;
+      setStep(Math.min(current + 1, panels.length));
+    });
+
+    prevBtn.addEventListener("click", () => {
+      setStep(Math.max(current - 1, 1));
+    });
+
+    dots.forEach((dot) => {
+      dot.addEventListener("click", () => {
+        const targetStep = Number(dot.dataset.step);
+        if (targetStep < current) setStep(targetStep);
+      });
+    });
+
+    select.addEventListener("change", updateSummary);
+    updateSummary();
+    setStep(1);
+  })();
+</script>
+
+<%- include("../partials/footer") %>

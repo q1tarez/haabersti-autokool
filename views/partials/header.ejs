@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="<%= lang %>">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %> | Haabersti Autokool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav-wrap">
+        <a class="logo" href="/">Haabersti Autokool</a>
+        <nav class="nav" aria-label="Main navigation">
+          <a href="/"><%= t("navHome") %></a>
+          <a href="/courses"><%= t("navCourses") %></a>
+          <a href="/register"><%= t("navRegister") %></a>
+          <a href="/contacts"><%= t("navContacts") %></a>
+        </nav>
+        <div class="lang-switch">
+          <a href="?lang=et" class="<%= lang === 'et' ? 'active' : '' %>">EST</a>
+          <a href="?lang=ru" class="<%= lang === 'ru' ? 'active' : '' %>">RU</a>
+          <a href="?lang=en" class="<%= lang === 'en' ? 'active' : '' %>">EN</a>
+        </div>
+      </div>
+    </header>
+    <main class="container">
