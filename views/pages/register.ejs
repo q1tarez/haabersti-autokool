@@ -1,7 +1,8 @@
+<% const showInstrBoot = courses.some((c) => c.id === selectedCourseId && c.requiresInstructor); %>
 <%- include("../partials/header", { title }) %>
 
-<section>
-  <h1><%= t("registerTitle") %></h1>
+<section class="registration-section">
+  <h1><%= t("registerWizardTitle") %></h1>
   <p class="section-lead"><%= t("registerLead") %></p>
 
   <% if (error) { %>
@@ -12,24 +13,69 @@
   <% } %>
 
   <div class="registration-layout">
-    <form class="form card form-card step-form" method="POST" action="/register" id="stepForm">
-      <div class="stepper" id="stepper">
-        <button type="button" class="step-dot active" data-step="1">1</button>
-        <button type="button" class="step-dot" data-step="2">2</button>
-        <button type="button" class="step-dot" data-step="3">3</button>
+    <form
+      class="form card form-card step-form"
+      method="POST"
+      action="/register"
+      id="stepForm"
+      data-initial-course="<%= selectedCourseId || "" %>"
+      data-pick-msg="<%= String(t("instructorPickVisibleError")).replace(/"/g, "&quot;").replace(/</g, "&lt;") %>"
+    >
+      <div class="wizard-track" aria-label="<%= t('registerWizardTitle') %>">
+        <div class="wizard-track-item">
+          <button type="button" class="wizard-dot active" data-step="1" aria-current="step">
+            <span class="wizard-dot-num">1</span>
+          </button>
+          <span class="wizard-dot-label"><%= t("wizardStepCourse") %></span>
+        </div>
+        <div class="wizard-track-connector" data-connector="1" aria-hidden="true"></div>
+        <div class="wizard-track-item">
+          <button type="button" class="wizard-dot" data-step="2"><span class="wizard-dot-num">2</span></button>
+          <span class="wizard-dot-label"><%= t("wizardStepInstructor") %></span>
+        </div>
+        <div class="wizard-track-connector" data-connector="2" aria-hidden="true"></div>
+        <div class="wizard-track-item">
+          <button type="button" class="wizard-dot" data-step="3"><span class="wizard-dot-num">3</span></button>
+          <span class="wizard-dot-label"><%= t("wizardStepDetails") %></span>
+        </div>
+        <div class="wizard-track-connector" data-connector="3" aria-hidden="true"></div>
+        <div class="wizard-track-item">
+          <button type="button" class="wizard-dot" data-step="4"><span class="wizard-dot-num">4</span></button>
+          <span class="wizard-dot-label"><%= t("wizardStepConfirm") %></span>
+        </div>
       </div>
 
       <div class="step-panel active" data-step="1">
-        <h3><%= t("step1Title") %></h3>
-        <label for="courseId"><%= t("selectCourse") %></label>
-        <select id="courseId" name="courseId" required>
-          <option value=""><%= t("pickCourse") %></option>
-          <% courses.forEach((course) => { %>
-            <option value="<%= course.id %>" data-price="<%= course.price %>" <%= selectedCourseId === course.id ? "selected" : "" %>>
-              <%= course.name %> - <%= course.price %>
-            </option>
-          <% }) %>
-        </select>
+        <h3 class="wizard-panel-heading"><%= t("wizardStepCourse") %></h3>
+        <fieldset class="course-picker-group">
+          <legend class="visually-hidden"><%= t("selectCourse") %></legend>
+          <% if (!courses.length) { %>
+            <p><%= t("pickCourse") %></p>
+          <% } else { %>
+            <div class="course-picker-cards" role="radiogroup" aria-required="true">
+              <% courses.forEach((course) => { %>
+                <label class="course-picker-card<%= selectedCourseId === course.id ? " selected" : "" %>">
+                  <input
+                    type="radio"
+                    name="courseId"
+                    value="<%= course.id %>"
+                    data-price="<%= course.omitCourseListPrice ? "" : course.price %>"
+                    data-requires-instructor="<%= course.requiresInstructor ? "1" : "" %>"
+                    <%= selectedCourseId === course.id ? "checked" : "" %>
+                    required
+                  />
+                  <span class="course-picker-inner">
+                    <span class="course-picker-name"><%= course.name %></span>
+                    <span class="course-picker-meta"><%= t("duration") %>: <%= course.duration %></span>
+                    <% if (!course.omitCourseListPrice) { %>
+                      <span class="course-picker-price"><%= course.price %></span>
+                    <% } %>
+                  </span>
+                </label>
+              <% }) %>
+            </div>
+          <% } %>
+        </fieldset>
 
         <label for="startDate"><%= t("startDate") %></label>
         <input id="startDate" name="startDate" type="date" />
@@ -43,22 +89,247 @@
       </div>
 
       <div class="step-panel" data-step="2">
-        <h3><%= t("step2Title") %></h3>
-        <label for="fullName"><%= t("fullName") %></label>
-        <input id="fullName" name="fullName" type="text" required />
+        <h3 class="wizard-panel-heading"><%= t("wizardStepInstructor") %></h3>
 
-        <label for="isikukood"><%= t("isikukood") %></label>
-        <input id="isikukood" name="isikukood" type="text" required />
+        <div id="instructorStepPlaceholder" class="instructor-step-placeholder" <%= showInstrBoot ? "hidden" : "" %>>
+          <p><%= t("instructorStepNeutral") %></p>
+        </div>
 
-        <label for="phone"><%= t("phone") %></label>
-        <input id="phone" name="phone" type="text" required />
+        <div id="instructorBlock" class="instructor-block" <%= showInstrBoot ? "" : "hidden" %>>
+          <p class="instructor-step-lead"><%= t("instructorSectionTitle") %></p>
 
-        <label for="email"><%= t("email") %></label>
-        <input id="email" name="email" type="email" required />
+          <% const locSlugKeys = [{ s: "kopli", k: "filterLocKopli" }, { s: "mustamae", k: "filterLocMustamae" }, { s: "lasnamae", k: "filterLocLasnamae" }, { s: "haabersti", k: "filterLocHaabersti" }, { s: "kristiine", k: "filterLocKristiine" }, { s: "viimsi", k: "filterLocViimsi" }, { s: "pirita", k: "filterLocPirita" }, { s: "maardu", k: "filterLocMaardu" }, { s: "ulemiste", k: "filterLocUlemiste" }, { s: "kadaka", k: "filterLocKadaka" }]; %>
+
+          <div id="instructorFilterBar" class="instructor-filter-panel">
+            <p class="visually-hidden" id="instructorRadiogroupLabel"><%= t("instructorSectionTitle") %></p>
+
+            <div class="filter-chip-row">
+              <span class="filter-field-label"><%= t("instructorFilterGroupLang") %></span>
+              <div class="filter-chip-group" data-filter-group="lang">
+                <button type="button" class="filter-chip" data-filter-value="any"><%= t("filterNeutralLang") %></button>
+                <button type="button" class="filter-chip" data-filter-value="et"><%= t("filterLangEt") %></button>
+                <button type="button" class="filter-chip is-selected" data-filter-value="ru" aria-pressed="true"><%= t("filterLangRu") %></button>
+                <button type="button" class="filter-chip" data-filter-value="en"><%= t("filterLangEn") %></button>
+              </div>
+            </div>
+
+            <div class="filter-chip-row">
+              <span class="filter-field-label"><%= t("instructorFilterTransmission") %></span>
+              <div class="filter-chip-group" data-filter-group="transmission">
+                <button type="button" class="filter-chip is-selected" data-filter-value="any" aria-pressed="true"><%= t("filterNeutralTrans") %></button>
+                <button type="button" class="filter-chip" data-filter-value="manual"><%= t("filterTransManual") %></button>
+                <button type="button" class="filter-chip" data-filter-value="automatic"><%= t("filterTransAutomatic") %></button>
+              </div>
+            </div>
+
+            <div class="filter-chip-row">
+              <span class="filter-field-label"><%= t("instructorFilterCategory") %></span>
+              <div class="filter-chip-group" data-filter-group="category">
+                <button type="button" class="filter-chip" data-filter-value="any"><%= t("filterNeutralCat") %></button>
+                <button type="button" class="filter-chip is-selected" data-filter-value="b" aria-pressed="true"><%= t("filterCatB") %></button>
+                <button type="button" class="filter-chip" data-filter-value="be"><%= t("filterCatBE") %></button>
+                <button type="button" class="filter-chip" data-filter-value="moto"><%= t("filterCatMoto") %></button>
+              </div>
+            </div>
+
+            <div class="filter-chip-row">
+              <span class="filter-field-label"><%= t("instructorFilterLocation") %></span>
+              <div class="filter-chip-group filter-chip-group--wrap" data-filter-group="location">
+                <button type="button" class="filter-chip is-selected" data-filter-value="any" aria-pressed="true"><%= t("filterNeutralLoc") %></button>
+                <% locSlugKeys.forEach(({ s, k }) => { %>
+                  <button type="button" class="filter-chip" data-filter-value="<%= s %>"><%= t(k) %></button>
+                <% }) %>
+              </div>
+            </div>
+
+            <div class="filter-search-row">
+              <label class="filter-field-label" for="instructorSearchInput"><%= t("instructorFilterSearch") %></label>
+              <span class="filter-search-inner">
+                <svg class="filter-search-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input type="search" id="instructorSearchInput" class="inst-search-field" autocomplete="off" placeholder="<%= t('instructorSearchPlaceholder') %>" />
+              </span>
+            </div>
+
+            <div class="filter-chip-row">
+              <span class="filter-field-label"><%= t("instructorFilterSort") %></span>
+              <div class="filter-chip-group" data-filter-group="sort">
+                <button type="button" class="filter-chip is-selected" data-filter-value="first-lesson" aria-pressed="true"><%= t("instructorSortFirstLesson") %></button>
+                <button type="button" class="filter-chip" data-filter-value="rating"><%= t("instructorSortRating") %></button>
+                <button type="button" class="filter-chip" data-filter-value="price"><%= t("instructorSortPrice") %></button>
+              </div>
+            </div>
+          </div>
+
+          <p id="instructorFilterError" class="alert error instructor-filter-msg" hidden role="alert"></p>
+          <p id="instructorNoResults" class="instructor-empty-list" hidden><%= t("instructorNoResults") %></p>
+
+          <div id="instructorCardsRoot" class="instructor-picker-cards" role="radiogroup" aria-labelledby="instructorRadiogroupLabel">
+            <% drivingInstructors.forEach((instr) => { %>
+              <article
+                class="instructor-hub-card"
+                data-inst-langs="<%= instr.filterGroupLanguages.join(" ") %>"
+                data-inst-trans="<%= instr.transmissionKey %>"
+                data-inst-cats="<%= instr.filterCategories.join(" ") %>"
+                data-inst-locs="<%= instr.filterLocationIds.join(" ") %>"
+                data-inst-days="<%= instr.firstLessonDays %>"
+                data-inst-rating="<%= instr.rating %>"
+                data-inst-price="<%= instr.sortPriceNumber %>"
+                data-inst-search="<%= instr.searchHaystack %>"
+              >
+                <input
+                  type="radio"
+                  name="instructorId"
+                  value="<%= instr.id %>"
+                  id="inst-radio-<%= instr.id %>"
+                  data-price-package="<%= instr.pricePackage %>"
+                  data-price-lesson="<%= instr.pricePerLesson %>"
+                  data-label="<%= instr.name %>"
+                  class="instructor-radio"
+                  <%= showInstrBoot ? "" : "disabled" %>
+                />
+                <div class="hub-card-photo">
+                  <img class="hub-photo-round" src="<%= instr.photo %>" alt="" width="96" height="96" loading="lazy" />
+                </div>
+                <div class="hub-card-center">
+                  <div class="hub-card-head">
+                    <% if (instr.badgePro) { %>
+                      <span class="hub-pro-badge">★ <%= t("instructorBadgePro") %></span>
+                    <% } %>
+                    <h4 class="hub-name"><%= instr.name %></h4>
+                  </div>
+                  <div class="hub-price-row">
+                    <div class="hub-price-cell">
+                      <span class="hub-euro" aria-hidden="true">€</span>
+                      <span class="hub-price-label"><%= t("instructorCostShort") %></span>
+                      <span class="hub-price-value"><%= instr.priceFormattedPackage %></span>
+                    </div>
+                    <div class="hub-price-cell">
+                      <span class="hub-euro" aria-hidden="true">€</span>
+                      <span class="hub-price-label"><%= t("instructorPerLessonNote") %></span>
+                      <span class="hub-price-value"><%= instr.priceLessonFormatted %></span>
+                    </div>
+                  </div>
+                  <div class="hub-info-grid">
+                    <div class="hub-info-item">
+                      <svg class="hub-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 6v6l4 2" />
+                      </svg>
+                      <div>
+                        <span class="hub-info-lbl"><%= t("instructorFirstLesson") %></span>
+                        <span class="hub-info-val hub-info-accent"><%= instr.firstLessonEta %></span>
+                      </div>
+                    </div>
+                    <div class="hub-info-item">
+                      <svg class="hub-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <path d="M7 11V7a5 5 0 0110 0v4" />
+                        <path d="M7 21h10l1-10H6l1 10z" />
+                      </svg>
+                      <div>
+                        <span class="hub-info-lbl"><%= t("instructorRatingTotalShort") %></span>
+                        <span class="hub-info-val"><%= instr.rating %> (<%= instr.reviewCount %>)</span>
+                      </div>
+                    </div>
+                    <div class="hub-info-item">
+                      <svg class="hub-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <path d="M12 21s-6-5-6-10a6 6 0 1112 0c0 5-6 10-6 10z" />
+                        <circle cx="12" cy="11" r="2.5" />
+                      </svg>
+                      <div>
+                        <span class="hub-info-lbl"><%= t("instructorMeetingPoint") %></span>
+                        <span class="hub-info-val"><%= instr.location %></span>
+                      </div>
+                    </div>
+                    <div class="hub-info-item">
+                      <svg class="hub-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M12 2v4M12 18v4M5 5l3 3M16 16l3 3M2 12h4M18 12h4" />
+                      </svg>
+                      <div>
+                        <span class="hub-info-lbl"><%= t("instructorTransmission") %></span>
+                        <span class="hub-info-val"><%= instr.transmission %></span>
+                      </div>
+                    </div>
+                    <div class="hub-info-item">
+                      <svg class="hub-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <path d="M4 5h16M9 11h11M9 17h11" />
+                      </svg>
+                      <div>
+                        <span class="hub-info-lbl"><%= t("instructorLanguageLabel") %></span>
+                        <span class="hub-info-val"><%= instr.spokenLanguage %></span>
+                      </div>
+                    </div>
+                    <div class="hub-info-item">
+                      <svg class="hub-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <rect x="2" y="5" width="20" height="14" rx="2" />
+                        <path d="M2 10h20" />
+                      </svg>
+                      <div>
+                        <span class="hub-info-lbl"><%= t("instructorPayPerLessonShort") %></span>
+                        <% if (instr.payPerLessonOk) { %>
+                          <span class="hub-info-val"><span class="hub-check">✓</span></span>
+                        <% } %>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="hub-card-actions">
+                  <button type="button" class="btn-hub-select hub-select-trigger">
+                    <%= t("instructorChooseBtn") %> ›
+                  </button>
+                  <button type="button" class="btn-hub-info" data-open-dialog="inst-dialog-<%= instr.id %>">
+                    <span class="btn-hub-info-ico">i</span>
+                    <%= t("instructorMoreInfoBtn") %>
+                  </button>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        </div>
       </div>
 
       <div class="step-panel" data-step="3">
-        <h3><%= t("step3Title") %></h3>
+        <h3 class="wizard-panel-heading"><%= t("contactFieldsTitle") %></h3>
+        <div class="field-grid-two">
+          <div>
+            <label for="fullName"><%= t("fullName") %></label>
+            <input id="fullName" name="fullName" type="text" required autocomplete="name" />
+          </div>
+          <div>
+            <label for="isikukood"><%= t("isikukood") %></label>
+            <input id="isikukood" name="isikukood" type="text" required inputmode="numeric" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="field-grid-two">
+          <div>
+            <label for="phone"><%= t("phone") %></label>
+            <input id="phone" name="phone" type="tel" required autocomplete="tel" />
+          </div>
+          <div>
+            <label for="email"><%= t("email") %></label>
+            <input id="email" name="email" type="email" required autocomplete="email" />
+          </div>
+        </div>
+      </div>
+
+      <div class="step-panel" data-step="4">
+        <h3 class="wizard-panel-heading"><%= t("wizardStepConfirm") %></h3>
+
+        <div class="wizard-recap card-inner" id="wizardRecap" aria-live="polite">
+          <p class="wizard-recap-title"><%= t("recapHeading") %></p>
+          <dl class="wizard-recap-list">
+            <div class="wizard-recap-row wizard-recap-row--instructor" id="recapInstructorRow" hidden>
+              <dt><%= t("recapInstructor") %></dt>
+              <dd id="recapInstructor">—</dd>
+            </div>
+            <div class="wizard-recap-row"><dt><%= t("recapCourse") %></dt><dd id="recapCourse">—</dd></div>
+            <div class="wizard-recap-row"><dt><%= t("recapStartDate") %></dt><dd id="recapStart">—</dd></div>
+            <div class="wizard-recap-row"><dt><%= t("recapLessonTime") %></dt><dd id="recapLesson">—</dd></div>
+            <div class="wizard-recap-row"><dt><%= t("recapYourDetails") %></dt><dd id="recapPerson">—</dd></div>
+          </dl>
+        </div>
+
         <label for="paymentMethod"><%= t("paymentMethod") %></label>
         <select id="paymentMethod" name="paymentMethod">
           <option value="full"><%= t("paymentFull") %></option>
@@ -95,6 +366,62 @@
       </ul>
     </aside>
   </div>
+
+  <% drivingInstructors.forEach((instr) => { %>
+    <dialog class="inst-detail-dialog" id="inst-dialog-<%= instr.id %>" aria-labelledby="inst-dialog-title-<%= instr.id %>">
+      <div class="inst-dialog-sheet">
+        <button type="button" class="inst-dialog-x" data-close-dialog aria-label="<%= t('modalCloseAria') %>">×</button>
+        <p class="inst-dialog-eyebrow"><%= t("instructorDrivingLessonsEyebrow") %></p>
+        <h2 class="inst-dialog-title" id="inst-dialog-title-<%= instr.id %>"><%= instr.name %></h2>
+        <div class="inst-dialog-summary">
+          <img class="inst-dialog-photo" src="<%= instr.photo %>" alt="" width="88" height="88" loading="lazy" />
+          <div>
+            <div class="inst-modal-price-row">
+              <div class="hub-price-cell">
+                <span class="hub-euro" aria-hidden="true">€</span>
+                <span class="hub-price-label"><%= t("instructorCostShort") %></span>
+                <span class="hub-price-value"><%= instr.priceFormattedPackage %></span>
+              </div>
+              <div class="hub-price-cell">
+                <span class="hub-euro" aria-hidden="true">€</span>
+                <span class="hub-price-label"><%= t("instructorPerLessonNote") %></span>
+                <span class="hub-price-value"><%= instr.priceLessonFormatted %></span>
+              </div>
+            </div>
+            <dl class="inst-modal-mini-grid">
+              <div>
+                <dt><%= t("instructorMeetingPoint") %></dt>
+                <dd><%= instr.location %></dd>
+              </div>
+              <div>
+                <dt><%= t("instructorFirstLesson") %></dt>
+                <dd class="hub-info-accent"><%= instr.firstLessonEta %></dd>
+              </div>
+              <div>
+                <dt><%= t("instructorRatingTotalShort") %></dt>
+                <dd><%= instr.rating %> (<%= instr.reviewCount %>)</dd>
+              </div>
+              <div>
+                <dt><%= t("instructorTransmission") %></dt>
+                <dd><%= instr.transmission %></dd>
+              </div>
+              <div>
+                <dt><%= t("instructorLanguageLabel") %></dt>
+                <dd><%= instr.spokenLanguage %></dd>
+              </div>
+              <div>
+                <dt><%= t("instructorPayPerLessonShort") %></dt>
+                <dd><% if (instr.payPerLessonOk) { %><span class="hub-check">✓</span><% } else { %>—<% } %></dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+        <hr class="inst-dialog-line" />
+        <div class="inst-dialog-prose"><%- instr.modalArticleHtml %></div>
+        <button type="button" class="btn inst-dialog-cta" data-select-instructor="<%= instr.id %>"><%= t("instructorModalRegisterCta") %> ›</button>
+      </div>
+    </dialog>
+  <% }) %>
 </section>
 
 <script>
@@ -102,45 +429,303 @@
     const form = document.getElementById("stepForm");
     if (!form) return;
 
+    const EXTRA_DRIVING_ID = "extra-driving";
+
     const panels = Array.from(form.querySelectorAll(".step-panel"));
-    const dots = Array.from(form.querySelectorAll(".step-dot"));
+    const dots = Array.from(form.querySelectorAll(".wizard-dot"));
+    const connectors = Array.from(form.querySelectorAll(".wizard-track-connector"));
     const prevBtn = document.getElementById("prevStep");
     const nextBtn = document.getElementById("nextStep");
     const submitBtn = document.getElementById("submitStep");
-    const select = document.getElementById("courseId");
+    const courseRadios = () => Array.from(form.querySelectorAll('input[name="courseId"]'));
+    const instructorRadios = () => Array.from(form.querySelectorAll(".instructor-radio"));
+    const instructorBlock = document.getElementById("instructorBlock");
+    const instructorStepPlaceholder = document.getElementById("instructorStepPlaceholder");
+    const recapInstructorRow = document.getElementById("recapInstructorRow");
+    const lessonTimeSel = document.getElementById("lessonTime");
     const summaryCourse = document.getElementById("summaryCourse");
     const summaryPrice = document.getElementById("summaryPrice");
+    const recapEls = {
+      instructor: document.getElementById("recapInstructor"),
+      course: document.getElementById("recapCourse"),
+      start: document.getElementById("recapStart"),
+      lesson: document.getElementById("recapLesson"),
+      person: document.getElementById("recapPerson"),
+    };
+    const instructorSearchEl = document.getElementById("instructorSearchInput");
+
     let current = 1;
 
-    function updateSummary() {
-      const selected = select.options[select.selectedIndex];
-      if (!selected || !selected.value) {
+    function normalizeInstructorComparable(s) {
+      return String(s || "")
+        .toLowerCase()
+        .normalize("NFKD")
+        .replace(/\p{M}/gu, "")
+        .replace(/[-_/,.;:+|]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function pickedRadio() {
+      return courseRadios().find((r) => r.checked);
+    }
+
+    function needsInstructor() {
+      const r = pickedRadio();
+      return !!(r && r.dataset.requiresInstructor === "1");
+    }
+
+    function pickedCourseId() {
+      return pickedRadio()?.value || "";
+    }
+
+    function pickedInstructorEligible() {
+      const r = instructorRadios().find((x) => x.checked);
+      if (!r) return undefined;
+      if (r.closest(".instructor-hub-card")?.classList.contains("is-filtered-out")) return undefined;
+      return r;
+    }
+
+    function syncDrivingInstructorUi() {
+      const need = needsInstructor();
+      if (instructorBlock) instructorBlock.hidden = !need;
+      if (instructorStepPlaceholder) instructorStepPlaceholder.hidden = need;
+
+      instructorRadios().forEach((inp) => {
+        inp.disabled = !need;
+        inp.required = false;
+        if (!need) inp.checked = false;
+      });
+    }
+
+    function getFilterSelection(groupName) {
+      const g = document.querySelector(`#instructorFilterBar [data-filter-group="${groupName}"]`);
+      const chip = g?.querySelector(".filter-chip.is-selected");
+      return chip?.dataset.filterValue || "any";
+    }
+
+    function cardMatches(card) {
+      const lang = getFilterSelection("lang");
+      const langs = (card.dataset.instLangs || "").split(/\s+/).filter(Boolean);
+      if (lang !== "any" && !langs.includes(lang)) return false;
+
+      const trans = getFilterSelection("transmission");
+      const ct = card.dataset.instTrans || "";
+      if (trans === "manual" && ct !== "manual") return false;
+      if (trans === "automatic" && ct !== "automatic") return false;
+
+      const cat = getFilterSelection("category");
+      const cats = (card.dataset.instCats || "").split(/\s+/).filter(Boolean);
+      if (cat !== "any" && !cats.includes(cat)) return false;
+
+      const loc = getFilterSelection("location");
+      const locs = (card.dataset.instLocs || "").split(/\s+/).filter(Boolean);
+      if (loc !== "any" && !locs.includes(loc)) return false;
+
+      const rawSearch = instructorSearchEl?.value || "";
+      const qTokens = normalizeInstructorComparable(rawSearch)
+        .split(/\s+/)
+        .filter((t) => t.length >= 2);
+      if (qTokens.length) {
+        const hay = normalizeInstructorComparable(card.dataset.instSearch || "");
+        if (!qTokens.every((tok) => hay.includes(tok))) return false;
+      }
+
+      return true;
+    }
+
+    function sortCardsInDom(root) {
+      const sort = getFilterSelection("sort");
+      const cards = Array.from(root.querySelectorAll(".instructor-hub-card"));
+      cards.sort((a, b) => {
+        if (sort === "rating") return Number(b.dataset.instRating) - Number(a.dataset.instRating);
+        if (sort === "price") return Number(a.dataset.instPrice) - Number(b.dataset.instPrice);
+        return Number(a.dataset.instDays) - Number(b.dataset.instDays);
+      });
+      cards.forEach((c) => root.appendChild(c));
+    }
+
+    function applyInstructorFilters() {
+      const root = document.getElementById("instructorCardsRoot");
+      const errEl = document.getElementById("instructorFilterError");
+      const emptyEl = document.getElementById("instructorNoResults");
+      if (!root) return;
+      sortCardsInDom(root);
+      let visibleCount = 0;
+      root.querySelectorAll(".instructor-hub-card").forEach((card) => {
+        const ok = cardMatches(card);
+        card.classList.toggle("is-filtered-out", !ok);
+        if (ok) visibleCount += 1;
+      });
+      const rawChecked = instructorRadios().find((x) => x.checked);
+      if (rawChecked && rawChecked.closest(".instructor-hub-card")?.classList.contains("is-filtered-out")) {
+        rawChecked.checked = false;
+        rawChecked.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      if (emptyEl) emptyEl.hidden = visibleCount > 0;
+      if (errEl) errEl.hidden = true;
+      updateCourseCardsHighlight();
+      summaryPriceDisplay();
+      if (current === 4) updateRecap();
+    }
+
+    function updateCourseCardsHighlight() {
+      form.querySelectorAll(".course-picker-card").forEach((card) => {
+        const inp = card.querySelector('input[type="radio"]');
+        card.classList.toggle("selected", inp && inp.checked);
+      });
+      instructorRadios().forEach((inp) => {
+        const card = inp.closest(".instructor-hub-card");
+        if (card) card.classList.toggle("is-selected", inp.checked);
+      });
+    }
+
+    function summaryPriceDisplay() {
+      const r = pickedRadio();
+      if (!r) {
         summaryCourse.textContent = "<%= t('notSelected') %>";
         summaryPrice.textContent = "-";
         return;
       }
-      summaryCourse.textContent = selected.textContent.split(" - ")[0];
-      summaryPrice.textContent = selected.dataset.price || "-";
+      summaryCourse.textContent =
+        r.closest(".course-picker-card")?.querySelector(".course-picker-name")?.textContent.trim() ||
+        "<%= t('notSelected') %>";
+
+      const inst = pickedInstructorEligible();
+      if (!needsInstructor()) {
+        summaryPrice.textContent = r.dataset.price || "-";
+        return;
+      }
+      if (!inst) {
+        summaryPrice.textContent = "-";
+        return;
+      }
+      if (pickedCourseId() === EXTRA_DRIVING_ID) {
+        summaryPrice.textContent = inst.dataset.priceLesson || "-";
+      } else {
+        summaryPrice.textContent = inst.dataset.pricePackage || "-";
+      }
+    }
+
+    function padDateDisplay(iso) {
+      if (!iso) return "—";
+      const d = new Date(iso + "T12:00:00");
+      if (Number.isNaN(d.getTime())) return iso;
+      try {
+        return d.toLocaleDateString(document.documentElement.lang || "et", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+      } catch (_) {
+        return iso;
+      }
+    }
+
+    function updateRecap() {
+      const needInstr = needsInstructor();
+      const inst = pickedInstructorEligible();
+
+      if (recapInstructorRow) recapInstructorRow.hidden = !needInstr;
+      if (recapEls.instructor) {
+        recapEls.instructor.textContent = needInstr ? inst?.dataset.label?.trim() || "—" : "—";
+      }
+
+      const r = pickedRadio();
+      recapEls.course.textContent =
+        r?.closest(".course-picker-card")?.querySelector(".course-picker-name")?.textContent.trim() || "—";
+      const sd = document.getElementById("startDate").value;
+      recapEls.start.textContent = sd ? padDateDisplay(sd) : "—";
+      recapEls.lesson.textContent = lessonTimeSel?.selectedOptions?.[0]?.textContent?.trim() || "—";
+
+      const name = document.getElementById("fullName").value.trim();
+      const ik = document.getElementById("isikukood").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const email = document.getElementById("email").value.trim();
+
+      const parts = [name];
+      if (ik) parts.push(ik);
+      if (phone) parts.push(phone);
+      if (email) parts.push(email);
+      recapEls.person.textContent = parts.some(Boolean) ? parts.filter(Boolean).join(" · ") : "—";
     }
 
     function setStep(step) {
       current = step;
       panels.forEach((panel) => panel.classList.toggle("active", Number(panel.dataset.step) === step));
-      dots.forEach((dot) => dot.classList.toggle("active", Number(dot.dataset.step) <= step));
+
+      connectors.forEach((line, idx) => {
+        line.classList.toggle("is-complete", step > idx + 1);
+      });
+
+      dots.forEach((dot) => {
+        const n = Number(dot.dataset.step);
+        const isActive = n === step;
+        const done = n < step;
+        dot.classList.toggle("active", isActive);
+        dot.classList.toggle("done", done);
+        dot.setAttribute("aria-current", isActive ? "step" : "false");
+        const inner = dot.querySelector(".wizard-dot-num");
+        if (inner) inner.textContent = done ? "✓" : String(n);
+      });
+
       prevBtn.style.display = step === 1 ? "none" : "inline-block";
       nextBtn.style.display = step === panels.length ? "none" : "inline-block";
       submitBtn.style.display = step === panels.length ? "inline-block" : "none";
+
+      if (step === 4) updateRecap();
     }
 
     function validateCurrentStep() {
       const panel = panels.find((p) => Number(p.dataset.step) === current);
+
+      const fieldsetCourses = panel.querySelector("fieldset.course-picker-group");
+      if (fieldsetCourses) {
+        const radiosInPanel = Array.from(fieldsetCourses.querySelectorAll('input[type="radio"]'));
+        if (radiosInPanel.length && !pickedRadio()) {
+          const first = radiosInPanel[0];
+          first.required = true;
+          first.reportValidity();
+          return false;
+        }
+      }
+
+      if (current === 2 && needsInstructor()) {
+        const visibleRadios = instructorRadios().filter((r) => {
+          const c = r.closest(".instructor-hub-card");
+          return c && !c.classList.contains("is-filtered-out") && !r.disabled;
+        });
+        if (visibleRadios.length === 0) {
+          document.getElementById("instructorNoResults")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          return false;
+        }
+        if (!visibleRadios.some((r) => r.checked)) {
+          const errEl = document.getElementById("instructorFilterError");
+          if (errEl) {
+            errEl.textContent = form.dataset.pickMsg || "";
+            errEl.hidden = false;
+          }
+          visibleRadios[0]?.focus();
+          return false;
+        }
+        const errEl = document.getElementById("instructorFilterError");
+        if (errEl) errEl.hidden = true;
+        return true;
+      }
+
+      if (current === 2) return true;
+
       const fields = Array.from(panel.querySelectorAll("input, select, textarea"));
       for (const field of fields) {
+        if (field.classList.contains("instructor-radio")) continue;
+        if (field.id === "instructorSearchInput") continue;
+        if (field.disabled || !field.willValidate) continue;
         if (!field.checkValidity()) {
           field.reportValidity();
           return false;
         }
       }
+
       return true;
     }
 
@@ -160,9 +745,92 @@
       });
     });
 
-    select.addEventListener("change", updateSummary);
-    updateSummary();
-    setStep(1);
+    courseRadios().forEach((radio) =>
+      radio.addEventListener("change", () => {
+        syncDrivingInstructorUi();
+        applyInstructorFilters();
+        updateCourseCardsHighlight();
+        summaryPriceDisplay();
+      })
+    );
+
+    instructorRadios().forEach((r) =>
+      r.addEventListener("change", () => {
+        updateCourseCardsHighlight();
+        summaryPriceDisplay();
+        if (current === 4) updateRecap();
+      })
+    );
+
+    form.addEventListener("click", (e) => {
+      const selectBtn = e.target.closest(".hub-select-trigger");
+      if (selectBtn) {
+        const card = selectBtn.closest(".instructor-hub-card");
+        const radio = card?.querySelector(".instructor-radio");
+        if (radio && !radio.disabled) {
+          radio.checked = true;
+          radio.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        return;
+      }
+
+      const openBtn = e.target.closest("[data-open-dialog]");
+      if (openBtn) {
+        const dialogId = openBtn.getAttribute("data-open-dialog");
+        document.getElementById(dialogId)?.showModal?.();
+      }
+    });
+
+    document.getElementById("instructorFilterBar")?.addEventListener("click", (e) => {
+      const chip = e.target.closest(".filter-chip");
+      if (!chip || !chip.closest("#instructorFilterBar")) return;
+      const group = chip.closest("[data-filter-group]");
+      if (!group) return;
+      group.querySelectorAll(".filter-chip").forEach((c) => {
+        c.classList.remove("is-selected");
+        c.setAttribute("aria-pressed", "false");
+      });
+      chip.classList.add("is-selected");
+      chip.setAttribute("aria-pressed", "true");
+      applyInstructorFilters();
+    });
+
+    document.getElementById("instructorSearchInput")?.addEventListener("input", () => {
+      applyInstructorFilters();
+    });
+
+    document.querySelectorAll(".inst-detail-dialog").forEach((dlg) => {
+      dlg.addEventListener("click", (evt) => {
+        if (evt.target === dlg) dlg.close();
+      });
+      dlg.querySelectorAll("[data-close-dialog]").forEach((btn) => {
+        btn.addEventListener("click", () => dlg.close());
+      });
+      dlg.querySelectorAll("[data-select-instructor]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-select-instructor");
+          const radio = document.getElementById(`inst-radio-${id}`);
+          if (radio && !radio.disabled) {
+            radio.checked = true;
+            radio.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+          dlg.close();
+        });
+      });
+    });
+
+    lessonTimeSel.addEventListener("change", summaryPriceDisplay);
+    ["startDate", "lessonTime", "fullName", "isikukood", "phone", "email"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("input", () => current === 4 && updateRecap());
+      if (el) el.addEventListener("change", () => current === 4 && updateRecap());
+    });
+
+    syncDrivingInstructorUi();
+    applyInstructorFilters();
+    updateCourseCardsHighlight();
+    summaryPriceDisplay();
+    setStep(current);
   })();
 </script>
 

@@ -1,0 +1,211 @@
+<%- include("../partials/header", { title }) %>
+
+<section>
+  <h1>Инструкторы</h1>
+  <p class="section-lead">Появление на регистрации (шаг со списком) и сохранённые фильтры. Добавление — новая строка с полным описанием.</p>
+  <%- include("./_nav") %>
+
+  <% if (notice) { %>
+    <p class="admin-notice"><%= notice %></p>
+  <% } %>
+
+  <div class="registration-layout">
+    <div class="card">
+      <h2><%= editingId ? "Изменить инструктора" : "Добавить инструктора" %></h2>
+      <form class="form instructor-admin-form" method="POST" action="<%= editingId ? `/admin/instructors/${encodeURIComponent(editingId)}/update` : '/admin/instructors' %>">
+        <% if (!editingId) { %>
+          <label>ID (латиница, только в URL/данных)</label>
+          <input type="text" name="manual_id" placeholder="например ivan-smirnov" pattern="[a-z0-9\-]+" />
+          <p class="form-hint">Если не заполнено — код создаётся из имени. Только маленькие латинские буквы, цифры и дефис.</p>
+        <% } %>
+
+        <label>Отображаемое имя *</label>
+        <input type="text" name="name" required value="<%= editingInstructor ? editingInstructor.name : '' %>" />
+
+        <label>Фото (путь или URL от /images/…)</label>
+        <input type="text" name="photo" value="<%= editingInstructor ? editingInstructor.photo : '' %>" placeholder="/images/instructors/name.svg" />
+
+        <label class="check-label">
+          <input type="checkbox" name="badge_pro" value="1" <%= editingInstructor && editingInstructor.badgePro ? "checked" : "" %> />
+          <span>Плашка PRO</span>
+        </label>
+
+        <label class="check-label">
+          <input type="checkbox" name="pay_per_lesson" value="1" <%= editingInstructor && editingInstructor.payPerLessonOk ? "checked" : "" %> />
+          <span>Можно оплачивать по уроку</span>
+        </label>
+
+        <div class="form-grid-two">
+          <div>
+            <label>Рейтинг</label>
+            <input type="number" name="rating" step="0.01" value="<%= editingInstructor ? editingInstructor.rating : '4.5' %>" />
+          </div>
+          <div>
+            <label>Число отзывов</label>
+            <input type="number" name="review_count" step="1" value="<%= editingInstructor ? editingInstructor.reviewCount : '0' %>" />
+          </div>
+        </div>
+
+        <div class="form-grid-three">
+          <div>
+            <label>Уроков в пакете</label>
+            <input type="number" name="lessons_count" value="<%= editingInstructor ? editingInstructor.lessonsCount : '26' %>" />
+          </div>
+          <div>
+            <label>Длительность занятия (мин)</label>
+            <input type="number" name="lesson_duration_min" value="<%= editingInstructor ? editingInstructor.lessonDurationMinutes : '45' %>" />
+          </div>
+          <div>
+            <label>Сортировка «первый урок» — дней</label>
+            <input type="number" name="first_lesson_days" value="<%= editingInstructor ? editingInstructor.firstLessonDays : '14' %>" />
+          </div>
+        </div>
+
+        <div class="form-grid-two">
+          <div>
+            <label>Цена сортировки (число, € без текста)</label>
+            <input type="number" name="sort_price" step="1" value="<%= editingInstructor ? editingInstructor.sortPriceNumber : '715' %>" />
+          </div>
+          <div>
+            <label>Рег. взнос (€ число для текста модалки)</label>
+            <input type="number" name="registration_fee_euro" value="<%= editingInstructor ? editingInstructor.registrationFeeEuro : '52' %>" />
+          </div>
+        </div>
+
+        <label>Порядок в списке (sort_order)</label>
+        <input type="number" name="sort_order" value="<%= typeof editingSortOrder === 'number' ? editingSortOrder : 0 %>" />
+
+        <fieldset class="fieldset-compact">
+          <legend>Коробка</legend>
+          <label
+            ><input
+              type="radio"
+              name="transmission_key"
+              value="manual"
+              <%= editingInstructor && editingInstructor.transmissionKey === "automatic" ? "" : "checked" %>
+            />
+            МКПП / manual</label
+          >
+          <label
+            ><input
+              type="radio"
+              name="transmission_key"
+              value="automatic"
+              <%= editingInstructor && editingInstructor.transmissionKey === "automatic" ? "checked" : "" %>
+            />
+            Автомат / automatic</label
+          >
+        </fieldset>
+
+        <fieldset class="fieldset-compact">
+          <legend>Языки группы (фильтр)</legend>
+          <label><input type="checkbox" name="langs" value="et" <%= editingInstructor && editingInstructor.filterGroupLanguages.includes('et') ? 'checked' : '' %> /> Eesti</label>
+          <label><input type="checkbox" name="langs" value="ru" <%= editingInstructor && editingInstructor.filterGroupLanguages.includes('ru') ? 'checked' : '' %> /> Русский</label>
+          <label><input type="checkbox" name="langs" value="en" <%= editingInstructor && editingInstructor.filterGroupLanguages.includes('en') ? 'checked' : '' %> /> English</label>
+        </fieldset>
+
+        <fieldset class="fieldset-compact">
+          <legend>Категория</legend>
+          <label><input type="checkbox" name="cats" value="b" <%= editingInstructor && editingInstructor.filterCategories.includes('b') ? 'checked' : '' %> /> B</label>
+          <label><input type="checkbox" name="cats" value="be" <%= editingInstructor && editingInstructor.filterCategories.includes('be') ? 'checked' : '' %> /> BE</label>
+          <label><input type="checkbox" name="cats" value="moto" <%= editingInstructor && editingInstructor.filterCategories.includes('moto') ? 'checked' : '' %> /> Мото</label>
+        </fieldset>
+
+        <% if (typeof instructorLocations !== 'undefined' && instructorLocations.length) { %>
+          <fieldset class="fieldset-compact">
+            <legend>Районы (фильтр)</legend>
+            <div class="loc-check-grid">
+              <% instructorLocations.forEach((slug) => { %>
+                <label><input type="checkbox" name="locs" value="<%= slug %>"
+                  <%= editingInstructor && editingInstructor.filterLocationIds.includes(slug) ? 'checked' : '' %> />
+                  <%= slug %>
+                </label>
+              <% }) %>
+            </div>
+          </fieldset>
+        <% } %>
+
+        <label>Дополнительные подсказки поиска (через запятую)</label>
+        <textarea name="search_aliases" rows="2" placeholder="Кириллица, русские синонимы…"><%= editingInstructor ? editingInstructor.searchAliases : '' %></textarea>
+
+        <h3 class="inst-admin-sub">Цены (как текст на карточке)</h3>
+        <label>Цена пакета строкой</label>
+        <input type="text" name="price_package" value="<%= editingInstructor ? editingInstructor.pricePackage : '' %>" />
+        <label>Пакет (формат.)</label>
+        <input type="text" name="price_pkg_fmt" value="<%= editingInstructor ? editingInstructor.priceFormattedPackage : '' %>" />
+        <label>Цена занятия (формат.)</label>
+        <input type="text" name="price_lesson_fmt" value="<%= editingInstructor ? editingInstructor.priceLessonFormatted : '' %>" />
+        <label>Цена занятия (коротко)</label>
+        <input type="text" name="price_per_lesson" value="<%= editingInstructor ? editingInstructor.pricePerLesson : '' %>" />
+        <label>Всего курс текстом в модалке</label>
+        <input type="text" name="total_course_disp" value="<%= editingInstructor ? editingInstructor.totalCourseEuroDisplayed : '' %>" />
+
+        <h3 class="inst-admin-sub">Тексты (ET / RU / EN)</h3>
+        <% ["et", "ru", "en"].forEach(function (lng) { %>
+          <p class="lang-inline-label"><%= lng.toUpperCase() %></p>
+          <label>Первый урок <%= lng %></label>
+          <input type="text" name="first_<%= lng %>"
+            value="<%= editingInstructor && editingInstructor.firstLesson ? editingInstructor.firstLesson[lng] || '' : '' %>" />
+
+          <label>Язык группы (подпись) <%= lng %></label>
+          <input type="text" name="spoken_<%= lng %>"
+            value="<%= editingInstructor && editingInstructor.languages ? editingInstructor.languages[lng] || '' : '' %>" />
+
+          <label>Место встречи <%= lng %></label>
+          <input type="text" name="loc_text_<%= lng %>"
+            value="<%= editingInstructor && editingInstructor.location ? editingInstructor.location[lng] || '' : '' %>" />
+
+          <label>Подпись КПП <%= lng %></label>
+          <input type="text" name="trans_<%= lng %>"
+            value="<%= editingInstructor && editingInstructor.transmission ? editingInstructor.transmission[lng] || '' : '' %>" />
+
+          <label>Кратко о себе <%= lng %></label>
+          <textarea name="desc_<%= lng %>" rows="2"><%= editingInstructor && editingInstructor.description ? editingInstructor.description[lng] || '' : '' %></textarea>
+
+          <label>HTML модалки (осторожно) <%= lng %></label>
+          <textarea name="modal_<%= lng %>" rows="4"><%= editingInstructor && editingInstructor.modalDetailHtml ? editingInstructor.modalDetailHtml[lng] || '' : '' %></textarea>
+        <% }); %>
+
+        <div class="hero-actions">
+          <button class="btn" type="submit"><%= editingId ? "Сохранить" : "Добавить" %></button>
+          <% if (editingId) { %>
+            <a class="btn secondary" href="/admin/instructors">Отмена</a>
+          <% } %>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Список</h2>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Sort</th>
+              <th>ID</th>
+              <th>Имя</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% instructors.forEach((instr) => { %>
+              <tr>
+                <td><%= instr.sort_order %></td>
+                <td><%= instr.id %></td>
+                <td><%= instr.name %></td>
+                <td class="table-actions">
+                  <a class="btn secondary" href="/admin/instructors/<%= encodeURIComponent(instr.id) %>/edit">Изменить</a>
+                  <form method="POST" action="/admin/instructors/<%= encodeURIComponent(instr.id) %>/delete" onsubmit="return confirm('Удалить инструктора «<%= instr.name %>»?');">
+                    <button class="btn danger" type="submit">Удалить</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include("../partials/footer") %>

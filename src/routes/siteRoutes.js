@@ -1,7 +1,20 @@
 const express = require("express");
 const { runAsync, allAsync } = require("../db/database");
+const { courseRequiresInstructor, getInstructorsForLang, getInstructorById } = require("../data/drivingInstructors");
 
 const router = express.Router();
+
+function registerViewLocals(req, overrides = {}) {
+  return {
+    title: req.t("registerWizardTitle"),
+    drivingInstructors: getInstructorsForLang(req.lang),
+    courses: [],
+    selectedCourseId: "",
+    error: null,
+    success: null,
+    ...overrides,
+  };
+}
 
 async function getLocalizedCoursesFromDb(lang, onlyActive = true) {
   const whereClause = onlyActive ? "WHERE is_active = 1" : "";
@@ -12,6 +25,15 @@ async function getLocalizedCoursesFromDb(lang, onlyActive = true) {
     description: course[`description_${lang}`] || course.description_et,
     duration: course[`duration_${lang}`] || course.duration_et,
     price: course.price,
+  }));
+}
+
+async function getRegistrationCourses(lang) {
+  const rows = await getLocalizedCoursesFromDb(lang);
+  return rows.map((course) => ({
+    ...course,
+    requiresInstructor: courseRequiresInstructor(course.id),
+    omitCourseListPrice: courseRequiresInstructor(course.id),
   }));
 }
 
@@ -62,16 +84,15 @@ router.post("/contacts", async (req, res, next) => {
   }
 });
 
-router.get("/register", async (req, res, next) => {
+router.get("/register", (req, res) => {
+  const qs = new URLSearchParams(req.query).toString();
+  res.redirect(302, qs ? `/register/steps?${qs}` : "/register/steps");
+});
+
+router.get("/register/steps", async (req, res, next) => {
   try {
-    const courses = await getLocalizedCoursesFromDb(req.lang);
-    res.render("pages/register", {
-      title: "Registreeru kursusele",
-      courses,
-      selectedCourseId: req.query.course || "",
-      error: null,
-      success: null,
-    });
+    const courses = await getRegistrationCourses(req.lang);
+    res.render("pages/register", registerViewLocals(req, { courses, selectedCourseId: req.query.course || "" }));
   } catch (error) {
     next(error);
   }
@@ -79,24 +100,52 @@ router.get("/register", async (req, res, next) => {
 
 router.post("/register", async (req, res, next) => {
   try {
-    const courses = await getLocalizedCoursesFromDb(req.lang);
-    const { fullName, isikukood, phone, email, courseId, startDate, lessonTime, paymentMethod, comment } = req.body;
+    const courses = await getRegistrationCourses(req.lang);
+    const {
+      fullName,
+      isikukood,
+      phone,
+      email,
+      courseId,
+      startDate,
+      lessonTime,
+      paymentMethod,
+      comment,
+      instructorId,
+    } = req.body;
     const chosenCourse = courses.find((course) => course.id === courseId);
 
     if (!fullName || !isikukood || !phone || !email || !courseId || !chosenCourse) {
-      res.status(400).render("pages/register", {
-        title: "Registreeru kursusele",
-        courses,
-        selectedCourseId: courseId || "",
-        error: req.t("registerRequired"),
-        success: null,
-      });
+      res.status(400).render(
+        "pages/register",
+        registerViewLocals(req, {
+          courses,
+          selectedCourseId: courseId || "",
+          error: req.t("registerRequired"),
+        })
+      );
       return;
+    }
+
+    if (courseRequiresInstructor(courseId)) {
+      const instructor = getInstructorById(instructorId);
+      if (!instructor) {
+        res.status(400).render(
+          "pages/register",
+          registerViewLocals(req, {
+            courses,
+            selectedCourseId: courseId || "",
+            error: req.t("instructorRequired"),
+          })
+        );
+        return;
+      }
     }
 
     const registrationNote = [
       lessonTime ? `lesson_time:${lessonTime}` : "",
       paymentMethod ? `payment:${paymentMethod}` : "",
+      courseRequiresInstructor(courseId) && instructorId ? `instructor:${instructorId}` : "",
       comment || "",
     ]
       .filter(Boolean)
@@ -109,13 +158,7 @@ router.post("/register", async (req, res, next) => {
       [fullName, isikukood, phone, email, chosenCourse.id, chosenCourse.name, startDate || "", registrationNote]
     );
 
-    res.render("pages/register", {
-      title: "Registreeru kursusele",
-      courses,
-      selectedCourseId: "",
-      error: null,
-      success: req.t("registerSuccess"),
-    });
+    res.render("pages/register", registerViewLocals(req, { courses, selectedCourseId: "", success: req.t("registerSuccess") }));
   } catch (error) {
     next(error);
   }

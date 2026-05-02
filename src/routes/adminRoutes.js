@@ -2,6 +2,9 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const { getAsync, allAsync, runAsync } = require("../db/database");
 const { requireAdmin } = require("../middleware/auth");
+const { mergeInstructorImported } = require("../data/drivingInstructors");
+const { refreshInstructorsFromDatabase } = require("../data/instructorSync");
+const { formBodyToDrivingInstructor, stripIdForPayload, LOCATION_SLUGS } = require("../data/instructorAdminForm");
 
 const router = express.Router();
 const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
@@ -255,6 +258,177 @@ router.post("/contacts/:id/delete", requireAdmin, async (req, res, next) => {
   try {
     await runAsync("DELETE FROM contacts WHERE id = ?", [req.params.id]);
     res.redirect(303, "/admin/contacts");
+  } catch (error) {
+    next(error);
+  }
+});
+
+function summarizeInstructorsRows(rows) {
+  return rows.map((row) => {
+    let name = row.id;
+    try {
+      const p = typeof row.payload === "string" ? JSON.parse(row.payload) : row.payload;
+      if (p && typeof p === "object" && p.name) name = p.name;
+    } catch (_) {
+      /* omit */
+    }
+    return {
+      id: row.id,
+      sort_order: row.sort_order,
+      name,
+    };
+  });
+}
+
+router.get("/instructors", requireAdmin, async (req, res, next) => {
+  try {
+    const rows = await allAsync("SELECT id, sort_order, payload FROM instructors ORDER BY sort_order ASC, id ASC");
+    let notice = null;
+    if (req.query.created) notice = "Инструктор добавлен.";
+    if (req.query.updated) notice = "Изменения сохранены.";
+    if (req.query.deleted) notice = "Инструктор удалён.";
+    if (req.query.err === "name") notice = "Укажите имя.";
+    if (req.query.err === "id") notice = "Код может содержать только латиницу, цифры и дефис.";
+    if (req.query.err === "dup") notice = "Такой ID уже есть — выберите другой код.";
+    res.render("admin/instructors", {
+      title: "Админ — Инструкторы",
+      instructors: summarizeInstructorsRows(rows),
+      editingInstructor: null,
+      editingSortOrder: 0,
+      editingId: null,
+      instructorLocations: LOCATION_SLUGS,
+      notice,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/instructors/:id/edit", requireAdmin, async (req, res, next) => {
+  try {
+    const rows = await allAsync("SELECT id, sort_order, payload FROM instructors ORDER BY sort_order ASC, id ASC");
+    const row = await getAsync("SELECT * FROM instructors WHERE id = ?", [req.params.id]);
+    if (!row) {
+      res.redirect(303, "/admin/instructors");
+      return;
+    }
+
+    let payload = {};
+    try {
+      payload = typeof row.payload === "string" ? JSON.parse(row.payload) : {};
+    } catch (_) {
+      payload = {};
+    }
+    const editingInstructor = mergeInstructorImported(row.id, typeof payload === "object" ? payload : {});
+
+    let notice = null;
+    if (req.query.err === "name") notice = "Укажите имя.";
+    res.render("admin/instructors", {
+      title: "Админ — Инструкторы",
+      instructors: summarizeInstructorsRows(rows),
+      editingInstructor,
+      editingSortOrder: Number(row.sort_order) || 0,
+      editingId: row.id,
+      instructorLocations: LOCATION_SLUGS,
+      notice,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/instructors", requireAdmin, async (req, res, next) => {
+  try {
+    const record = formBodyToDrivingInstructor(req.body);
+    if (!String(record.name || "").trim()) {
+      res.redirect(303, "/admin/instructors?err=name");
+      return;
+    }
+
+    const idLooksOk = /^[a-z0-9-]+$/.test(record.id || "");
+    if (!idLooksOk) {
+      res.redirect(303, "/admin/instructors?err=id");
+      return;
+    }
+
+    const dup = await getAsync("SELECT id FROM instructors WHERE id = ?", [record.id]);
+    if (dup) {
+      res.redirect(303, "/admin/instructors?err=dup");
+      return;
+    }
+
+    const numericSort = Number(String(req.body.sort_order || "").trim());
+    let sort_order = Number.isFinite(numericSort) ? numericSort : NaN;
+    if (!Number.isFinite(sort_order)) {
+      const sorted = await allAsync("SELECT sort_order FROM instructors");
+      sort_order =
+        sorted.length === 0
+          ? 0
+          : Math.max(
+              ...sorted.map((x) => {
+                const n = Number(x.sort_order);
+                return Number.isFinite(n) ? n : 0;
+              }),
+              -1
+            ) + 1;
+    }
+
+    const payloadJson = JSON.stringify(stripIdForPayload(record));
+
+    await runAsync("INSERT INTO instructors (id, sort_order, payload, updated_at) VALUES (?, ?, ?, ?)", [
+      record.id,
+      sort_order,
+      payloadJson,
+      new Date().toISOString(),
+    ]);
+
+    await refreshInstructorsFromDatabase();
+    res.redirect(303, "/admin/instructors?created=1");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/instructors/:id/update", requireAdmin, async (req, res, next) => {
+  try {
+    const existingRow = await getAsync("SELECT * FROM instructors WHERE id = ?", [req.params.id]);
+    if (!existingRow) {
+      res.redirect(303, "/admin/instructors");
+      return;
+    }
+
+    const record = formBodyToDrivingInstructor(req.body, { editingId: req.params.id });
+
+    if (!String(record.name || "").trim()) {
+      res.redirect(303, `/admin/instructors/${encodeURIComponent(req.params.id)}/edit?err=name`);
+      return;
+    }
+
+    const fromForm = Number(String(req.body.sort_order ?? "").trim());
+    const sort_order = Number.isFinite(fromForm)
+      ? fromForm
+      : Number(existingRow.sort_order) || 0;
+
+    const payloadJson = JSON.stringify(stripIdForPayload(record));
+
+    await runAsync(
+      `UPDATE instructors SET payload = ?, sort_order = ?, updated_at = ?
+       WHERE id = ?`,
+      [payloadJson, sort_order, new Date().toISOString(), req.params.id]
+    );
+
+    await refreshInstructorsFromDatabase();
+    res.redirect(303, `/admin/instructors?updated=1`);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/instructors/:id/delete", requireAdmin, async (req, res, next) => {
+  try {
+    await runAsync("DELETE FROM instructors WHERE id = ?", [req.params.id]);
+    await refreshInstructorsFromDatabase();
+    res.redirect(303, "/admin/instructors?deleted=1");
   } catch (error) {
     next(error);
   }

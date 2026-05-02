@@ -10,6 +10,7 @@ const memory = {
   contacts: [],
   courseRegistrations: [],
   courses: [],
+  instructors: [],
 };
 
 try {
@@ -115,6 +116,31 @@ function runAsync(sql, params = []) {
       memory.contacts = memory.contacts.filter((c) => String(c.id) !== String(params[0]));
       return Promise.resolve({ changes: 1 });
     }
+    if (query.startsWith("INSERT INTO INSTRUCTORS")) {
+      memory.instructors.push({
+        id: params[0],
+        sort_order: Number(params[1]) || 0,
+        payload: params[2],
+        updated_at:
+          typeof params[3] === "string" && params[3] ? params[3] : new Date().toISOString(),
+      });
+      return Promise.resolve({ changes: 1, lastID: memory.instructors.length });
+    }
+    if (query.startsWith("UPDATE INSTRUCTORS SET")) {
+      const id = params[params.length - 1];
+      const row = memory.instructors.find((r) => String(r.id) === String(id));
+      if (row) {
+        row.payload = params[0];
+        row.sort_order = Number(params[1]) ?? row.sort_order;
+        row.updated_at = typeof params[2] === "string" ? params[2] : new Date().toISOString();
+      }
+      return Promise.resolve({ changes: row ? 1 : 0 });
+    }
+    if (query.startsWith("DELETE FROM INSTRUCTORS")) {
+      const before = memory.instructors.length;
+      memory.instructors = memory.instructors.filter((r) => String(r.id) !== String(params[0]));
+      return Promise.resolve({ changes: before === memory.instructors.length ? 0 : 1 });
+    }
     return Promise.resolve({ changes: 0 });
   }
 
@@ -153,6 +179,16 @@ function getAsync(sql, params = []) {
     }
     if (query.includes("FROM COURSES WHERE ID")) {
       return Promise.resolve(memory.courses.find((c) => c.id === params[0]));
+    }
+    if (query.startsWith("SELECT COUNT(*) AS COUNT FROM INSTRUCTORS")) {
+      return Promise.resolve({ count: memory.instructors.length });
+    }
+    if (query.startsWith("SELECT * FROM INSTRUCTORS WHERE ID = ?")) {
+      return Promise.resolve(memory.instructors.find((r) => String(r.id) === String(params[0])));
+    }
+    if (query.startsWith("SELECT ID FROM INSTRUCTORS WHERE ID = ?")) {
+      const hit = memory.instructors.find((r) => String(r.id) === String(params[0]));
+      return Promise.resolve(hit ? { id: hit.id } : undefined);
     }
     return Promise.resolve(undefined);
   }
@@ -194,6 +230,13 @@ function allAsync(sql, params = []) {
     }
     if (query.includes("SELECT * FROM CONTACTS")) {
       return Promise.resolve([...memory.contacts].sort((a, b) => (a.created_at < b.created_at ? 1 : -1)));
+    }
+    if (query.startsWith("SELECT ID, SORT_ORDER, PAYLOAD FROM INSTRUCTORS")) {
+      return Promise.resolve(
+        [...memory.instructors].sort((a, b) =>
+          a.sort_order !== b.sort_order ? a.sort_order - b.sort_order : String(a.id).localeCompare(String(b.id))
+        )
+      );
     }
     return Promise.resolve([]);
   }
@@ -261,9 +304,42 @@ async function initDatabase() {
           duration_en: "Flexible schedule",
           is_active: 1,
           created_at: new Date().toISOString(),
+        },
+        {
+          id: "driving-lessons-26",
+          name_et: "Sõiduõppe tunnid",
+          name_ru: "Уроки вождения",
+          name_en: "Driving lessons",
+          description_et: "26 praktilist sõidutundi. Järgmises sammus vali instruktor.",
+          description_ru: "26 практических уроков вождения. На следующем шаге выберите инструктора.",
+          description_en: "26 practical driving lessons. Choose your instructor in the next step.",
+          price: "715 €",
+          duration_et: "26 tundi",
+          duration_ru: "26 занятий",
+          duration_en: "26 lessons",
+          is_active: 1,
+          created_at: new Date().toISOString(),
         }
       );
+    } else if (!memory.courses.some((c) => c.id === "driving-lessons-26")) {
+      memory.courses.push({
+        id: "driving-lessons-26",
+        name_et: "Sõiduõppe tunnid",
+        name_ru: "Уроки вождения",
+        name_en: "Driving lessons",
+        description_et: "26 praktilist sõidutundi. Järgmises sammus vali instruktor.",
+        description_ru: "26 практических уроков вождения. На следующем шаге выберите инструктора.",
+        description_en: "26 practical driving lessons. Choose your instructor in the next step.",
+        price: "715 €",
+        duration_et: "26 tundi",
+        duration_ru: "26 занятий",
+        duration_en: "26 lessons",
+        is_active: 1,
+        created_at: new Date().toISOString(),
+      });
     }
+    const instructorSync = require("../data/instructorSync");
+    await instructorSync.refreshInstructorsFromDatabase();
     return;
   }
 
@@ -403,10 +479,44 @@ async function initDatabase() {
     );
   }
 
+  const drivingExists = await getAsync("SELECT id FROM courses WHERE id = ?", ["driving-lessons-26"]);
+  if (!drivingExists) {
+    await runAsync(
+      `INSERT INTO courses
+      (id, name_et, name_ru, name_en, description_et, description_ru, description_en, price, duration_et, duration_ru, duration_en, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+      [
+        "driving-lessons-26",
+        "Sõiduõppe tunnid",
+        "Уроки вождения",
+        "Driving lessons",
+        "26 praktilist sõidutundi. Järgmises sammus vali instruktor.",
+        "26 практических уроков вождения. На следующем шаге выберите инструктора.",
+        "26 practical driving lessons. Choose your instructor in the next step.",
+        "715 €",
+        "26 tundi",
+        "26 занятий",
+        "26 lessons",
+      ]
+    );
+  }
+
   await runAsync(
     "UPDATE courses SET price = ? WHERE id = ?",
     ["65 EUR", "extra-driving"]
   ).catch(() => null);
+
+  await runAsync(`
+    CREATE TABLE IF NOT EXISTS instructors (
+      id TEXT PRIMARY KEY,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      payload TEXT NOT NULL,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  const instructorSync = require("../data/instructorSync");
+  await instructorSync.refreshInstructorsFromDatabase();
 }
 
 module.exports = {

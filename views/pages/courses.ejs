@@ -10,7 +10,7 @@
         <p><%= course.description %></p>
         <p class="price-badge"><strong><%= t("price") %>:</strong> <%= course.price %></p>
         <p><strong><%= t("duration") %>:</strong> <%= course.duration %></p>
-        <a class="btn" href="/register?course=<%= course.id %>"><%= t("registerShort") %></a>
+        <a class="btn" href="/register/steps?course=<%= course.id %>"><%= t("registerShort") %></a>
       </article>
     <% }) %>
   </div>
