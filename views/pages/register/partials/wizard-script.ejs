@@ -1,0 +1,883 @@
+<script>
+  (function () {
+    const form = document.getElementById("stepForm");
+    if (!form) return;
+
+    const EXTRA_DRIVING_ID = "extra-driving";
+
+    const panels = Array.from(form.querySelectorAll(".step-panel"));
+    const dots = Array.from(document.querySelectorAll(".wizard-dot"));
+    const connectors = Array.from(document.querySelectorAll(".wizard-track-connector"));
+    const prevBtn = document.getElementById("prevStep");
+    const nextBtn = document.getElementById("nextStep");
+    const submitBtn = document.getElementById("submitStep");
+    const courseRadios = () => Array.from(form.querySelectorAll('input[name="courseId"]'));
+    const instructorBlock = document.getElementById("instructorBlock");
+    const instructorRadios = () =>
+      instructorBlock ? Array.from(instructorBlock.querySelectorAll('input[name="instructorId"]')) : [];
+    const trainingOfferRadios = () => Array.from(form.querySelectorAll(".training-offer-radio"));
+    const trainingOffersShell = document.getElementById("trainingOffersShell");
+    const instructorStepPlaceholder = document.getElementById("instructorStepPlaceholder");
+    const summaryCourse = document.getElementById("summaryCourse");
+    const summaryPrice = document.getElementById("summaryPrice");
+    const summaryCourseBadge = document.getElementById("summaryCourseBadge");
+    const summaryCourseLoc = document.getElementById("summaryCourseLoc");
+    const instructorSearchEl = document.getElementById("instructorSearchInput");
+    const registrationContactDialog = document.getElementById("registration-contact-dialog");
+    const registrationPaymentDialog = document.getElementById("registration-payment-dialog");
+    const registrationContactNextBtn = document.getElementById("registrationContactNext");
+
+    const WIZARD_STORAGE_KEY = "haaberstiRegisterWizard";
+    const STEP_STORAGE_KEY_LEGACY = "haaberstiRegisterWizardStep";
+
+    /** Avoid persistWizardSnapshot() while restoring — handlers would save step as 1 and clobber course/training. */
+    let wizardHydrating = false;
+
+    function safeCourseId(id) {
+      return typeof id === "string" && /^[a-z0-9-]+$/.test(id) ? id : "";
+    }
+
+    function safeIdPart(id) {
+      return typeof id === "string" && /^[a-z0-9-]+$/.test(id) ? id : "";
+    }
+
+    function persistWizardSnapshot() {
+      if (wizardHydrating) return;
+      try {
+        const courseRadio = pickedRadio();
+        const payload = {
+          step: current,
+          studyLang: form.querySelector('input[name="studyLang"]:checked')?.value || "",
+          wizardCategory: form.querySelector('input[name="wizardCategory"]:checked')?.value || "",
+          courseId: courseRadio?.value || "",
+          trainingOfferId: form.querySelector('input[name="trainingOfferId"]:checked')?.value || "",
+          instructorId: form.querySelector('input[name="instructorId"]:checked')?.value || "",
+          paymentMethod:
+            registrationPaymentDialog?.querySelector('input[name="regPaymentMethod"]:checked')?.value ||
+            document.getElementById("hid_paymentMethod")?.value ||
+            "",
+          comment: document.getElementById("regComment")?.value || "",
+          firstName: document.getElementById("regFirstName")?.value || "",
+          lastName: document.getElementById("regLastName")?.value || "",
+          isikukood: document.getElementById("regIsikukood")?.value || "",
+          phone: document.getElementById("regPhone")?.value || "",
+          email: document.getElementById("regEmail")?.value || "",
+        };
+        sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(payload));
+      } catch (_) {
+        /* private mode or quota */
+      }
+    }
+
+    function readStoredWizardSnapshot() {
+      try {
+        const raw = sessionStorage.getItem(WIZARD_STORAGE_KEY);
+        if (raw) {
+          const o = JSON.parse(raw);
+          if (typeof o !== "object" || !o) return null;
+          const st = Number.parseInt(String(o.step), 10);
+          const hasCourse = typeof o.courseId === "string" && /^[a-z0-9-]+$/.test(o.courseId);
+          if (Number.isFinite(st) && st > 2 && !hasCourse) {
+            sessionStorage.removeItem(WIZARD_STORAGE_KEY);
+            return null;
+          }
+          return o;
+        }
+        const legacy = sessionStorage.getItem(STEP_STORAGE_KEY_LEGACY);
+        if (legacy != null) {
+          sessionStorage.removeItem(STEP_STORAGE_KEY_LEGACY);
+          const n = Number.parseInt(legacy, 10);
+          if (Number.isFinite(n) && n >= 1 && n <= panels.length) {
+            // Legacy stored only the step index — cannot restore course/training; avoid step 4 + empty summary.
+            if (n > 2) return null;
+            return { step: n };
+          }
+        }
+      } catch (_) {
+        /* omit */
+      }
+      return null;
+    }
+
+    function restoreWizardSnapshot(snap) {
+      if (!snap || typeof snap !== "object") return;
+
+      wizardHydrating = true;
+      try {
+        const stepNum = Number.parseInt(String(snap.step), 10);
+        if (Number.isFinite(stepNum) && stepNum >= 1 && stepNum <= panels.length) {
+          current = stepNum;
+        }
+
+        if (snap.studyLang) {
+          const el = form.querySelector(`input[name="studyLang"][value="${snap.studyLang}"]`);
+          if (el) el.checked = true;
+        }
+
+        const cidPre = safeCourseId(snap.courseId);
+        if (cidPre) {
+          const courseRadioPre = form.querySelector(`input[name="courseId"][value="${cidPre}"]`);
+          const cardPre = courseRadioPre?.closest(".sky-course-card");
+          const catsPre = (cardPre?.dataset.wizardCats || "").split(/\s+/).filter(Boolean);
+          const wantedCat = typeof snap.wizardCategory === "string" ? snap.wizardCategory : "";
+          if (catsPre.length) {
+            const pick =
+              wantedCat && catsPre.includes(wantedCat)
+                ? wantedCat
+                : catsPre[0];
+            const catEl = form.querySelector(`input[name="wizardCategory"][value="${pick}"]`);
+            if (catEl) catEl.checked = true;
+          }
+        } else if (snap.wizardCategory) {
+          const el = form.querySelector(`input[name="wizardCategory"][value="${snap.wizardCategory}"]`);
+          if (el) el.checked = true;
+        }
+
+        applyWizardCategoryFilter();
+
+        const cid = safeCourseId(snap.courseId);
+        if (cid) {
+          const radio = form.querySelector(`input[name="courseId"][value="${cid}"]`);
+          if (radio) {
+            radio.checked = true;
+            const card = radio.closest(".sky-course-card");
+            const cats = (card?.dataset.wizardCats || "").split(/\s+/).filter(Boolean);
+            if (cats.length && !snap.wizardCategory) {
+              const match = form.querySelector(`input[name="wizardCategory"][value="${cats[0]}"]`);
+              if (match) match.checked = true;
+              applyWizardCategoryFilter();
+              radio.checked = true;
+            }
+            radio.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        }
+
+        syncDrivingInstructorUi();
+        refreshTrainingOfferCards();
+
+        const tid = safeIdPart(snap.trainingOfferId);
+        if (tid) {
+          const tr = document.getElementById(`training-radio-${tid}`);
+          if (tr) {
+            tr.disabled = false;
+            tr.checked = true;
+            tr.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        }
+
+        const iid = safeIdPart(snap.instructorId);
+        if (iid) {
+          const ir = document.getElementById(`inst-radio-${iid}`);
+          if (ir && !ir.disabled) {
+            ir.checked = true;
+            ir.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        }
+
+        const payV = String(snap.paymentMethod || "").trim();
+        if (/^(cash|card|bank)$/.test(payV)) {
+          const pmr = registrationPaymentDialog?.querySelector(`input[name="regPaymentMethod"][value="${payV}"]`);
+          if (pmr) pmr.checked = true;
+          const hid = document.getElementById("hid_paymentMethod");
+          if (hid) hid.value = payV;
+        }
+        const cm = document.getElementById("regComment");
+        if (cm && snap.comment != null) cm.value = snap.comment;
+
+        const rfn = document.getElementById("regFirstName");
+        if (rfn && snap.firstName != null) rfn.value = snap.firstName;
+        const rln = document.getElementById("regLastName");
+        if (rln && snap.lastName != null) rln.value = snap.lastName;
+        const ik = document.getElementById("regIsikukood");
+        if (ik && snap.isikukood != null) ik.value = snap.isikukood;
+        const ph = document.getElementById("regPhone");
+        if (ph && snap.phone != null) ph.value = snap.phone;
+        const em = document.getElementById("regEmail");
+        if (em && snap.email != null) em.value = snap.email;
+        const hfn = document.getElementById("fullName");
+        if (hfn) {
+          const combined = [snap.firstName, snap.lastName].filter(Boolean).join(" ").trim();
+          if (combined) hfn.value = combined;
+        }
+      } finally {
+        wizardHydrating = false;
+      }
+    }
+
+    let current = 1;
+
+    function normalizeInstructorComparable(s) {
+      return String(s || "")
+        .toLowerCase()
+        .normalize("NFKD")
+        .replace(/\p{M}/gu, "")
+        .replace(/[-_/,.;:+|]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function pickedRadio() {
+      return courseRadios().find((r) => r.checked);
+    }
+
+    function needsInstructor() {
+      const r = pickedRadio();
+      return !!(r && r.dataset.requiresInstructor === "1");
+    }
+
+    function needsTrainingOffer() {
+      const r = pickedRadio();
+      return !!(r && r.dataset.requiresTrainingOffer === "1");
+    }
+
+    function pickedCourseId() {
+      return pickedRadio()?.value || "";
+    }
+
+    function pickedInstructorEligible() {
+      const r = instructorRadios().find((x) => x.checked);
+      if (!r) return undefined;
+      if (r.closest(".instructor-hub-card")?.classList.contains("is-filtered-out")) return undefined;
+      return r;
+    }
+
+    function pickedTrainingEligible() {
+      const r = trainingOfferRadios().find((x) => x.checked);
+      if (!r) return undefined;
+      const card = r.closest(".offer-hub-card");
+      if (!card || card.classList.contains("is-offer-hidden")) return undefined;
+      return r;
+    }
+
+    function refreshTrainingOfferCards() {
+      const cid = pickedCourseId();
+      trainingOfferRadios().forEach((inp) => {
+        const card = inp.closest(".offer-hub-card");
+        if (!card) return;
+        const match = card.dataset.offerForCourse === cid;
+        card.classList.toggle("is-offer-hidden", !match);
+        if (!match && inp.checked) inp.checked = false;
+        inp.disabled = !needsTrainingOffer() || !match;
+      });
+    }
+
+    function syncDrivingInstructorUi() {
+      const needInstr = needsInstructor();
+      const needTrain = needsTrainingOffer();
+      if (instructorBlock) instructorBlock.hidden = !needInstr;
+      if (trainingOffersShell) trainingOffersShell.hidden = !needTrain;
+      if (instructorStepPlaceholder) instructorStepPlaceholder.hidden = needInstr || needTrain;
+
+      instructorRadios().forEach((inp) => {
+        inp.disabled = !needInstr;
+        inp.required = false;
+        if (!needInstr) inp.checked = false;
+      });
+
+      trainingOfferRadios().forEach((inp) => {
+        inp.required = false;
+        if (!needTrain) inp.checked = false;
+      });
+      refreshTrainingOfferCards();
+    }
+
+    function getFilterSelection(groupName) {
+      const g = document.querySelector(`#instructorFilterBar [data-filter-group="${groupName}"]`);
+      const chip = g?.querySelector(".filter-chip.is-selected");
+      return chip?.dataset.filterValue || "any";
+    }
+
+    function cardMatches(card) {
+      const lang = getFilterSelection("lang");
+      const langs = (card.dataset.instLangs || "").split(/\s+/).filter(Boolean);
+      if (lang !== "any" && !langs.includes(lang)) return false;
+
+      const trans = getFilterSelection("transmission");
+      const ct = card.dataset.instTrans || "";
+      if (trans === "manual" && ct !== "manual") return false;
+      if (trans === "automatic" && ct !== "automatic") return false;
+
+      const cat = getFilterSelection("category");
+      const cats = (card.dataset.instCats || "").split(/\s+/).filter(Boolean);
+      if (cat !== "any" && !cats.includes(cat)) return false;
+
+      const loc = getFilterSelection("location");
+      const locs = (card.dataset.instLocs || "").split(/\s+/).filter(Boolean);
+      if (loc !== "any" && !locs.includes(loc)) return false;
+
+      const rawSearch = instructorSearchEl?.value || "";
+      const qTokens = normalizeInstructorComparable(rawSearch)
+        .split(/\s+/)
+        .filter((t) => t.length >= 2);
+      if (qTokens.length) {
+        const hay = normalizeInstructorComparable(card.dataset.instSearch || "");
+        if (!qTokens.every((tok) => hay.includes(tok))) return false;
+      }
+
+      return true;
+    }
+
+    function sortCardsInDom(root) {
+      const sort = getFilterSelection("sort");
+      const cards = Array.from(root.querySelectorAll(".instructor-hub-card"));
+      cards.sort((a, b) => {
+        if (sort === "rating") return Number(b.dataset.instRating) - Number(a.dataset.instRating);
+        if (sort === "price") return Number(a.dataset.instPrice) - Number(b.dataset.instPrice);
+        return Number(a.dataset.instDays) - Number(b.dataset.instDays);
+      });
+      cards.forEach((c) => root.appendChild(c));
+    }
+
+    function applyInstructorFilters() {
+      const root = document.getElementById("instructorCardsRoot");
+      const errEl = document.getElementById("instructorFilterError");
+      const emptyEl = document.getElementById("instructorNoResults");
+      if (!root) return;
+      sortCardsInDom(root);
+      let visibleCount = 0;
+      root.querySelectorAll(".instructor-hub-card").forEach((card) => {
+        const ok = cardMatches(card);
+        card.classList.toggle("is-filtered-out", !ok);
+        if (ok) visibleCount += 1;
+      });
+      const rawChecked = instructorRadios().find((x) => x.checked);
+      if (rawChecked && rawChecked.closest(".instructor-hub-card")?.classList.contains("is-filtered-out")) {
+        rawChecked.checked = false;
+        rawChecked.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      if (emptyEl) emptyEl.hidden = visibleCount > 0;
+      if (errEl) errEl.hidden = true;
+      updateCourseCardsHighlight();
+      summaryPriceDisplay();
+    }
+
+    function applyWizardCategoryFilter() {
+      const cat = form.querySelector('input[name="wizardCategory"]:checked')?.value;
+      const emptyEl = document.getElementById("wizardCourseEmpty");
+      if (!cat) return;
+      let visible = 0;
+      form.querySelectorAll(".sky-course-card").forEach((label) => {
+        const cats = (label.dataset.wizardCats || "").split(/\s+/).filter(Boolean);
+        const show = cats.includes(cat);
+        label.classList.toggle("is-wizard-hidden", !show);
+        if (show) visible += 1;
+      });
+      const picked = pickedRadio();
+      if (picked && picked.closest(".sky-course-card")?.classList.contains("is-wizard-hidden")) {
+        picked.checked = false;
+        picked.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      if (emptyEl) emptyEl.hidden = visible > 0;
+      updateCourseCardsHighlight();
+      summaryPriceDisplay();
+    }
+
+    function updateCourseCardsHighlight() {
+      form.querySelectorAll(".course-picker-card, .sky-course-card").forEach((card) => {
+        const inp = card.querySelector('input[type="radio"]');
+        card.classList.toggle("selected", inp && inp.checked);
+      });
+      instructorRadios().forEach((inp) => {
+        const card = inp.closest(".instructor-hub-card");
+        if (card) card.classList.toggle("is-selected", inp.checked);
+      });
+      trainingOfferRadios().forEach((inp) => {
+        const card = inp.closest(".offer-hub-card");
+        if (card) card.classList.toggle("is-selected", inp.checked);
+      });
+    }
+
+    function summaryPriceDisplay() {
+      const notSel = "<%= t('notSelected') %>";
+      const r = pickedRadio();
+      if (!r) {
+        if (summaryCourseBadge) summaryCourseBadge.textContent = notSel;
+        if (summaryCourse) summaryCourse.textContent = notSel;
+        if (summaryPrice) summaryPrice.textContent = "—";
+        if (summaryCourseLoc) {
+          summaryCourseLoc.textContent = "";
+          summaryCourseLoc.hidden = true;
+        }
+        return;
+      }
+      const pickCard = r.closest(".course-picker-card, .sky-course-card");
+      const nm =
+        pickCard?.querySelector(".course-picker-name, .sky-course-name")?.textContent.trim() || "";
+      const title = nm || notSel;
+      if (summaryCourseBadge) summaryCourseBadge.textContent = title;
+      if (summaryCourse) summaryCourse.textContent = title;
+
+      let locText = "";
+
+      if (needsTrainingOffer()) {
+        const tr = pickedTrainingEligible();
+        if (summaryPrice) summaryPrice.textContent = tr?.dataset?.offerPrice || "—";
+        locText = (tr?.dataset?.offerLocation || "").trim();
+      } else if (!needsInstructor()) {
+        if (summaryPrice) summaryPrice.textContent = r.dataset.price || "—";
+      } else {
+        const inst = pickedInstructorEligible();
+        if (!inst) {
+          if (summaryPrice) summaryPrice.textContent = "—";
+        } else if (pickedCourseId() === EXTRA_DRIVING_ID) {
+          if (summaryPrice) summaryPrice.textContent = inst.dataset.priceLesson || "—";
+        } else {
+          if (summaryPrice) summaryPrice.textContent = inst.dataset.pricePackage || "—";
+        }
+        locText = (inst?.dataset?.instLocation || "").trim();
+      }
+
+      if (summaryCourseLoc) {
+        if (locText) {
+          summaryCourseLoc.textContent = locText;
+          summaryCourseLoc.hidden = false;
+        } else {
+          summaryCourseLoc.textContent = "";
+          summaryCourseLoc.hidden = true;
+        }
+      }
+    }
+
+    function validateStepFourPanel() {
+      const panel = panels.find((p) => Number(p.dataset.step) === 4);
+      if (!panel) return false;
+
+      if (needsTrainingOffer()) {
+        refreshTrainingOfferCards();
+        const visibleRadios = trainingOfferRadios().filter((r) => {
+          const c = r.closest(".offer-hub-card");
+          return c && !c.classList.contains("is-offer-hidden") && !r.disabled;
+        });
+        if (visibleRadios.length === 0) return false;
+        if (!visibleRadios.some((r) => r.checked)) {
+          const errEl = document.getElementById("trainingOfferPickError");
+          if (errEl) {
+            errEl.textContent = form.dataset.trainingPickMsg || "";
+            errEl.hidden = false;
+          }
+          visibleRadios[0]?.focus();
+          return false;
+        }
+        const errEl = document.getElementById("trainingOfferPickError");
+        if (errEl) errEl.hidden = true;
+      }
+      if (needsInstructor()) {
+        const visibleRadios = instructorRadios().filter((r) => {
+          const c = r.closest(".instructor-hub-card");
+          return c && !c.classList.contains("is-filtered-out") && !r.disabled;
+        });
+        if (visibleRadios.length === 0) {
+          document.getElementById("instructorNoResults")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          return false;
+        }
+        if (!visibleRadios.some((r) => r.checked)) {
+          const errEl = document.getElementById("instructorFilterError");
+          if (errEl) {
+            errEl.textContent = form.dataset.pickMsg || "";
+            errEl.hidden = false;
+          }
+          visibleRadios[0]?.focus();
+          return false;
+        }
+        const errEl = document.getElementById("instructorFilterError");
+        if (errEl) errEl.hidden = true;
+      }
+      return true;
+    }
+
+    function beginRegistrationModals() {
+      registrationPaymentDialog?.close();
+      queueMicrotask(() => {
+        try {
+          registrationContactDialog?.showModal?.();
+        } catch (_) {
+          /* nested dialog timing — retry next frame */
+          requestAnimationFrame(() => {
+            try {
+              registrationContactDialog?.showModal?.();
+            } catch (_e) {
+              /* omit */
+            }
+          });
+        }
+      });
+    }
+
+    function copyRegistrationToForm() {
+      const fn = document.getElementById("regFirstName")?.value.trim() || "";
+      const ln = document.getElementById("regLastName")?.value.trim() || "";
+      const full = [fn, ln].filter(Boolean).join(" ").trim();
+      const fnEl = document.getElementById("fullName");
+      if (fnEl) fnEl.value = full;
+      const hfn = document.getElementById("hid_firstName");
+      const hln = document.getElementById("hid_lastName");
+      if (hfn) hfn.value = fn;
+      if (hln) hln.value = ln;
+      const hik = document.getElementById("hid_isikukood");
+      if (hik) hik.value = document.getElementById("regIsikukood")?.value.trim() || "";
+      const hp = document.getElementById("hid_phone");
+      if (hp) hp.value = document.getElementById("regPhone")?.value.trim() || "";
+      const he = document.getElementById("hid_email");
+      if (he) he.value = document.getElementById("regEmail")?.value.trim() || "";
+      const pay = registrationPaymentDialog?.querySelector('input[name="regPaymentMethod"]:checked');
+      const hpm = document.getElementById("hid_paymentMethod");
+      if (hpm) hpm.value = pay?.value || "";
+      const hc = document.getElementById("hid_comment");
+      if (hc) hc.value = document.getElementById("regComment")?.value.trim() || "";
+    }
+
+    function handleCourseRegisterCta(courseId, dialogEl) {
+      const radio = form.querySelector(`input[name="courseId"][value="${courseId}"]`);
+      if (radio) {
+        radio.checked = true;
+        radio.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+
+      if (dialogEl) dialogEl.close();
+
+      const needExtra = needsTrainingOffer() || needsInstructor();
+      queueMicrotask(() => {
+        if (needExtra) {
+          if (!validateStepFourPanel()) {
+            setStep(4);
+            trainingOffersShell?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            return;
+          }
+        }
+        beginRegistrationModals();
+      });
+    }
+
+    function afterInstructorOrTrainingModalRegistration() {
+      queueMicrotask(() => {
+        if (!validateStepFourPanel()) {
+          setStep(4);
+          trainingOffersShell?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          return;
+        }
+        beginRegistrationModals();
+      });
+    }
+
+    function setStep(step) {
+      current = step;
+      panels.forEach((panel) => panel.classList.toggle("active", Number(panel.dataset.step) === step));
+
+      connectors.forEach((line, idx) => {
+        line.classList.toggle("is-complete", step > idx + 1);
+      });
+
+      dots.forEach((dot) => {
+        const n = Number(dot.dataset.step);
+        const isActive = n === step;
+        const done = n < step;
+        dot.classList.toggle("active", isActive);
+        dot.classList.toggle("done", done);
+        dot.setAttribute("aria-current", isActive ? "step" : "false");
+        const inner = dot.querySelector(".wizard-dot-num");
+        if (inner) inner.textContent = done ? "✓" : String(n);
+      });
+
+      prevBtn.style.display = step === 1 ? "none" : "inline-block";
+      nextBtn.style.display = step === panels.length ? "none" : "inline-block";
+      submitBtn.style.display = "none";
+
+      persistWizardSnapshot();
+    }
+
+    function validateCurrentStep() {
+      const panel = panels.find((p) => Number(p.dataset.step) === current);
+      if (!panel) return false;
+
+      if (current === 1) {
+        return !!panel.querySelector('input[name="studyLang"]:checked');
+      }
+
+      if (current === 2) {
+        return !!panel.querySelector('input[name="wizardCategory"]:checked');
+      }
+
+      if (current === 3) {
+        const visInputs = Array.from(
+          panel.querySelectorAll(".sky-course-card:not(.is-wizard-hidden) input[name=courseId]")
+        );
+        if (!visInputs.length) return false;
+        const pr = pickedRadio();
+        if (!pr || pr.closest(".sky-course-card")?.classList.contains("is-wizard-hidden")) {
+          if (visInputs[0]) {
+            visInputs[0].required = true;
+            visInputs[0].reportValidity();
+          }
+          return false;
+        }
+        return true;
+      }
+
+      if (current === 4) {
+        return validateStepFourPanel();
+      }
+
+      return true;
+    }
+
+    nextBtn.addEventListener("click", () => {
+      if (!validateCurrentStep()) return;
+      setStep(Math.min(current + 1, panels.length));
+      persistWizardSnapshot();
+    });
+
+    prevBtn.addEventListener("click", () => {
+      setStep(Math.max(current - 1, 1));
+      persistWizardSnapshot();
+    });
+
+    dots.forEach((dot) => {
+      dot.addEventListener("click", () => {
+        const targetStep = Number(dot.dataset.step);
+        if (targetStep < current) setStep(targetStep);
+      });
+    });
+
+    courseRadios().forEach((radio) =>
+      radio.addEventListener("change", () => {
+        syncDrivingInstructorUi();
+        applyInstructorFilters();
+        updateCourseCardsHighlight();
+        summaryPriceDisplay();
+        persistWizardSnapshot();
+      })
+    );
+
+    instructorRadios().forEach((r) =>
+      r.addEventListener("change", () => {
+        updateCourseCardsHighlight();
+        summaryPriceDisplay();
+        persistWizardSnapshot();
+      })
+    );
+
+    trainingOfferRadios().forEach((r) =>
+      r.addEventListener("change", () => {
+        updateCourseCardsHighlight();
+        summaryPriceDisplay();
+        persistWizardSnapshot();
+      })
+    );
+
+    form.addEventListener("click", (e) => {
+      const preBtn = e.target.closest("[data-preselect-course]");
+      if (preBtn) {
+        const cid = preBtn.getAttribute("data-preselect-course");
+        if (cid && /^[a-z0-9-]+$/.test(cid)) {
+          const radio = form.querySelector(`input[name="courseId"][value="${cid}"]`);
+          if (radio) {
+            radio.checked = true;
+            radio.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        }
+      }
+
+      const selectBtn = e.target.closest(".hub-select-trigger");
+      if (selectBtn) {
+        const dlgId = selectBtn.getAttribute("data-open-dialog");
+        if (dlgId) {
+          document.getElementById(dlgId)?.showModal?.();
+          return;
+        }
+        const card = selectBtn.closest(".instructor-hub-card, .offer-hub-card");
+        const radio = card?.querySelector('input[name="instructorId"], .training-offer-radio');
+        if (radio && !radio.disabled) {
+          radio.checked = true;
+          radio.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        return;
+      }
+
+      const openBtn = e.target.closest("[data-open-dialog]");
+      if (openBtn) {
+        const dialogId = openBtn.getAttribute("data-open-dialog");
+        document.getElementById(dialogId)?.showModal?.();
+      }
+    });
+
+    document.addEventListener(
+      "click",
+      (e) => {
+        const btn = e.target.closest("[data-register-flow-course]");
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const courseId = btn.getAttribute("data-register-flow-course");
+        const dlg = btn.closest("dialog");
+        if (courseId && /^[a-z0-9-]+$/.test(courseId)) handleCourseRegisterCta(courseId, dlg);
+      },
+      true
+    );
+
+    registrationContactNextBtn?.addEventListener("click", () => {
+      const ids = ["regFirstName", "regLastName", "regIsikukood", "regPhone", "regEmail"];
+      for (let i = 0; i < ids.length; i += 1) {
+        const el = document.getElementById(ids[i]);
+        if (el && !el.checkValidity()) {
+          el.reportValidity();
+          return;
+        }
+      }
+      const agree = document.getElementById("regAgreeTerms");
+      if (agree && !agree.checked) {
+        agree.reportValidity();
+        return;
+      }
+      registrationContactDialog?.close();
+      registrationPaymentDialog?.showModal?.();
+    });
+
+    document.getElementById("registrationFinalizeBtn")?.addEventListener("click", () => {
+      const ids = ["regFirstName", "regLastName", "regIsikukood", "regPhone", "regEmail"];
+      for (let i = 0; i < ids.length; i += 1) {
+        const el = document.getElementById(ids[i]);
+        if (el && !el.checkValidity()) {
+          el.reportValidity();
+          return;
+        }
+      }
+      const agree = document.getElementById("regAgreeTerms");
+      if (agree && !agree.checked) {
+        agree.reportValidity();
+        return;
+      }
+      const pay = registrationPaymentDialog?.querySelector('input[name="regPaymentMethod"]:checked');
+      if (!pay) {
+        const first = registrationPaymentDialog?.querySelector('input[name="regPaymentMethod"]');
+        first?.reportValidity();
+        return;
+      }
+      copyRegistrationToForm();
+      form.submit();
+    });
+
+    registrationPaymentDialog?.addEventListener("change", (e) => {
+      if (e.target?.matches?.('input[name="regPaymentMethod"]')) persistWizardSnapshot();
+    });
+
+    document.getElementById("instructorFilterBar")?.addEventListener("click", (e) => {
+      const chip = e.target.closest(".filter-chip");
+      if (!chip || !chip.closest("#instructorFilterBar")) return;
+      const group = chip.closest("[data-filter-group]");
+      if (!group) return;
+      group.querySelectorAll(".filter-chip").forEach((c) => {
+        c.classList.remove("is-selected");
+        c.setAttribute("aria-pressed", "false");
+      });
+      chip.classList.add("is-selected");
+      chip.setAttribute("aria-pressed", "true");
+      applyInstructorFilters();
+    });
+
+    document.getElementById("instructorSearchInput")?.addEventListener("input", () => {
+      applyInstructorFilters();
+    });
+
+    document.querySelectorAll(".inst-detail-dialog").forEach((dlg) => {
+      dlg.addEventListener("click", (evt) => {
+        if (evt.target === dlg) dlg.close();
+      });
+      dlg.querySelectorAll("[data-close-dialog]").forEach((btn) => {
+        btn.addEventListener("click", () => dlg.close());
+      });
+      dlg.querySelectorAll("[data-select-instructor]").forEach((btn) => {
+        btn.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          const id = btn.getAttribute("data-select-instructor");
+          const radio = document.getElementById(`inst-radio-${id}`);
+          if (radio && !radio.disabled) {
+            radio.checked = true;
+            radio.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+          dlg.close();
+          afterInstructorOrTrainingModalRegistration();
+        });
+      });
+      dlg.querySelectorAll("[data-select-training-offer]").forEach((btn) => {
+        btn.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          const id = btn.getAttribute("data-select-training-offer");
+          const radio = document.getElementById(`training-radio-${id}`);
+          if (radio && !radio.disabled) {
+            radio.checked = true;
+            radio.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+          dlg.close();
+          afterInstructorOrTrainingModalRegistration();
+        });
+      });
+    });
+
+    ["regFirstName", "regLastName", "regIsikukood", "regPhone", "regEmail", "regComment"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener("input", () => persistWizardSnapshot());
+        el.addEventListener("change", () => persistWizardSnapshot());
+      }
+    });
+
+    form.querySelectorAll('input[name="studyLang"]').forEach((r) =>
+      r.addEventListener("change", () => persistWizardSnapshot())
+    );
+
+    form.querySelectorAll('input[name="wizardCategory"]').forEach((r) =>
+      r.addEventListener("change", () => {
+        applyWizardCategoryFilter();
+        persistWizardSnapshot();
+      })
+    );
+
+    const registrationSuccess = document.querySelector(".registration-section .alert.success");
+    if (registrationSuccess) {
+      try {
+        sessionStorage.removeItem(WIZARD_STORAGE_KEY);
+        sessionStorage.removeItem(STEP_STORAGE_KEY_LEGACY);
+      } catch (_) {
+        /* omit */
+      }
+    }
+
+    const snapshot = !registrationSuccess ? readStoredWizardSnapshot() : null;
+
+    if (snapshot) {
+      restoreWizardSnapshot(snapshot);
+    } else {
+      (function bootstrapCourseFromQuery() {
+        const initial = form.getAttribute("data-initial-course");
+        if (!initial || !/^[a-z0-9-]+$/.test(initial)) return;
+        const radio = form.querySelector(`input[name="courseId"][value="${initial}"]`);
+        if (!radio) return;
+        radio.checked = true;
+        const card = radio.closest(".sky-course-card");
+        const cats = (card?.dataset.wizardCats || "").split(/\s+/).filter(Boolean);
+        if (cats[0]) {
+          const match = form.querySelector(`input[name="wizardCategory"][value="${cats[0]}"]`);
+          if (match) {
+            match.checked = true;
+          }
+        }
+        applyWizardCategoryFilter();
+        radio.dispatchEvent(new Event("change", { bubbles: true }));
+      })();
+    }
+
+    syncDrivingInstructorUi();
+    applyInstructorFilters();
+    updateCourseCardsHighlight();
+    summaryPriceDisplay();
+
+    let initialStep = 1;
+    if (!registrationSuccess && snapshot && snapshot.step != null) {
+      const n = Number.parseInt(String(snapshot.step), 10);
+      if (Number.isFinite(n) && n >= 1 && n <= panels.length) initialStep = n;
+    }
+
+    setStep(initialStep);
+    persistWizardSnapshot();
+  })();
+</script>

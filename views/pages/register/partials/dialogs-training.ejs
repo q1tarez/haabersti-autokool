@@ -1,0 +1,31 @@
+<% if (trainingOffers && trainingOffers.length) { %>
+  <% trainingOffers.forEach((offer) => { %>
+    <dialog class="inst-detail-dialog training-detail-dialog" id="training-dialog-<%= offer.id %>" aria-labelledby="training-dialog-title-<%= offer.id %>">
+      <div class="inst-dialog-sheet">
+        <button type="button" class="inst-dialog-x" data-close-dialog aria-label="<%= t('modalCloseAria') %>">×</button>
+        <% if (offer.eyebrow) { %>
+          <p class="inst-dialog-eyebrow"><%= offer.eyebrow %></p>
+        <% } %>
+        <h2 class="inst-dialog-title" id="training-dialog-title-<%= offer.id %>"><%= offer.title %></h2>
+        <div class="inst-dialog-summary">
+          <img class="inst-dialog-photo inst-dialog-photo--wide" src="<%= offer.image %>" alt="" width="120" height="82" loading="lazy" />
+          <div class="inst-modal-price-row">
+            <div class="hub-price-cell">
+              <span class="hub-euro" aria-hidden="true">€</span>
+              <span class="hub-price-label"><%= t("instructorCostShort") %></span>
+              <span class="hub-price-value"><%= offer.priceDisplay %></span>
+            </div>
+            <div class="hub-price-cell">
+              <span class="hub-euro" aria-hidden="true">A</span>
+              <span class="hub-price-label"><%= t("trainingOfferLanguageLabel") %></span>
+              <span class="hub-price-value"><%= offer.language %></span>
+            </div>
+          </div>
+        </div>
+        <hr class="inst-dialog-line" />
+        <div class="inst-dialog-prose"><%- offer.modalArticleHtml %></div>
+        <button type="button" class="btn inst-dialog-cta" data-select-training-offer="<%= offer.id %>"><%= t("instructorModalRegisterCta") %> ›</button>
+      </div>
+    </dialog>
+  <% }) %>
+<% } %>

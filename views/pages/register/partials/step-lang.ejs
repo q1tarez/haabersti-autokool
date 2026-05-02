@@ -1,0 +1,35 @@
+<div class="step-panel active" data-step="1">
+  <div class="wizard-step-inner">
+    <h3 class="wizard-panel-heading"><%= t("wizardStudyLangTitle") %></h3>
+    <p class="wizard-panel-lead"><%= t("wizardStudyLangLead") %></p>
+    <fieldset class="reg-lang-fieldset">
+      <legend class="visually-hidden"><%= t("wizardStepLang") %></legend>
+      <div class="sky-lang-rows" role="radiogroup">
+        <label class="sky-lang-card">
+          <input type="radio" name="studyLang" value="et" <%= lang === "et" ? "checked" : "" %> />
+          <span class="sky-lang-inner">
+            <span class="sky-lang-flag" aria-hidden="true">🇪🇪</span>
+            <span class="sky-lang-name"><%= t("filterLangEt") %></span>
+            <span class="sky-course-chevron">›</span>
+          </span>
+        </label>
+        <label class="sky-lang-card">
+          <input type="radio" name="studyLang" value="ru" <%= lang === "ru" ? "checked" : "" %> />
+          <span class="sky-lang-inner">
+            <span class="sky-lang-flag" aria-hidden="true">🇷🇺</span>
+            <span class="sky-lang-name"><%= t("filterLangRu") %></span>
+            <span class="sky-course-chevron">›</span>
+          </span>
+        </label>
+        <label class="sky-lang-card">
+          <input type="radio" name="studyLang" value="en" <%= lang === "en" ? "checked" : "" %> />
+          <span class="sky-lang-inner">
+            <span class="sky-lang-flag" aria-hidden="true">🇬🇧</span>
+            <span class="sky-lang-name"><%= t("filterLangEn") %></span>
+            <span class="sky-course-chevron">›</span>
+          </span>
+        </label>
+      </div>
+    </fieldset>
+  </div>
+</div>

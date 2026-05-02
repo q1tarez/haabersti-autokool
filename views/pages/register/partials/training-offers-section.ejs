@@ -1,0 +1,148 @@
+<% if (trainingOffers && trainingOffers.length) { %>
+<div id="trainingOffersShell" class="training-offers-shell" <%= typeof showTrainingBoot !== 'undefined' && showTrainingBoot ? "" : "hidden" %>>
+  <p class="instructor-step-lead instructor-step-lead--strong"><%= t("trainingOfferSectionTitle") %></p>
+  <p id="trainingOfferPickError" class="alert error instructor-filter-msg" hidden role="alert"></p>
+  <div
+    id="trainingOfferCardsRoot"
+    class="instructor-picker-cards training-picker-cards"
+    role="radiogroup"
+    aria-labelledby="trainingOfferRadiogroupLabel"
+  >
+    <p class="visually-hidden" id="trainingOfferRadiogroupLabel"><%= t("trainingOfferSectionTitle") %></p>
+    <% trainingOffers.forEach((offer) => { %>
+      <article
+        class="instructor-hub-card offer-hub-card"
+        data-offer-for-course="<%= offer.courseId %>"
+      >
+        <input
+          type="radio"
+          name="trainingOfferId"
+          value="<%= offer.id %>"
+          id="training-radio-<%= offer.id %>"
+          class="training-offer-radio"
+          data-label="<%= offer.title %>"
+          data-offer-price="<%= offer.priceDisplay %>"
+          data-offer-location="<%= offer.location %>"
+          <%= typeof showTrainingBoot !== 'undefined' && showTrainingBoot ? "" : "disabled" %>
+        />
+        <div class="hub-card-photo hub-card-photo--training">
+          <img class="hub-photo-thumb" src="<%= offer.image %>" alt="" width="140" height="96" loading="lazy" />
+          <div class="offer-thumb-badges" aria-hidden="true">
+            <% if (offer.locationBadge) { %>
+              <span class="offer-badge offer-badge--loc"><%= offer.locationBadge %></span>
+            <% } %>
+            <% if (offer.badgeExtra) { %>
+              <span class="offer-badge offer-badge--extra"><%= offer.badgeExtra %></span>
+            <% } %>
+          </div>
+        </div>
+        <div class="hub-card-center">
+          <div class="offer-card-heading">
+            <% if (offer.eyebrow) { %>
+              <span class="offer-category-badge"><%= offer.eyebrow %></span>
+            <% } %>
+            <h4 class="hub-name offer-card-title"><%= offer.title %></h4>
+          </div>
+          <div class="hub-price-row hub-price-row--single">
+            <div class="hub-price-cell">
+              <span class="hub-euro" aria-hidden="true">€</span>
+              <span class="hub-price-label"><%= t("instructorCostShort") %></span>
+              <span class="hub-price-value"><%= offer.priceDisplay %></span>
+            </div>
+          </div>
+          <div class="hub-info-grid hub-info-grid--training">
+            <div class="offer-info-row offer-info-row--3">
+              <div class="hub-info-item hub-info-item--training">
+                <svg class="hub-svg hub-svg--training" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <path d="M12 21s-6-5-6-10a6 6 0 1112 0c0 5-6 10-6 10z" />
+                  <circle cx="12" cy="11" r="2.5" />
+                </svg>
+                <div class="hub-info-stack">
+                  <span class="hub-info-lbl"><%= t("trainingOfferLocationLabel") %></span>
+                  <span class="hub-info-val"><%= offer.location %></span>
+                </div>
+              </div>
+              <div class="hub-info-item hub-info-item--training">
+                <svg class="hub-svg hub-svg--training" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="16" rx="2" />
+                  <path d="M16 3v4M8 3v4M3 11h18" />
+                </svg>
+                <div class="hub-info-stack">
+                  <span class="hub-info-lbl"><%= t("trainingOfferCalendarLabel") %></span>
+                  <span class="hub-info-val"><%= offer.dateDisplay %></span>
+                </div>
+              </div>
+              <div class="hub-info-item hub-info-item--training">
+                <svg class="hub-svg hub-svg--training" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+                <div class="hub-info-stack">
+                  <span class="hub-info-lbl"><%= t("trainingOfferLessonTimeLabel") %></span>
+                  <span class="hub-info-val"><%= offer.timeDisplay %></span>
+                </div>
+              </div>
+            </div>
+            <div class="offer-info-row offer-info-row--3">
+              <div class="hub-info-item hub-info-item--training">
+                <svg class="hub-svg hub-svg--training" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 2v4M12 18v4M5 5l3 3M16 16l3 3M2 12h4M18 12h4" />
+                </svg>
+                <div class="hub-info-stack">
+                  <span class="hub-info-lbl"><%= t("trainingOfferTransmissionLabel") %></span>
+                  <span class="hub-info-val"><%= offer.transmission %></span>
+                </div>
+              </div>
+              <div class="hub-info-item hub-info-item--training">
+                <svg class="hub-svg hub-svg--training" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <path d="M4 5h16M9 11h11M9 17h11" />
+                </svg>
+                <div class="hub-info-stack">
+                  <span class="hub-info-lbl"><%= t("trainingOfferLanguageLabel") %></span>
+                  <span class="hub-info-val"><%= offer.language %></span>
+                </div>
+              </div>
+              <div class="hub-info-item hub-info-item--training">
+                <svg class="hub-svg hub-svg--training" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <path d="M17 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8zM22 21v-2a4 4 0 00-3-3.87" />
+                </svg>
+                <div class="hub-info-stack">
+                  <span class="hub-info-lbl"><%= t("trainingOfferSeatsLabel") %></span>
+                  <span class="hub-info-val"><%= offer.seats != null ? offer.seats : "—" %></span>
+                </div>
+              </div>
+            </div>
+            <div class="offer-info-row offer-info-row--1">
+              <div class="hub-info-item hub-info-item--training">
+                <svg class="hub-svg hub-svg--training" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <path d="M6 17l2-7h8l2 7M9 17h6M7 10l1-4h8l1 4" />
+                </svg>
+                <div class="hub-info-stack">
+                  <span class="hub-info-lbl"><%= t("trainingOfferTransportLabel") %></span>
+                  <span class="hub-info-val">
+                    <% if (offer.transportIncluded) { %><span class="hub-check">✓</span><% } else { %>—<% } %>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="hub-card-actions">
+          <button
+            type="button"
+            class="btn-hub-select hub-select-trigger"
+            data-open-dialog="training-dialog-<%= offer.id %>"
+          >
+            <%= t("instructorChooseBtn") %> ›
+          </button>
+          <button type="button" class="btn-hub-info" data-open-dialog="training-dialog-<%= offer.id %>">
+            <span class="btn-hub-info-ico">i</span>
+            <%= t("instructorMoreInfoBtn") %>
+          </button>
+        </div>
+      </article>
+    <% }) %>
+  </div>
+</div>
+<% } %>

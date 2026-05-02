@@ -1,0 +1,47 @@
+<% if (courses && courses.length) { %>
+  <% const sectionTkey = { start: "wizardSection_start", quick: "wizardSection_quick", already: "wizardSection_already", after: "wizardSection_after" }; %>
+  <% const pageLang = typeof lang === "string" ? lang : "et"; %>
+  <% courses.forEach((course) => { %>
+    <% const secKey = sectionTkey[course.wizardSection] || "wizardSection_quick"; %>
+    <% const uiLangLabel = pageLang === "ru" ? t("filterLangRu") : pageLang === "en" ? t("filterLangEn") : t("filterLangEt"); %>
+    <dialog class="inst-detail-dialog course-detail-dialog" id="course-dialog-<%= course.id %>" aria-labelledby="course-dialog-title-<%= course.id %>">
+      <div class="inst-dialog-sheet">
+        <button type="button" class="inst-dialog-x" data-close-dialog aria-label="<%= t('modalCloseAria') %>">×</button>
+        <p class="inst-dialog-eyebrow"><%= course.name %></p>
+        <h2 class="inst-dialog-title" id="course-dialog-title-<%= course.id %>">
+          <%= course.name %> — <%= t("courseModalIndividualSuffix") %>
+        </h2>
+        <div class="inst-dialog-summary">
+          <div class="course-dialog-media course-dialog-media--placeholder" aria-hidden="true">
+            <span class="sky-course-icon sky-course-icon--generic"></span>
+          </div>
+          <div>
+            <div class="inst-modal-price-row inst-modal-price-row--course">
+              <% if (!course.omitCourseListPrice) { %>
+                <div class="hub-price-cell">
+                  <span class="hub-euro" aria-hidden="true">€</span>
+                  <span class="hub-price-label"><%= t("instructorCostShort") %></span>
+                  <span class="hub-price-value"><%= course.price %></span>
+                </div>
+              <% } %>
+              <div class="hub-price-cell">
+                <span class="hub-euro hub-euro--lang" aria-hidden="true">A</span>
+                <span class="hub-price-label"><%= t("trainingOfferLanguageLabel") %></span>
+                <span class="hub-price-value"><%= uiLangLabel %></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <hr class="inst-dialog-line" />
+        <div class="inst-dialog-prose course-dialog-prose">
+          <% const desc = course.description || ""; %>
+          <% desc.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).forEach((para) => { %>
+            <p><%= para.replace(/\n/g, " ") %></p>
+          <% }) %>
+        </div>
+        <p class="inst-dialog-schedule-note"><%= t("modalSchedulingNote") %></p>
+        <button type="button" class="btn inst-dialog-cta" data-register-flow-course="<%= course.id %>"><%= t("instructorModalRegisterCta") %> ›</button>
+      </div>
+    </dialog>
+  <% }) %>
+<% } %>

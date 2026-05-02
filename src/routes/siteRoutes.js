@@ -1,6 +1,7 @@
 const express = require("express");
-const { runAsync, allAsync } = require("../db/database");
+const { runAsync, allAsync, getAsync } = require("../db/database");
 const { courseRequiresInstructor, getInstructorsForLang, getInstructorById } = require("../data/drivingInstructors");
+const { courseRequiresTrainingOffer, mergeTrainingOfferRow } = require("../data/trainingOffers");
 
 const router = express.Router();
 
@@ -9,6 +10,7 @@ function registerViewLocals(req, overrides = {}) {
     title: req.t("registerWizardTitle"),
     drivingInstructors: getInstructorsForLang(req.lang),
     courses: [],
+    trainingOffers: [],
     selectedCourseId: "",
     error: null,
     success: null,
@@ -28,13 +30,44 @@ async function getLocalizedCoursesFromDb(lang, onlyActive = true) {
   }));
 }
 
+/** Сопоставление курсов БД с «мастером Sky»: категория (B/BE/Moto) и секция списка */
+const WIZARD_COURSE_META = {
+  "b-category": { wizardCats: ["b", "be"], wizardSection: "start" },
+  "winter-training": { wizardCats: ["b", "be"], wizardSection: "quick" },
+  "first-aid": { wizardCats: ["b", "be"], wizardSection: "quick" },
+  "night-driving": { wizardCats: ["b", "be"], wizardSection: "quick" },
+  "slippery-driving": { wizardCats: ["b", "be"], wizardSection: "quick" },
+  "driving-lessons-26": { wizardCats: ["b", "be"], wizardSection: "already" },
+  "extra-driving": { wizardCats: ["b", "be"], wizardSection: "already" },
+};
+
+function enrichWizardCourse(course) {
+  const meta = WIZARD_COURSE_META[course.id] || { wizardCats: ["b", "be"], wizardSection: "already" };
+  const wizardCats = Array.isArray(meta.wizardCats) ? meta.wizardCats : ["b"];
+  const wizardSection = meta.wizardSection || "already";
+  return { ...course, wizardCats, wizardSection };
+}
+
+async function loadRegistrationTrainingOffers(lang) {
+  const rows = await allAsync(
+    "SELECT * FROM training_offers WHERE is_active = 1 ORDER BY course_id ASC, sort_order ASC, id ASC"
+  );
+  return rows.map((row) => mergeTrainingOfferRow(row, lang));
+}
+
 async function getRegistrationCourses(lang) {
   const rows = await getLocalizedCoursesFromDb(lang);
-  return rows.map((course) => ({
-    ...course,
-    requiresInstructor: courseRequiresInstructor(course.id),
-    omitCourseListPrice: courseRequiresInstructor(course.id),
-  }));
+  return rows.map((course) => {
+    const e = enrichWizardCourse(course);
+    const reqInstr = courseRequiresInstructor(course.id);
+    const reqTrain = courseRequiresTrainingOffer(course.id);
+    return {
+      ...e,
+      requiresInstructor: reqInstr,
+      requiresTrainingOffer: reqTrain,
+      omitCourseListPrice: reqInstr || reqTrain,
+    };
+  });
 }
 
 router.get("/", (req, res) => {
@@ -92,7 +125,11 @@ router.get("/register", (req, res) => {
 router.get("/register/steps", async (req, res, next) => {
   try {
     const courses = await getRegistrationCourses(req.lang);
-    res.render("pages/register", registerViewLocals(req, { courses, selectedCourseId: req.query.course || "" }));
+    const trainingOffers = await loadRegistrationTrainingOffers(req.lang);
+    res.render(
+      "pages/register",
+      registerViewLocals(req, { courses, trainingOffers, selectedCourseId: req.query.course || "" })
+    );
   } catch (error) {
     next(error);
   }
@@ -101,17 +138,23 @@ router.get("/register/steps", async (req, res, next) => {
 router.post("/register", async (req, res, next) => {
   try {
     const courses = await getRegistrationCourses(req.lang);
+    const trainingOffers = await loadRegistrationTrainingOffers(req.lang);
+    const firstName = String(req.body.firstName || "").trim();
+    const lastName = String(req.body.lastName || "").trim();
+    let fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+    if (!fullName) fullName = String(req.body.fullName || "").trim();
+
     const {
-      fullName,
       isikukood,
       phone,
       email,
       courseId,
-      startDate,
       lessonTime,
       paymentMethod,
       comment,
       instructorId,
+      studyLang,
+      trainingOfferId,
     } = req.body;
     const chosenCourse = courses.find((course) => course.id === courseId);
 
@@ -120,11 +163,29 @@ router.post("/register", async (req, res, next) => {
         "pages/register",
         registerViewLocals(req, {
           courses,
+          trainingOffers,
           selectedCourseId: courseId || "",
           error: req.t("registerRequired"),
         })
       );
       return;
+    }
+
+    if (courseRequiresTrainingOffer(courseId)) {
+      const tid = String(trainingOfferId || "").trim();
+      const row = tid ? await getAsync("SELECT * FROM training_offers WHERE id = ?", [tid]) : null;
+      if (!row || row.course_id !== courseId || !row.is_active) {
+        res.status(400).render(
+          "pages/register",
+          registerViewLocals(req, {
+            courses,
+            trainingOffers,
+            selectedCourseId: courseId || "",
+            error: req.t("trainingOfferRequired"),
+          })
+        );
+        return;
+      }
     }
 
     if (courseRequiresInstructor(courseId)) {
@@ -134,6 +195,7 @@ router.post("/register", async (req, res, next) => {
           "pages/register",
           registerViewLocals(req, {
             courses,
+            trainingOffers,
             selectedCourseId: courseId || "",
             error: req.t("instructorRequired"),
           })
@@ -142,10 +204,31 @@ router.post("/register", async (req, res, next) => {
       }
     }
 
+    const payRaw = String(paymentMethod || "").trim();
+    const allowedPay = ["cash", "card", "bank"];
+    const payNorm = allowedPay.includes(payRaw) ? payRaw : "";
+
+    if (!payNorm) {
+      res.status(400).render(
+        "pages/register",
+        registerViewLocals(req, {
+          courses,
+          trainingOffers,
+          selectedCourseId: courseId || "",
+          error: req.t("paymentRequired"),
+        })
+      );
+      return;
+    }
+
     const registrationNote = [
+      studyLang ? `study_lang:${studyLang}` : "",
       lessonTime ? `lesson_time:${lessonTime}` : "",
-      paymentMethod ? `payment:${paymentMethod}` : "",
+      payNorm ? `payment:${payNorm}` : "",
       courseRequiresInstructor(courseId) && instructorId ? `instructor:${instructorId}` : "",
+      courseRequiresTrainingOffer(courseId) && trainingOfferId
+        ? `training_offer:${String(trainingOfferId).trim()}`
+        : "",
       comment || "",
     ]
       .filter(Boolean)
@@ -155,10 +238,13 @@ router.post("/register", async (req, res, next) => {
       `INSERT INTO course_registrations
         (full_name, isikukood, phone, email, course_id, course_name, start_date, comment)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [fullName, isikukood, phone, email, chosenCourse.id, chosenCourse.name, startDate || "", registrationNote]
+      [fullName, isikukood, phone, email, chosenCourse.id, chosenCourse.name, "", registrationNote]
     );
 
-    res.render("pages/register", registerViewLocals(req, { courses, selectedCourseId: "", success: req.t("registerSuccess") }));
+    res.render(
+      "pages/register",
+      registerViewLocals(req, { courses, trainingOffers, selectedCourseId: "", success: req.t("registerSuccess") })
+    );
   } catch (error) {
     next(error);
   }

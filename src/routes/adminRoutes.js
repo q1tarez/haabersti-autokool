@@ -5,8 +5,34 @@ const { requireAdmin } = require("../middleware/auth");
 const { mergeInstructorImported } = require("../data/drivingInstructors");
 const { refreshInstructorsFromDatabase } = require("../data/instructorSync");
 const { formBodyToDrivingInstructor, stripIdForPayload, LOCATION_SLUGS } = require("../data/instructorAdminForm");
+const { formBodyToTrainingOfferPayload, payloadToFormDefaults } = require("../data/trainingOfferForm");
+const { TRAINING_OFFER_COURSE_IDS } = require("../data/trainingOffers");
 
 const router = express.Router();
+
+const TRAINING_COURSE_LABELS = {
+  "winter-training": "Зимнее вождение",
+  "first-aid": "Первая помощь",
+  "night-driving": "Тёмное вождение",
+  "slippery-driving": "Скользкое вождение (RS)",
+};
+
+function trainingCourseSelectOptions() {
+  return TRAINING_OFFER_COURSE_IDS.map((id) => ({ id, label: `${TRAINING_COURSE_LABELS[id] || id} (${id})` }));
+}
+
+function summarizeTrainingOfferRows(rows) {
+  return rows.map((row) => {
+    let title = row.id;
+    try {
+      const p = typeof row.payload === "string" ? JSON.parse(row.payload) : row.payload;
+      title = p.titleRu || p.titleEt || title;
+    } catch (_) {
+      /* omit */
+    }
+    return { ...row, summaryTitle: title };
+  });
+}
 const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
 
 function slugify(text) {
@@ -429,6 +455,142 @@ router.post("/instructors/:id/delete", requireAdmin, async (req, res, next) => {
     await runAsync("DELETE FROM instructors WHERE id = ?", [req.params.id]);
     await refreshInstructorsFromDatabase();
     res.redirect(303, "/admin/instructors?deleted=1");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/training-offers", requireAdmin, async (req, res, next) => {
+  try {
+    const rows = await allAsync("SELECT * FROM training_offers ORDER BY course_id ASC, sort_order ASC, id ASC");
+    let notice = null;
+    if (req.query.created) notice = "Предложение добавлено.";
+    if (req.query.updated) notice = "Изменения сохранены.";
+    if (req.query.deleted) notice = "Запись удалена.";
+    if (req.query.err === "dup") notice = "Такой ID уже есть.";
+    if (req.query.err === "course") notice = "Выберите тип курса.";
+    res.render("admin/training-offers", {
+      title: "Админ — Тренинги / группы",
+      offers: summarizeTrainingOfferRows(rows),
+      editingOffer: null,
+      editingId: null,
+      editingSortOrder: 0,
+      editingCourseId: "",
+      editingVariantKey: "",
+      editingActive: true,
+      trainingCourseOptions: trainingCourseSelectOptions(),
+      notice,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/training-offers/:id/edit", requireAdmin, async (req, res, next) => {
+  try {
+    const rows = await allAsync("SELECT * FROM training_offers ORDER BY course_id ASC, sort_order ASC, id ASC");
+    const row = await getAsync("SELECT * FROM training_offers WHERE id = ?", [req.params.id]);
+    if (!row) {
+      res.redirect(303, "/admin/training-offers");
+      return;
+    }
+    let payload = {};
+    try {
+      payload = typeof row.payload === "string" ? JSON.parse(row.payload) : {};
+    } catch (_) {
+      payload = {};
+    }
+    const editingOffer = payloadToFormDefaults(payload);
+    res.render("admin/training-offers", {
+      title: "Админ — Тренинги / группы",
+      offers: summarizeTrainingOfferRows(rows),
+      editingOffer,
+      editingId: row.id,
+      editingSortOrder: Number(row.sort_order) || 0,
+      editingCourseId: row.course_id || "",
+      editingVariantKey: row.variant_key || "",
+      editingActive: row.is_active !== 0,
+      trainingCourseOptions: trainingCourseSelectOptions(),
+      notice: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/training-offers", requireAdmin, async (req, res, next) => {
+  try {
+    const course_id = String(req.body.course_id || "").trim();
+    if (!course_id || !TRAINING_OFFER_COURSE_IDS.includes(course_id)) {
+      res.redirect(303, "/admin/training-offers?err=course");
+      return;
+    }
+
+    const payload = formBodyToTrainingOfferPayload(req.body);
+    let id = slugify(req.body.manual_id || "");
+    if (!id) {
+      id = slugify(`${course_id}-${req.body.variant_key || "opt"}-${Date.now().toString(36)}`);
+    }
+
+    const dup = await getAsync("SELECT id FROM training_offers WHERE id = ?", [id]);
+    if (dup) {
+      res.redirect(303, "/admin/training-offers?err=dup");
+      return;
+    }
+
+    const variantKey = String(req.body.variant_key || "").trim() || null;
+    const sort_order = Number(String(req.body.sort_order ?? "").trim());
+    const sortOrderFinal = Number.isFinite(sort_order) ? sort_order : 0;
+    const is_active = req.body.is_active ? 1 : 0;
+    const payloadJson = JSON.stringify(payload);
+
+    await runAsync(
+      `INSERT INTO training_offers (id, course_id, variant_key, sort_order, is_active, payload, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [id, course_id, variantKey, sortOrderFinal, is_active, payloadJson, new Date().toISOString()]
+    );
+
+    res.redirect(303, "/admin/training-offers?created=1");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/training-offers/:id/update", requireAdmin, async (req, res, next) => {
+  try {
+    const existing = await getAsync("SELECT * FROM training_offers WHERE id = ?", [req.params.id]);
+    if (!existing) {
+      res.redirect(303, "/admin/training-offers");
+      return;
+    }
+
+    const course_id = String(req.body.course_id || "").trim();
+    if (!course_id || !TRAINING_OFFER_COURSE_IDS.includes(course_id)) {
+      res.redirect(303, "/admin/training-offers?err=course");
+      return;
+    }
+
+    const payload = formBodyToTrainingOfferPayload(req.body);
+    const variantKey = String(req.body.variant_key || "").trim() || null;
+    const sort_order = Number(String(req.body.sort_order ?? "").trim());
+    const sortOrderFinal = Number.isFinite(sort_order) ? sort_order : Number(existing.sort_order) || 0;
+    const is_active = req.body.is_active ? 1 : 0;
+    const payloadJson = JSON.stringify(payload);
+
+    await runAsync(
+      `UPDATE training_offers SET payload = ?, sort_order = ?, variant_key = ?, course_id = ?, is_active = ?, updated_at = ? WHERE id = ?`,
+      [payloadJson, sortOrderFinal, variantKey, course_id, is_active, new Date().toISOString(), req.params.id]
+    );
+
+    res.redirect(303, "/admin/training-offers?updated=1");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/training-offers/:id/delete", requireAdmin, async (req, res, next) => {
+  try {
+    await runAsync("DELETE FROM training_offers WHERE id = ?", [req.params.id]);
+    res.redirect(303, "/admin/training-offers?deleted=1");
   } catch (error) {
     next(error);
   }

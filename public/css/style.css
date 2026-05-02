@@ -298,9 +298,597 @@ select:focus {
   align-items: start;
 }
 
+/* Sky-поток: сайдбар слева + основная колонка (цвета Haabersti) */
+.registration-layout--sky {
+  grid-template-columns: minmax(168px, 220px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.wizard-main {
+  min-width: 0;
+}
+
+.wizard-sidebar {
+  position: sticky;
+  top: 88px;
+  align-self: start;
+  padding: 14px 12px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #f7faff, #fff);
+}
+
+.wizard-sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.wizard-sidebar-item {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 0;
+  position: relative;
+}
+
+.wizard-sidebar-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 19px;
+  top: 48px;
+  bottom: -6px;
+  width: 2px;
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.wizard-sidebar-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 2px;
+}
+
+.wizard-sidebar-kicker {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.wizard-sidebar-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.wizard-panel-lead {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.wizard-picked-course-card {
+  margin: 0 0 22px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fbff, #fff);
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+}
+
+.wizard-picked-kicker {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.wizard-course-pill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(37, 99, 235, 0.1);
+  margin-bottom: 12px;
+}
+
+.wizard-picked-course-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.wizard-course-loc-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.wizard-picked-course-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  flex: 1;
+  min-width: 0;
+}
+
+.wizard-picked-course-price {
+  margin: 6px 0 6px;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.wizard-picked-course-hint {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.wizard-picked-divider {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 0 0 12px;
+}
+
+.wizard-picked-includes-label {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.wizard-picked-includes-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.wizard-schedule-block {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+  display: grid;
+  gap: 10px;
+}
+
+.wizard-course-empty {
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 10px;
+  background: #fff8ed;
+  border: 1px solid #f6dfb8;
+  font-size: 14px;
+}
+
+.sky-lang-rows,
+.sky-category-rows,
+.sky-course-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sky-lang-card,
+.sky-category-card,
+.sky-course-card {
+  position: relative;
+  margin: 0;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 0;
+  cursor: pointer;
+  background: linear-gradient(180deg, #fbfdff, #fff);
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.sky-lang-card:hover,
+.sky-category-card:hover,
+.sky-course-card:hover {
+  border-color: #a8c6fa;
+}
+
+.sky-lang-card input,
+.sky-category-card input,
+.sky-course-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sky-lang-inner,
+.sky-category-inner,
+.sky-course-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  min-height: 52px;
+}
+
+.sky-lang-card:focus-within,
+.sky-category-card:focus-within,
+.sky-course-card:focus-within {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
+.sky-lang-card:has(input:checked),
+.sky-category-card:has(input:checked),
+.sky-course-card.selected {
+  border-color: var(--primary);
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.12);
+}
+
+.sky-lang-flag {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.sky-lang-name {
+  flex: 1;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.sky-category-name {
+  flex: 1;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.sky-category-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  flex-shrink: 0;
+}
+
+.sky-category-icon--moto::before {
+  content: "🏍";
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  line-height: 36px;
+  text-align: center;
+}
+
+.sky-category-icon--car::before {
+  content: "🚗";
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  line-height: 36px;
+}
+
+.sky-category-icon--trailer::before {
+  content: "🚙";
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  line-height: 36px;
+}
+
+.sky-section-title {
+  margin: 18px 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sky-section-title:first-child {
+  margin-top: 4px;
+}
+
+.sky-course-icon--generic {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  flex-shrink: 0;
+}
+
+.sky-course-icon--generic::before {
+  content: "📋";
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  width: 100%;
+  height: 100%;
+}
+
+.sky-course-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sky-course-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.sky-course-meta {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.sky-course-chevron {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.sky-course-card.is-wizard-hidden {
+  display: none !important;
+}
+
+.reg-lang-fieldset,
+.reg-category-fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-inline-size: unset;
+}
+
 .form-card.step-form {
   max-width: none;
   width: 100%;
+}
+
+.registration-section--wizard .wizard-page-title {
+  margin: 0 0 8px;
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.registration-section--wizard .wizard-page-lead {
+  margin-bottom: 22px;
+  max-width: 52ch;
+  color: var(--muted);
+}
+
+.wizard-main--shell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wizard-step-card.form.card.form-card {
+  padding: 0;
+  border-radius: 18px;
+  border: 1px solid #e3eaf5;
+  box-shadow:
+    0 4px 28px rgba(15, 23, 42, 0.07),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  background: #fff;
+  overflow: hidden;
+}
+
+.wizard-step-inner {
+  padding: 22px 22px 26px;
+}
+
+.wizard-step-inner--wide {
+  padding-bottom: 16px;
+}
+
+.step-actions--wizard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 16px 22px 22px;
+  margin: 0;
+  border-top: 1px solid #eef2f8;
+  background: linear-gradient(180deg, #fbfcff 0%, #ffffff 100%);
+}
+
+.step-actions--wizard #nextStep {
+  margin-left: auto;
+}
+
+.price-summary.price-summary--wizard {
+  border-radius: 16px;
+  border: 1px solid #e3eaf5;
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.06);
+}
+
+.wizard-recap.wizard-recap--elevated {
+  border-radius: 14px;
+  border: 1px solid #e8eef7;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  background: linear-gradient(180deg, #fff, #fafcff);
+}
+
+.offer-category-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  background: linear-gradient(180deg, #eaf2ff, #dbeafe);
+  border: 1px solid #bcd4fb;
+  border-radius: 999px;
+  padding: 6px 12px;
+  letter-spacing: 0.02em;
+}
+
+.offer-card-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.offer-card-title {
+  margin: 0;
+  font-size: clamp(15px, 2.4vw, 17px);
+  font-weight: 800;
+  line-height: 1.38;
+  letter-spacing: -0.015em;
+  color: #0f172a;
+}
+
+.instructor-step-lead--strong {
+  font-weight: 700;
+  font-size: 15px;
+  margin: 0 0 12px;
+  color: var(--text);
+}
+
+.wizard-schedule-block.wizard-schedule-block--bordered {
+  margin-top: 22px;
+  padding-top: 0;
+  border-top: none;
+  padding: 16px 18px;
+  border: 1px solid #e8eef7;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fafcff, #fff);
+}
+
+.hub-card-photo--training {
+  background: linear-gradient(145deg, #e8f1ff, #dbeafe);
+}
+
+/* Training offer cards: строки с общей линией-разделителем, ровные отступы */
+.offer-hub-card .hub-card-center {
+  min-width: 0;
+  padding-right: 2px;
+}
+
+.offer-hub-card .hub-price-row--single {
+  margin-bottom: 14px;
+}
+
+.offer-hub-card .hub-price-cell {
+  padding: 12px 14px;
+}
+
+.hub-info-grid.hub-info-grid--training {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.hub-info-grid--training .offer-info-row {
+  display: grid;
+  gap: 12px 18px;
+  padding: 14px 0;
+  border-bottom: 1px dashed #dfe7f4;
+}
+
+.hub-info-grid--training .offer-info-row:first-child {
+  padding-top: 2px;
+}
+
+.hub-info-grid--training .offer-info-row:last-child {
+  border-bottom: none;
+  padding-bottom: 2px;
+}
+
+.hub-info-grid--training .offer-info-row--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.hub-info-grid--training .offer-info-row--1 {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.hub-info-item.hub-info-item--training {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.hub-info-item--training .hub-info-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.hub-info-item--training .hub-info-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+.hub-info-item--training .hub-info-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+  word-break: break-word;
+  margin-top: 0;
+}
+
+.hub-svg.hub-svg--training {
+  flex-shrink: 0;
+  align-self: center;
+  margin-top: 0;
+  color: #64748b;
+}
+
+@media (max-width: 900px) {
+  .hub-info-grid--training .offer-info-row--3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .hub-info-grid--training .offer-info-row--3 {
+    grid-template-columns: 1fr;
+  }
 }
 
 .registration-section .wizard-panel-heading {
@@ -917,6 +1505,84 @@ select:focus {
   font-weight: 800;
 }
 
+.training-offers-shell {
+  margin-bottom: 20px;
+}
+
+.offer-hub-card.is-offer-hidden {
+  display: none !important;
+}
+
+.offer-hub-card.instructor-hub-card {
+  grid-template-columns: 156px minmax(0, 1fr) auto;
+}
+
+.offer-hub-card.instructor-hub-card.is-selected {
+  border-color: var(--primary);
+  box-shadow:
+    0 10px 32px rgba(37, 99, 235, 0.12),
+    0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.hub-card-photo--training {
+  position: relative;
+  align-self: start;
+}
+
+.hub-photo-thumb {
+  width: 140px;
+  height: 96px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 3px solid #e8f1ff;
+  display: block;
+  background: #eef4ff;
+}
+
+.offer-thumb-badges {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: calc(100% - 16px);
+}
+
+.offer-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
+  line-height: 1.25;
+}
+
+.offer-badge--loc {
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text);
+  border: 1px solid #e2e8f0;
+}
+
+.offer-badge--extra {
+  background: #7c3aed;
+  color: #fff;
+  border: 1px solid #6d28d9;
+}
+
+.hub-price-row--single {
+  grid-template-columns: minmax(0, 240px);
+}
+
+.training-detail-dialog .inst-dialog-summary {
+  grid-template-columns: 120px 1fr;
+}
+
+.inst-dialog-photo--wide {
+  border-radius: 12px;
+  object-fit: cover;
+  border: 3px solid #e8f1ff;
+}
+
 /* Detail modal */
 .inst-detail-dialog {
   margin: auto;
@@ -927,6 +1593,11 @@ select:focus {
   padding: 0;
   background: transparent;
   box-shadow: none;
+}
+
+/* Contacts/payment open after closing course modal — stay above prior backdrop */
+.registration-flow-dialog.inst-detail-dialog {
+  z-index: 5000;
 }
 
 .inst-detail-dialog::backdrop {
@@ -1059,6 +1730,122 @@ select:focus {
   margin-top: 16px;
 }
 
+.sky-course-card.sky-course-card--pick {
+  cursor: default;
+}
+
+.sky-course-row-open {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  border-radius: 12px;
+}
+
+.sky-course-row-open .sky-course-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  min-height: 52px;
+}
+
+.course-dialog-media {
+  width: 120px;
+  height: 82px;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.course-dialog-media--placeholder .sky-course-icon--generic {
+  width: 48px;
+  height: 48px;
+}
+
+.course-detail-dialog .inst-dialog-summary {
+  grid-template-columns: minmax(88px, 120px) 1fr;
+}
+
+.inst-modal-price-row--course {
+  flex-wrap: wrap;
+}
+
+.inst-dialog-schedule-note {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.registration-flow-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.registration-flow-fields .field-grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 520px) {
+  .registration-flow-fields .field-grid-two {
+    grid-template-columns: 1fr;
+  }
+}
+
+.inst-dialog-sheet--form input[type="text"],
+.inst-dialog-sheet--form input[type="tel"],
+.inst-dialog-sheet--form input[type="email"],
+.inst-dialog-sheet--form textarea {
+  width: 100%;
+  margin-top: 4px;
+  box-sizing: border-box;
+}
+
+.registration-payment-fieldset {
+  border: none;
+  margin: 12px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.registration-payment-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.registration-payment-option input {
+  flex-shrink: 0;
+}
+
+.registration-payment-option:has(input:checked) {
+  border-color: var(--primary);
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.registration-terms-label {
+  margin-top: 8px;
+}
+
 @media (max-width: 760px) {
   .instructor-hub-card {
     grid-template-columns: 72px 1fr;
@@ -1088,11 +1875,21 @@ select:focus {
     grid-row: 1;
   }
 
-  .hub-info-grid {
+  .hub-info-grid:not(.hub-info-grid--training) {
     grid-template-columns: 1fr 1fr;
   }
 
   .hub-photo-round {
+    width: 72px;
+    height: 72px;
+  }
+
+  .offer-hub-card.instructor-hub-card {
+    grid-template-columns: 72px 1fr;
+    grid-template-rows: auto auto auto;
+  }
+
+  .hub-photo-thumb {
     width: 72px;
     height: 72px;
   }
@@ -1103,7 +1900,7 @@ select:focus {
 }
 
 @media (max-width: 520px) {
-  .hub-info-grid {
+  .hub-info-grid:not(.hub-info-grid--training) {
     grid-template-columns: 1fr;
   }
 }
@@ -1367,6 +2164,32 @@ select:focus {
 
   .registration-layout {
     grid-template-columns: 1fr;
+  }
+
+  .registration-layout--sky {
+    grid-template-columns: 1fr;
+  }
+
+  .wizard-sidebar {
+    position: static;
+    order: -1;
+  }
+
+  .wizard-sidebar-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+  }
+
+  .wizard-sidebar-item {
+    grid-template-columns: 36px 1fr;
+    padding: 6px 0;
+    flex: 1 1 140px;
+    max-width: 200px;
+  }
+
+  .wizard-sidebar-item:not(:last-child)::after {
+    display: none;
   }
 
   .price-summary {

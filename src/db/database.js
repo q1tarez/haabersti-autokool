@@ -11,6 +11,7 @@ const memory = {
   courseRegistrations: [],
   courses: [],
   instructors: [],
+  trainingOffers: [],
 };
 
 try {
@@ -141,6 +142,37 @@ function runAsync(sql, params = []) {
       memory.instructors = memory.instructors.filter((r) => String(r.id) !== String(params[0]));
       return Promise.resolve({ changes: before === memory.instructors.length ? 0 : 1 });
     }
+    if (query.startsWith("INSERT INTO TRAINING_OFFERS")) {
+      memory.trainingOffers.push({
+        id: params[0],
+        course_id: params[1],
+        variant_key: params[2],
+        sort_order: Number(params[3]) || 0,
+        is_active: Number(params[4]) ? 1 : 0,
+        payload: params[5],
+        updated_at:
+          typeof params[6] === "string" && params[6] ? params[6] : new Date().toISOString(),
+      });
+      return Promise.resolve({ changes: 1 });
+    }
+    if (query.startsWith("UPDATE TRAINING_OFFERS SET")) {
+      const id = params[params.length - 1];
+      const row = memory.trainingOffers.find((r) => String(r.id) === String(id));
+      if (row) {
+        row.payload = params[0];
+        row.sort_order = Number(params[1]) || 0;
+        row.variant_key = params[2];
+        row.course_id = params[3];
+        row.is_active = Number(params[4]) ? 1 : 0;
+        row.updated_at = typeof params[5] === "string" ? params[5] : new Date().toISOString();
+      }
+      return Promise.resolve({ changes: row ? 1 : 0 });
+    }
+    if (query.startsWith("DELETE FROM TRAINING_OFFERS")) {
+      const before = memory.trainingOffers.length;
+      memory.trainingOffers = memory.trainingOffers.filter((r) => String(r.id) !== String(params[0]));
+      return Promise.resolve({ changes: before === memory.trainingOffers.length ? 0 : 1 });
+    }
     return Promise.resolve({ changes: 0 });
   }
 
@@ -190,6 +222,16 @@ function getAsync(sql, params = []) {
       const hit = memory.instructors.find((r) => String(r.id) === String(params[0]));
       return Promise.resolve(hit ? { id: hit.id } : undefined);
     }
+    if (query.startsWith("SELECT * FROM TRAINING_OFFERS WHERE ID = ?")) {
+      return Promise.resolve(memory.trainingOffers.find((r) => String(r.id) === String(params[0])));
+    }
+    if (query.startsWith("SELECT ID FROM TRAINING_OFFERS WHERE ID = ?")) {
+      const hit = memory.trainingOffers.find((r) => String(r.id) === String(params[0]));
+      return Promise.resolve(hit ? { id: hit.id } : undefined);
+    }
+    if (query.startsWith("SELECT COUNT(*) AS COUNT FROM TRAINING_OFFERS")) {
+      return Promise.resolve({ count: memory.trainingOffers.length });
+    }
     return Promise.resolve(undefined);
   }
 
@@ -237,6 +279,18 @@ function allAsync(sql, params = []) {
           a.sort_order !== b.sort_order ? a.sort_order - b.sort_order : String(a.id).localeCompare(String(b.id))
         )
       );
+    }
+    if (query.includes("FROM TRAINING_OFFERS")) {
+      let rows = [...memory.trainingOffers];
+      if (query.includes("WHERE IS_ACTIVE = 1")) {
+        rows = rows.filter((r) => r.is_active);
+      }
+      rows.sort((a, b) => {
+        if (a.course_id !== b.course_id) return String(a.course_id).localeCompare(String(b.course_id));
+        if (a.sort_order !== b.sort_order) return (a.sort_order || 0) - (b.sort_order || 0);
+        return String(a.id).localeCompare(String(b.id));
+      });
+      return Promise.resolve(rows);
     }
     return Promise.resolve([]);
   }
@@ -338,6 +392,70 @@ async function initDatabase() {
         created_at: new Date().toISOString(),
       });
     }
+
+    const extraTrainingCourses = [
+      {
+        id: "first-aid",
+        name_et: "Esmaabi kursus",
+        name_ru: "Курс первой помощи",
+        name_en: "First aid course",
+        description_et: "Esmaabi teooria ja praktika.",
+        description_ru: "Теория и практика первой помощи.",
+        description_en: "First aid theory and practice.",
+        price: "55 EUR",
+        duration_et: "Paindlik",
+        duration_ru: "Гибкий график",
+        duration_en: "Flexible",
+      },
+      {
+        id: "night-driving",
+        name_et: "Öine sõit",
+        name_ru: "Тёмное вождение",
+        name_en: "Night driving",
+        description_et: "Öise sõidu kohustuslik etapp.",
+        description_ru: "Обязательный этап тёмного вождения.",
+        description_en: "Mandatory night driving stage.",
+        price: "70 EUR",
+        duration_et: "Simulaator või individuaalselt",
+        duration_ru: "Симулятор или индивидуально",
+        duration_en: "Simulator or individual",
+      },
+      {
+        id: "slippery-driving",
+        name_et: "Libeda tee sõit",
+        name_ru: "Скользкое вождение (RS)",
+        name_en: "Slippery road (RS)",
+        description_et: "RS koolitus libedal teel.",
+        description_ru: "Курс RS на скользкой дороге.",
+        description_en: "RS slippery road training.",
+        price: "110 EUR",
+        duration_et: "1 päev",
+        duration_ru: "1 день",
+        duration_en: "1 day",
+      },
+    ];
+    extraTrainingCourses.forEach((c) => {
+      if (!memory.courses.some((x) => x.id === c.id)) {
+        memory.courses.push({ ...c, is_active: 1, created_at: new Date().toISOString() });
+      }
+    });
+
+    if (memory.trainingOffers.length === 0) {
+      const defaults = require("../data/trainingOfferDefaults");
+      const now = new Date().toISOString();
+      defaults.forEach((row) => {
+        memory.trainingOffers.push({
+          id: row.id,
+          course_id: row.course_id,
+          variant_key: row.variant_key,
+          sort_order: row.sort_order,
+          is_active: 1,
+          payload: JSON.stringify(row.payload),
+          updated_at: now,
+        });
+      });
+    }
+
     const instructorSync = require("../data/instructorSync");
     await instructorSync.refreshInstructorsFromDatabase();
     return;
@@ -505,6 +623,83 @@ async function initDatabase() {
     "UPDATE courses SET price = ? WHERE id = ?",
     ["65 EUR", "extra-driving"]
   ).catch(() => null);
+
+  const upsertExtraCourses = [
+    [
+      "first-aid",
+      "Esmaabi kursus",
+      "Курс первой помощи",
+      "First aid course",
+      "Esmaabi teooria ja praktika.",
+      "Теория и практика первой помощи.",
+      "First aid theory and practice.",
+      "55 EUR",
+      "Paindlik",
+      "Гибкий график",
+      "Flexible",
+    ],
+    [
+      "night-driving",
+      "Öine sõit",
+      "Тёмное вождение",
+      "Night driving",
+      "Öise sõidu kohustuslik etapp.",
+      "Обязательный этап тёмного вождения.",
+      "Mandatory night driving stage.",
+      "70 EUR",
+      "Simulaator või individuaalselt",
+      "Симулятор или индивидуально",
+      "Simulator or individual",
+    ],
+    [
+      "slippery-driving",
+      "Libeda tee sõit",
+      "Скользкое вождение (RS)",
+      "Slippery road (RS)",
+      "RS koolitus libedal teel.",
+      "Курс RS на скользкой дороге.",
+      "RS slippery road training.",
+      "110 EUR",
+      "1 päev",
+      "1 день",
+      "1 day",
+    ],
+  ];
+  for (const row of upsertExtraCourses) {
+    const ex = await getAsync("SELECT id FROM courses WHERE id = ?", [row[0]]);
+    if (!ex) {
+      await runAsync(
+        `INSERT INTO courses
+        (id, name_et, name_ru, name_en, description_et, description_ru, description_en, price, duration_et, duration_ru, duration_en, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+        row
+      );
+    }
+  }
+
+  await runAsync(`
+    CREATE TABLE IF NOT EXISTS training_offers (
+      id TEXT PRIMARY KEY,
+      course_id TEXT NOT NULL,
+      variant_key TEXT,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      payload TEXT NOT NULL,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  const trainingOfferCount = await getAsync("SELECT COUNT(*) AS count FROM training_offers");
+  if (!trainingOfferCount || trainingOfferCount.count === 0) {
+    const defaults = require("../data/trainingOfferDefaults");
+    const nowIso = new Date().toISOString();
+    for (const row of defaults) {
+      await runAsync(
+        `INSERT INTO training_offers (id, course_id, variant_key, sort_order, is_active, payload, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?)`,
+        [row.id, row.course_id, row.variant_key ?? null, row.sort_order, JSON.stringify(row.payload), nowIso]
+      );
+    }
+  }
 
   await runAsync(`
     CREATE TABLE IF NOT EXISTS instructors (

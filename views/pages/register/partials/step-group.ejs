@@ -1,0 +1,31 @@
+<div class="step-panel" data-step="4">
+  <div class="wizard-step-inner wizard-step-inner--wide">
+    <h3 class="wizard-panel-heading"><%= t("wizardGroupTitle") %></h3>
+    <p class="wizard-panel-lead"><%= t("wizardGroupLead") %></p>
+
+    <div class="wizard-picked-course-card" id="wizardPickedCourseCard" aria-live="polite">
+      <p class="wizard-picked-kicker"><%= t("selectedCourse") %></p>
+      <span class="wizard-course-pill" id="summaryCourseBadge"><%= t("notSelected") %></span>
+      <div class="wizard-picked-course-row">
+        <span class="wizard-course-loc-pill" id="summaryCourseLoc" hidden></span>
+        <h4 class="wizard-picked-course-title" id="summaryCourse"><%= t("notSelected") %></h4>
+      </div>
+      <p class="wizard-picked-course-price" id="summaryPrice">—</p>
+      <p class="wizard-picked-course-hint"><%= t("priceHint") %></p>
+      <hr class="wizard-picked-divider" />
+      <p class="wizard-picked-includes-label"><strong><%= t("includes") %></strong></p>
+      <ul class="wizard-picked-includes-list">
+        <li><%= t("include1") %></li>
+        <li><%= t("include2") %></li>
+        <li><%= t("include3") %></li>
+      </ul>
+    </div>
+
+    <div id="instructorStepPlaceholder" class="instructor-step-placeholder" <%= typeof showInstrBoot !== 'undefined' && typeof showTrainingBoot !== 'undefined' && (showInstrBoot || showTrainingBoot) ? "hidden" : "" %>>
+      <p><%= t("instructorStepNeutral") %></p>
+    </div>
+
+    <%- include("./training-offers-section") %>
+    <%- include("./instructor-section") %>
+  </div>
+</div>

@@ -1,0 +1,35 @@
+<div class="step-panel" data-step="2">
+  <div class="wizard-step-inner">
+    <h3 class="wizard-panel-heading"><%= t("wizardCategoryTitle") %></h3>
+    <p class="wizard-panel-lead"><%= t("wizardCategoryLead") %></p>
+    <fieldset class="reg-category-fieldset">
+      <legend class="visually-hidden"><%= t("wizardStepCategory") %></legend>
+      <div class="sky-category-rows" role="radiogroup">
+        <label class="sky-category-card">
+          <input type="radio" name="wizardCategory" value="moto" />
+          <span class="sky-category-inner">
+            <span class="sky-category-icon sky-category-icon--moto" aria-hidden="true"></span>
+            <span class="sky-category-name"><%= t("filterCatMoto") %></span>
+            <span class="sky-course-chevron">›</span>
+          </span>
+        </label>
+        <label class="sky-category-card">
+          <input type="radio" name="wizardCategory" value="b" checked />
+          <span class="sky-category-inner">
+            <span class="sky-category-icon sky-category-icon--car" aria-hidden="true"></span>
+            <span class="sky-category-name"><%= t("filterCatB") %></span>
+            <span class="sky-course-chevron">›</span>
+          </span>
+        </label>
+        <label class="sky-category-card">
+          <input type="radio" name="wizardCategory" value="be" />
+          <span class="sky-category-inner">
+            <span class="sky-category-icon sky-category-icon--trailer" aria-hidden="true"></span>
+            <span class="sky-category-name"><%= t("filterCatBE") %></span>
+            <span class="sky-course-chevron">›</span>
+          </span>
+        </label>
+      </div>
+    </fieldset>
+  </div>
+</div>

@@ -1,0 +1,55 @@
+<% drivingInstructors.forEach((instr) => { %>
+  <dialog class="inst-detail-dialog" id="inst-dialog-<%= instr.id %>" aria-labelledby="inst-dialog-title-<%= instr.id %>">
+    <div class="inst-dialog-sheet">
+      <button type="button" class="inst-dialog-x" data-close-dialog aria-label="<%= t('modalCloseAria') %>">×</button>
+      <p class="inst-dialog-eyebrow"><%= t("instructorDrivingLessonsEyebrow") %></p>
+      <h2 class="inst-dialog-title" id="inst-dialog-title-<%= instr.id %>"><%= instr.name %></h2>
+      <div class="inst-dialog-summary">
+        <img class="inst-dialog-photo" src="<%= instr.photo %>" alt="" width="88" height="88" loading="lazy" />
+        <div>
+          <div class="inst-modal-price-row">
+            <div class="hub-price-cell">
+              <span class="hub-euro" aria-hidden="true">€</span>
+              <span class="hub-price-label"><%= t("instructorCostShort") %></span>
+              <span class="hub-price-value"><%= instr.priceFormattedPackage %></span>
+            </div>
+            <div class="hub-price-cell">
+              <span class="hub-euro" aria-hidden="true">€</span>
+              <span class="hub-price-label"><%= t("instructorPerLessonNote") %></span>
+              <span class="hub-price-value"><%= instr.priceLessonFormatted %></span>
+            </div>
+          </div>
+          <dl class="inst-modal-mini-grid">
+            <div>
+              <dt><%= t("instructorMeetingPoint") %></dt>
+              <dd><%= instr.location %></dd>
+            </div>
+            <div>
+              <dt><%= t("instructorFirstLesson") %></dt>
+              <dd class="hub-info-accent"><%= instr.firstLessonEta %></dd>
+            </div>
+            <div>
+              <dt><%= t("instructorRatingTotalShort") %></dt>
+              <dd><%= instr.rating %> (<%= instr.reviewCount %>)</dd>
+            </div>
+            <div>
+              <dt><%= t("instructorTransmission") %></dt>
+              <dd><%= instr.transmission %></dd>
+            </div>
+            <div>
+              <dt><%= t("instructorLanguageLabel") %></dt>
+              <dd><%= instr.spokenLanguage %></dd>
+            </div>
+            <div>
+              <dt><%= t("instructorPayPerLessonShort") %></dt>
+              <dd><% if (instr.payPerLessonOk) { %><span class="hub-check">✓</span><% } else { %>—<% } %></dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+      <hr class="inst-dialog-line" />
+      <div class="inst-dialog-prose"><%- instr.modalArticleHtml %></div>
+      <button type="button" class="btn inst-dialog-cta" data-select-instructor="<%= instr.id %>"><%= t("instructorModalRegisterCta") %> ›</button>
+    </div>
+  </dialog>
+<% }) %>

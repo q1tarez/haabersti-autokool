@@ -1,0 +1,62 @@
+<div class="step-panel" data-step="3">
+  <div class="wizard-step-inner">
+    <h3 class="wizard-panel-heading"><%= t("wizardTrainingTitle") %></h3>
+    <p class="wizard-panel-lead"><%= t("wizardTrainingLead") %></p>
+    <% const skySections = [
+      { key: "start", tkey: "wizardSection_start" },
+      { key: "quick", tkey: "wizardSection_quick" },
+      { key: "already", tkey: "wizardSection_already" },
+      { key: "after", tkey: "wizardSection_after" },
+    ]; %>
+    <fieldset class="sky-course-picker-group course-picker-group">
+      <legend class="visually-hidden"><%= t("selectCourse") %></legend>
+      <% if (!courses.length) { %>
+        <p><%= t("pickCourse") %></p>
+      <% } else { %>
+        <% skySections.forEach(({ key, tkey }) => { %>
+          <% const inSection = courses.filter((c) => c.wizardSection === key); %>
+          <% if (!inSection.length) return; %>
+          <h4 class="sky-section-title"><%= t(tkey) %></h4>
+          <div class="sky-course-rows" role="radiogroup" aria-required="true">
+            <% inSection.forEach((course) => { %>
+              <div
+                class="sky-course-card sky-course-card--pick<%= selectedCourseId === course.id ? " selected" : "" %>"
+                data-wizard-cats="<%= course.wizardCats.join(" ") %>"
+              >
+                <input
+                  type="radio"
+                  name="courseId"
+                  value="<%= course.id %>"
+                  id="course-radio-<%= course.id %>"
+                  class="sky-course-radio-input visually-hidden"
+                  tabindex="-1"
+                  data-price="<%= course.omitCourseListPrice ? "" : course.price %>"
+                  data-requires-instructor="<%= course.requiresInstructor ? "1" : "" %>"
+                  data-requires-training-offer="<%= course.requiresTrainingOffer ? "1" : "" %>"
+                  <%= selectedCourseId === course.id ? "checked" : "" %>
+                />
+                <button
+                  type="button"
+                  class="sky-course-row-open"
+                  data-open-dialog="course-dialog-<%= course.id %>"
+                  data-preselect-course="<%= course.id %>"
+                  aria-describedby="course-radio-<%= course.id %>"
+                >
+                  <span class="sky-course-inner">
+                    <span class="sky-course-icon sky-course-icon--generic" aria-hidden="true"></span>
+                    <span class="sky-course-text">
+                      <span class="sky-course-name course-picker-name"><%= course.name %></span>
+                      <span class="sky-course-meta"><%= t("duration") %>: <%= course.duration %><% if (!course.omitCourseListPrice) { %> · <%= course.price %><% } %></span>
+                    </span>
+                    <span class="sky-course-chevron" aria-hidden="true">›</span>
+                  </span>
+                </button>
+              </div>
+            <% }) %>
+          </div>
+        <% }) %>
+        <p id="wizardCourseEmpty" class="wizard-course-empty" hidden><%= t("wizardNoCoursesInCategory") %></p>
+      <% } %>
+    </fieldset>
+  </div>
+</div>

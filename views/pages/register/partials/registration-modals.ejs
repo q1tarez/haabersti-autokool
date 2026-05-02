@@ -1,0 +1,64 @@
+<dialog class="inst-detail-dialog registration-flow-dialog" id="registration-contact-dialog" aria-labelledby="registration-contact-title">
+  <div class="inst-dialog-sheet inst-dialog-sheet--form">
+    <button type="button" class="inst-dialog-x" data-close-dialog aria-label="<%= t('modalCloseAria') %>">×</button>
+    <h2 class="inst-dialog-title" id="registration-contact-title"><%= t("registrationContactTitle") %></h2>
+    <div class="registration-flow-fields">
+      <div class="field-grid-two">
+        <div>
+          <label for="regFirstName"><%= t("firstName") %></label>
+          <input id="regFirstName" type="text" required autocomplete="given-name" />
+        </div>
+        <div>
+          <label for="regLastName"><%= t("lastName") %></label>
+          <input id="regLastName" type="text" required autocomplete="family-name" />
+        </div>
+      </div>
+      <div>
+        <label for="regIsikukood"><%= t("isikukood") %></label>
+        <input id="regIsikukood" type="text" required inputmode="numeric" autocomplete="off" />
+      </div>
+      <div class="field-grid-two">
+        <div>
+          <label for="regPhone"><%= t("phone") %></label>
+          <input id="regPhone" type="tel" required autocomplete="tel" />
+        </div>
+        <div>
+          <label for="regEmail"><%= t("email") %></label>
+          <input id="regEmail" type="email" required autocomplete="email" />
+        </div>
+      </div>
+      <label class="check-label registration-terms-label">
+        <input type="checkbox" id="regAgreeTerms" required />
+        <span><%= t("agreeTerms") %></span>
+      </label>
+    </div>
+    <button type="button" class="btn inst-dialog-cta" id="registrationContactNext"><%= t("registrationContactNext") %> ›</button>
+  </div>
+</dialog>
+
+<dialog class="inst-detail-dialog registration-flow-dialog" id="registration-payment-dialog" aria-labelledby="registration-payment-title">
+  <div class="inst-dialog-sheet inst-dialog-sheet--form">
+    <button type="button" class="inst-dialog-x" data-close-dialog aria-label="<%= t('modalCloseAria') %>">×</button>
+    <h2 class="inst-dialog-title" id="registration-payment-title"><%= t("registrationPaymentTitle") %></h2>
+    <fieldset class="registration-payment-fieldset">
+      <legend class="visually-hidden"><%= t("paymentMethod") %></legend>
+      <label class="registration-payment-option">
+        <input type="radio" name="regPaymentMethod" value="cash" required />
+        <span><%= t("paymentCash") %></span>
+      </label>
+      <label class="registration-payment-option">
+        <input type="radio" name="regPaymentMethod" value="card" />
+        <span><%= t("paymentCard") %></span>
+      </label>
+      <label class="registration-payment-option">
+        <input type="radio" name="regPaymentMethod" value="bank" />
+        <span><%= t("paymentBank") %></span>
+      </label>
+    </fieldset>
+    <div>
+      <label for="regComment"><%= t("extraInfo") %></label>
+      <textarea id="regComment" rows="3" placeholder="<%= t('extraPlaceholder') %>"></textarea>
+    </div>
+    <button type="button" class="btn inst-dialog-cta" id="registrationFinalizeBtn"><%= t("submitRegistration") %> ›</button>
+  </div>
+</dialog>
