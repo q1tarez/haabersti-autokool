@@ -176,8 +176,12 @@ const translations = {
     contactSuccess: "Aitah! Me votame peagi uhendust.",
     registerRequired: "Palun taida kohustuslikud valjad.",
     registerSuccess: "Registreerimine on vastu voetud! Voetame sinuga peagi uhendust.",
-    registerBankEmailExtra:
-      "Kui valisite pangaumberkande, saatsime teie e-postile testkirja makse juhistega (kui SMTP pole seadistatud, on kiri serveri logis).",
+    registerBankEmailSent:
+      "Makse juhised saadeti teie e-postile (kui kiri ei jõua, kontrollige rämpsposti).",
+    registerBankFollowupGeneric:
+      "Registreerimine on vastu võetud. Makse juhised või kinnitus jõuavad teieni peagi e-posti või telefoni teel.",
+    registerBankPaymentManual:
+      "Registreerimine on vastu võetud. Panga rekvizdiid ja summa kinnitatakse teiega — võtke meiega ühendust või oodake vastust.",
     adminLoginTitle: "Admin login",
     username: "Kasutajanimi",
     password: "Parool",
@@ -366,8 +370,12 @@ const translations = {
     contactSuccess: "Спасибо! Мы скоро с вами свяжемся.",
     registerRequired: "Пожалуйста, заполните обязательные поля.",
     registerSuccess: "Заявка принята! Мы скоро с вами свяжемся.",
-    registerBankEmailExtra:
-      "Вы выбрали банковский перевод — на вашу почту отправлено тестовое письмо с реквизитами (без настройки SMTP текст дублируется в лог сервера).",
+    registerBankEmailSent:
+      "Инструкция и реквизиты отправлены на вашу почту (если письма нет, проверьте спам).",
+    registerBankFollowupGeneric:
+      "Заявка принята. Инструкции по оплате или подтверждение мы отправим вам по почте или свяжемся по телефону.",
+    registerBankPaymentManual:
+      "Заявка принята. Реквизиты и сумму мы уточним с вами — свяжитесь с нами или дождитесь ответа.",
     adminLoginTitle: "Вход в админку",
     username: "Логин",
     password: "Пароль",
@@ -556,8 +564,12 @@ const translations = {
     contactSuccess: "Thank you! We will contact you soon.",
     registerRequired: "Please fill in all required fields.",
     registerSuccess: "Registration received! We will contact you soon.",
-    registerBankEmailExtra:
-      "You chose bank transfer — we sent a test email with payment details (without SMTP it is only logged on the server).",
+    registerBankEmailSent:
+      "Payment instructions were sent to your email (if you do not see it, check spam).",
+    registerBankFollowupGeneric:
+      "Registration received. We will email or call you shortly with payment instructions or a confirmation.",
+    registerBankPaymentManual:
+      "Registration received. We will confirm bank details and the amount with you — contact us or wait for our reply.",
     adminLoginTitle: "Admin login",
     username: "Username",
     password: "Password",

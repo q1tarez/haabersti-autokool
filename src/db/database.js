@@ -3,9 +3,12 @@ const bcrypt = require("bcrypt");
 const { runPostgresMigrations } = require("./postgresInit");
 
 const isVercel = process.env.VERCEL === "1";
-/** Neon: стандартное имя или префикс из Vercel Storage (например STORAGE_URL). */
+/** Neon / Vercel Postgres: pooled URL (см. также POSTGRES_URL из интеграции Storage). */
 const neonConnectionString = String(
-  process.env.DATABASE_URL || process.env.STORAGE_URL || ""
+  process.env.DATABASE_URL ||
+    process.env.STORAGE_URL ||
+    process.env.POSTGRES_URL ||
+    ""
 ).trim();
 const useNeon = Boolean(neonConnectionString);
 

@@ -267,17 +267,24 @@ router.post("/register", async (req, res, next) => {
 
     let successBankInfo = null;
     if (payNorm === "bank") {
-      successBankInfo = req.t("registerBankEmailExtra");
       try {
-        await sendBankTransferInstructionsMail({
+        const mailResult = await sendBankTransferInstructionsMail({
           to: email,
           lang: req.lang,
           fullName,
           courseName: chosenCourse.name,
         });
+        if (mailResult.mode === "smtp") {
+          successBankInfo = req.t("registerBankEmailSent");
+        } else if (mailResult.mode === "skipped") {
+          successBankInfo = req.t("registerBankPaymentManual");
+        } else {
+          successBankInfo = req.t("registerBankFollowupGeneric");
+        }
       } catch (mailErr) {
         // eslint-disable-next-line no-console
         console.error("Bank transfer email failed:", mailErr.message);
+        successBankInfo = req.t("registerBankFollowupGeneric");
       }
     }
 
