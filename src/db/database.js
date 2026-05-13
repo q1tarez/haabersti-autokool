@@ -2,6 +2,10 @@ const path = require("path");
 const bcrypt = require("bcrypt");
 const { runPostgresMigrations } = require("./postgresInit");
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 const isVercel = process.env.VERCEL === "1";
 /** Neon / Vercel Postgres: pooled URL (см. также POSTGRES_URL из интеграции Storage). */
 const neonConnectionString = String(
@@ -382,12 +386,31 @@ function allAsync(sql, params = []) {
   });
 }
 
+async function initNeonDatabase() {
+  await runPostgresMigrations({ runAsync, getAsync });
+  const instructorSync = require("../data/instructorSync");
+  await instructorSync.refreshInstructorsFromDatabase();
+}
+
 async function initDatabase() {
   if (neonPool) {
-    await runPostgresMigrations({ runAsync, getAsync });
-    const instructorSync = require("../data/instructorSync");
-    await instructorSync.refreshInstructorsFromDatabase();
-    return;
+    const maxAttempts = Math.max(1, Math.min(12, Number(process.env.DB_INIT_ATTEMPTS || 6)));
+    let lastError = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        await initNeonDatabase();
+        return;
+      } catch (err) {
+        lastError = err;
+        const msg = err && err.message ? err.message : String(err);
+        // eslint-disable-next-line no-console
+        console.warn(`[db] Neon init attempt ${attempt}/${maxAttempts} failed: ${msg}`);
+        if (attempt < maxAttempts) {
+          await sleep(Math.min(400 * 2 ** (attempt - 1), 8000));
+        }
+      }
+    }
+    throw lastError;
   }
 
   if (useMemoryDb) {
