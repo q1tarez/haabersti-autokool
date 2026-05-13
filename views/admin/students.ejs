@@ -31,7 +31,7 @@
       <tbody>
         <% students.forEach((item) => { %>
           <tr>
-            <td><%= item.created_at %></td>
+            <td><%= formatEtDateTime(item.created_at) %></td>
             <td><strong><%= item.full_name %></strong></td>
             <td>
               IK: <%= item.isikukood || "-" %><br />

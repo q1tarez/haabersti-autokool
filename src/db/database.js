@@ -1,10 +1,19 @@
 const path = require("path");
 const bcrypt = require("bcrypt");
+const { runPostgresMigrations } = require("./postgresInit");
 
 const isVercel = process.env.VERCEL === "1";
+/** Neon: стандартное имя или префикс из Vercel Storage (например STORAGE_URL). */
+const neonConnectionString = String(
+  process.env.DATABASE_URL || process.env.STORAGE_URL || ""
+).trim();
+const useNeon = Boolean(neonConnectionString);
+
 let sqlite3;
 let db = null;
-let useMemoryDb = isVercel;
+/** @type {import("@neondatabase/serverless").Pool | null} */
+let neonPool = null;
+let useMemoryDb = isVercel && !useNeon;
 const memory = {
   admins: [],
   contacts: [],
@@ -15,20 +24,72 @@ const memory = {
 };
 
 try {
-  if (useMemoryDb) {
-    throw new Error("Use in-memory DB on Vercel");
+  if (useNeon) {
+    const { Pool } = require("@neondatabase/serverless");
+    neonPool = new Pool({ connectionString: neonConnectionString, max: 10 });
+  } else if (useMemoryDb) {
+    throw new Error("Use in-memory DB on Vercel without DATABASE_URL or STORAGE_URL");
+  } else {
+    // eslint-disable-next-line global-require
+    sqlite3 = require("sqlite3").verbose();
+    const dbPath = path.join(__dirname, "../../data.sqlite");
+    db = new sqlite3.Database(dbPath);
   }
-  // eslint-disable-next-line global-require
-  sqlite3 = require("sqlite3").verbose();
-  const dbPath = isVercel ? path.join("/tmp", "data.sqlite") : path.join(__dirname, "../../data.sqlite");
-  db = new sqlite3.Database(dbPath);
 } catch (error) {
+  if (useNeon) {
+    // eslint-disable-next-line no-console
+    console.error("Neon init failed:", error.message);
+    throw error;
+  }
   useMemoryDb = true;
   // eslint-disable-next-line no-console
   console.warn("SQLite unavailable, using in-memory DB fallback.");
 }
 
+function sqlToNeon(sql) {
+  let n = 0;
+  const numbered = sql.replace(/\?/g, () => `$${++n}`);
+  return numbered.replace(/\bLIKE\b/gi, "ILIKE");
+}
+
+function normalizePgRow(row) {
+  if (!row || typeof row !== "object") return row;
+  const out = { ...row };
+  if (Object.prototype.hasOwnProperty.call(out, "count") && out.count != null) {
+    out.count = Number(out.count);
+  }
+  if (Object.prototype.hasOwnProperty.call(out, "is_active") && out.is_active != null) {
+    out.is_active = Number(out.is_active);
+  }
+  if (Object.prototype.hasOwnProperty.call(out, "sort_order") && out.sort_order != null) {
+    out.sort_order = Number(out.sort_order);
+  }
+  return out;
+}
+
+async function neonRun(sql, params = []) {
+  const result = await neonPool.query(sqlToNeon(sql), params);
+  const insertedId = result.rows?.[0]?.id;
+  return {
+    lastID: insertedId != null ? Number(insertedId) : 0,
+    changes: result.rowCount || 0,
+  };
+}
+
+async function neonGet(sql, params = []) {
+  const result = await neonPool.query(sqlToNeon(sql), params);
+  return normalizePgRow(result.rows[0]);
+}
+
+async function neonAll(sql, params = []) {
+  const result = await neonPool.query(sqlToNeon(sql), params);
+  return result.rows.map((r) => normalizePgRow(r));
+}
+
 function runAsync(sql, params = []) {
+  if (neonPool) {
+    return neonRun(sql, params);
+  }
   if (useMemoryDb) {
     const query = sql.trim().toUpperCase();
 
@@ -188,6 +249,9 @@ function runAsync(sql, params = []) {
 }
 
 function getAsync(sql, params = []) {
+  if (neonPool) {
+    return neonGet(sql, params);
+  }
   if (useMemoryDb) {
     const query = sql.trim().toUpperCase();
     if (query.includes("FROM ADMINS WHERE USERNAME")) {
@@ -247,6 +311,9 @@ function getAsync(sql, params = []) {
 }
 
 function allAsync(sql, params = []) {
+  if (neonPool) {
+    return neonAll(sql, params);
+  }
   if (useMemoryDb) {
     const query = sql.trim().toUpperCase();
     if (query.includes("SELECT * FROM COURSES")) {
@@ -307,6 +374,13 @@ function allAsync(sql, params = []) {
 }
 
 async function initDatabase() {
+  if (neonPool) {
+    await runPostgresMigrations({ runAsync, getAsync });
+    const instructorSync = require("../data/instructorSync");
+    await instructorSync.refreshInstructorsFromDatabase();
+    return;
+  }
+
   if (useMemoryDb) {
     const adminCredentials = [
       { username: "talehh_gusseinov", password: "hab_autokool2026" },

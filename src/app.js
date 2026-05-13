@@ -5,6 +5,7 @@ const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 const { initDatabase } = require("./db/database");
+const { formatEtDateTime } = require("./formatEtDateTime");
 const { supportedLanguages, defaultLanguage, t } = require("./i18n");
 const siteRoutes = require("./routes/siteRoutes");
 const adminRoutes = require("./routes/adminRoutes");
@@ -39,6 +40,7 @@ app.use((req, res, next) => {
   req.t = (key) => t(activeLang, key);
   res.locals.lang = activeLang;
   res.locals.t = req.t;
+  res.locals.formatEtDateTime = formatEtDateTime;
   next();
 });
 

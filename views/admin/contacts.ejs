@@ -20,7 +20,7 @@
       <tbody>
         <% contacts.forEach((item) => { %>
           <tr>
-            <td><%= item.created_at %></td>
+            <td><%= formatEtDateTime(item.created_at) %></td>
             <td><%= item.full_name %></td>
             <td><%= item.phone %></td>
             <td><%= item.message || "-" %></td>

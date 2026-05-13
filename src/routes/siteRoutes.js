@@ -5,6 +5,9 @@ const { courseRequiresTrainingOffer, mergeTrainingOfferRow } = require("../data/
 
 const router = express.Router();
 
+const REG_COMMENT_STUDY_LANG_KEYS = { et: "filterLangEt", ru: "filterLangRu", en: "filterLangEn" };
+const REG_COMMENT_PAYMENT_KEYS = { cash: "paymentCash", card: "paymentCard", bank: "paymentBank" };
+
 function registerViewLocals(req, overrides = {}) {
   return {
     title: req.t("registerWizardTitle"),
@@ -171,6 +174,7 @@ router.post("/register", async (req, res, next) => {
       return;
     }
 
+    let trainingOfferRowForNote = null;
     if (courseRequiresTrainingOffer(courseId)) {
       const tid = String(trainingOfferId || "").trim();
       const row = tid ? await getAsync("SELECT * FROM training_offers WHERE id = ?", [tid]) : null;
@@ -186,6 +190,7 @@ router.post("/register", async (req, res, next) => {
         );
         return;
       }
+      trainingOfferRowForNote = row;
     }
 
     if (courseRequiresInstructor(courseId)) {
@@ -221,18 +226,35 @@ router.post("/register", async (req, res, next) => {
       return;
     }
 
-    const registrationNote = [
-      studyLang ? `study_lang:${studyLang}` : "",
-      lessonTime ? `lesson_time:${lessonTime}` : "",
-      payNorm ? `payment:${payNorm}` : "",
-      courseRequiresInstructor(courseId) && instructorId ? `instructor:${instructorId}` : "",
-      courseRequiresTrainingOffer(courseId) && trainingOfferId
-        ? `training_offer:${String(trainingOfferId).trim()}`
-        : "",
-      comment || "",
-    ]
-      .filter(Boolean)
-      .join(" | ");
+    const noteParts = [];
+    const studyLangCode = String(studyLang || "").trim();
+    const studyLangI18nKey = REG_COMMENT_STUDY_LANG_KEYS[studyLangCode];
+    if (studyLangI18nKey) {
+      noteParts.push(`${req.t("regCommentStudyLangLabel")}: ${req.t(studyLangI18nKey)}`);
+    }
+    const lessonTimeTrim = String(lessonTime || "").trim();
+    if (lessonTimeTrim) {
+      noteParts.push(`${req.t("lessonTime")}: ${lessonTimeTrim}`);
+    }
+    noteParts.push(`${req.t("paymentMethod")}: ${req.t(REG_COMMENT_PAYMENT_KEYS[payNorm])}`);
+    if (courseRequiresInstructor(courseId) && instructorId) {
+      const instr = getInstructorById(instructorId);
+      if (instr?.name) {
+        noteParts.push(`${req.t("regCommentInstructorLabel")}: ${instr.name}`);
+      }
+    }
+    if (trainingOfferRowForNote) {
+      const offerLoc = mergeTrainingOfferRow(trainingOfferRowForNote, req.lang);
+      const offerSummary = [offerLoc.title, offerLoc.dateDisplay].filter(Boolean).join(", ");
+      if (offerSummary) {
+        noteParts.push(`${req.t("regCommentTrainingOfferLabel")}: ${offerSummary}`);
+      }
+    }
+    const userComment = String(comment || "").trim();
+    if (userComment) {
+      noteParts.push(userComment);
+    }
+    const registrationNote = noteParts.join("; ");
 
     await runAsync(
       `INSERT INTO course_registrations
