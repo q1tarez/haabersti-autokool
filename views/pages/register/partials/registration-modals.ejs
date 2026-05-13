@@ -47,8 +47,8 @@
         <span><%= t("paymentCash") %></span>
       </label>
       <label class="registration-payment-option">
-        <input type="radio" name="regPaymentMethod" value="card" />
-        <span><%= t("paymentCard") %></span>
+        <input type="radio" name="regPaymentMethod" value="card" disabled />
+        <span><%= t("paymentCard") %> — <%= t("paymentTemporarilyUnavailable") %></span>
       </label>
       <label class="registration-payment-option">
         <input type="radio" name="regPaymentMethod" value="bank" />

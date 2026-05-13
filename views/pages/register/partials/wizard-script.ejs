@@ -179,9 +179,9 @@
         }
 
         const payV = String(snap.paymentMethod || "").trim();
-        if (/^(cash|card|bank)$/.test(payV)) {
+        if (/^(cash|bank)$/.test(payV)) {
           const pmr = registrationPaymentDialog?.querySelector(`input[name="regPaymentMethod"][value="${payV}"]`);
-          if (pmr) pmr.checked = true;
+          if (pmr && !pmr.disabled) pmr.checked = true;
           const hid = document.getElementById("hid_paymentMethod");
           if (hid) hid.value = payV;
         }

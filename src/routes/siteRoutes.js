@@ -296,7 +296,7 @@ router.post("/register", async (req, res, next) => {
     }
 
     const payRaw = String(paymentMethod || "").trim();
-    const allowedPay = ["cash", "card", "bank"];
+    const allowedPay = ["cash", "bank"];
     const payNorm = allowedPay.includes(payRaw) ? payRaw : "";
 
     if (!payNorm) {
