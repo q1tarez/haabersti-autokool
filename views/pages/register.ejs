@@ -31,6 +31,7 @@
       data-pick-msg="<%= String(t("instructorPickVisibleError")).replace(/"/g, "&quot;").replace(/</g, "&lt;") %>"
       data-training-pick-msg="<%= String(t("trainingOfferPickVisibleError")).replace(/"/g, "&quot;").replace(/</g, "&lt;") %>"
     >
+      <input type="hidden" name="uiLang" id="hid_uiLang" value="<%= lang %>" />
       <%- include("./register/partials/step-lang") %>
       <%- include("./register/partials/step-category") %>
       <%- include("./register/partials/step-course") %>

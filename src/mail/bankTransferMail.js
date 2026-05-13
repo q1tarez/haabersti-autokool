@@ -8,13 +8,11 @@ function getBankDetails() {
   const iban = String(process.env.BANK_IBAN || "")
     .trim()
     .replace(/\s+/g, " ");
-  const bic = String(process.env.BANK_BIC || "").trim();
   const phone = String(process.env.SCHOOL_CONTACT_PHONE || "").trim();
   const contactEmail = String(process.env.SCHOOL_CONTACT_EMAIL || "").trim();
   return {
     beneficiary,
     iban,
-    bic,
     phone,
     contactEmail,
     isComplete: Boolean(beneficiary && iban),
@@ -38,7 +36,6 @@ const COPY = {
       `Valisite kursile «${course}» tasumise pangaumberkandega. All on meie rekvizidid. Makse selgituse väljale kirjutage oma nimi ja kursus.`,
     labelBeneficiary: "Saaja",
     labelIban: "IBAN",
-    labelBic: "BIC / SWIFT",
     labelPurpose: "Makse selgitus",
     notice:
       "Kui summa või saaja ei vasta kokkuleppele, helistage või kirjutage enne tasumist. Lõplik hind võib kinnituda telefoni teel.",
@@ -58,7 +55,6 @@ const COPY = {
       `Вы выбрали оплату банковским переводом по курсу «${course}». Ниже — наши реквизиты. В назначении платежа укажите своё имя и курс.`,
     labelBeneficiary: "Получатель",
     labelIban: "IBAN",
-    labelBic: "BIC / SWIFT",
     labelPurpose: "Назначение платежа",
     notice:
       "Если сумма или получатель не совпадают с договорённостью, свяжитесь с нами до оплаты. Итоговая цена может быть подтверждена по телефону.",
@@ -78,7 +74,6 @@ const COPY = {
       `You chose bank transfer for «${course}». Below are our payment details. Please put your name and course in the payment reference.`,
     labelBeneficiary: "Beneficiary",
     labelIban: "IBAN",
-    labelBic: "BIC / SWIFT",
     labelPurpose: "Payment reference",
     notice:
       "If the amount or beneficiary does not match what we agreed, contact us before paying. The final price may be confirmed by phone.",
@@ -115,7 +110,6 @@ function buildMessage(lang, fullName, courseName, bank) {
 
   const ben = bank.beneficiary;
   const iban = bank.iban;
-  const bic = bank.bic;
 
   const textLines = [
     L.greeting(fullName),
@@ -124,7 +118,6 @@ function buildMessage(lang, fullName, courseName, bank) {
     "",
     `${L.labelBeneficiary}: ${ben}`,
     `${L.labelIban}: ${iban}`,
-    ...(bic ? [`${L.labelBic}: ${bic}`] : []),
     `${L.labelPurpose}: ${purpose}`,
     "",
     L.notice,
@@ -141,13 +134,6 @@ function buildMessage(lang, fullName, courseName, bank) {
   const base = siteBaseUrl();
   const logoHtml = base
     ? `<img src="${escapeHtml(base)}/images/haabersti-autokool-icon.png" width="48" height="48" alt="" style="display:block;border:0;margin:0 0 12px;" />`
-    : "";
-
-  const bicRow = bic
-    ? `<tr>
-          <td style="padding:8px 0;font-size:13px;color:#64748b;vertical-align:top;">${L.labelBic}</td>
-          <td style="padding:8px 0;font-size:15px;font-weight:700;color:#0f172a;font-family:Consolas,'Courier New',monospace;">${escapeHtml(bic)}</td>
-        </tr>`
     : "";
 
   const contactBlock =
@@ -204,7 +190,6 @@ function buildMessage(lang, fullName, courseName, bank) {
                         <td style="padding:8px 0;font-size:13px;color:#64748b;vertical-align:top;">${L.labelIban}</td>
                         <td style="padding:8px 0;font-size:16px;font-weight:700;color:#0f172a;letter-spacing:0.06em;font-family:Consolas,'Courier New',monospace;">${escapeHtml(formatIbanDisplay(iban))}</td>
                       </tr>
-                      ${bicRow}
                       <tr>
                         <td style="padding:8px 0;font-size:13px;color:#64748b;vertical-align:top;">${L.labelPurpose}</td>
                         <td style="padding:8px 0;font-size:15px;color:#0f172a;line-height:1.45;">${safePurpose}</td>
@@ -258,8 +243,8 @@ async function sendBankTransferInstructionsMail({ to, lang, fullName, courseName
 
   if (!bank.isComplete) {
     // eslint-disable-next-line no-console
-    console.error(
-      "[bank-transfer mail] Missing BANK_BENEFICIARY_NAME or BANK_IBAN — set them in environment variables."
+    console.warn(
+      "[bank-transfer mail] Add BANK_BENEFICIARY_NAME and BANK_IBAN in Vercel → Environment Variables (same names as in .env.example), then redeploy."
     );
     return { ok: false, mode: "skipped", reason: "missing-bank-config" };
   }

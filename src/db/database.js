@@ -191,6 +191,13 @@ function runAsync(sql, params = []) {
       memory.contacts = memory.contacts.filter((c) => String(c.id) !== String(params[0]));
       return Promise.resolve({ changes: 1 });
     }
+    if (query.startsWith("DELETE FROM COURSE_REGISTRATIONS")) {
+      const before = memory.courseRegistrations.length;
+      memory.courseRegistrations = memory.courseRegistrations.filter(
+        (r) => String(r.id) !== String(params[0])
+      );
+      return Promise.resolve({ changes: before === memory.courseRegistrations.length ? 0 : 1 });
+    }
     if (query.startsWith("INSERT INTO INSTRUCTORS")) {
       memory.instructors.push({
         id: params[0],

@@ -3,8 +3,21 @@ const { runAsync, allAsync, getAsync } = require("../db/database");
 const { courseRequiresInstructor, getInstructorsForLang, getInstructorById } = require("../data/drivingInstructors");
 const { courseRequiresTrainingOffer, mergeTrainingOfferRow } = require("../data/trainingOffers");
 const { sendBankTransferInstructionsMail } = require("../mail/bankTransferMail");
+const { supportedLanguages, t } = require("../i18n");
 
 const router = express.Router();
+
+/** Интерфейсный язык из формы (на serverless сессия теряется — без этого POST отдаётся на et). */
+function applyUiLangFromBody(req, res) {
+  const raw = String(req.body.uiLang || "").trim();
+  if (raw && supportedLanguages.includes(raw)) {
+    req.session.lang = raw;
+    req.lang = raw;
+    res.locals.lang = raw;
+    req.t = (key) => t(raw, key);
+    res.locals.t = req.t;
+  }
+}
 
 const REG_COMMENT_STUDY_LANG_KEYS = { et: "filterLangEt", ru: "filterLangRu", en: "filterLangEn" };
 const REG_COMMENT_PAYMENT_KEYS = { cash: "paymentCash", card: "paymentCard", bank: "paymentBank" };
@@ -142,6 +155,7 @@ router.get("/register/steps", async (req, res, next) => {
 
 router.post("/register", async (req, res, next) => {
   try {
+    applyUiLangFromBody(req, res);
     const courses = await getRegistrationCourses(req.lang);
     const trainingOffers = await loadRegistrationTrainingOffers(req.lang);
     const firstName = String(req.body.firstName || "").trim();

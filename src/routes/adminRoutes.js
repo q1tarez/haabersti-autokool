@@ -275,6 +275,15 @@ router.post("/students/:id/payment", requireAdmin, async (req, res, next) => {
   }
 });
 
+router.post("/students/:id/delete", requireAdmin, async (req, res, next) => {
+  try {
+    await runAsync("DELETE FROM course_registrations WHERE id = ?", [req.params.id]);
+    res.redirect(303, "/admin/students");
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get("/contacts", requireAdmin, async (req, res, next) => {
   try {
     const contacts = await allAsync("SELECT * FROM contacts ORDER BY created_at DESC");
