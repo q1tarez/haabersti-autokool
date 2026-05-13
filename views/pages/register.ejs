@@ -30,6 +30,9 @@
       data-initial-course="<%= selectedCourseId || "" %>"
       data-pick-msg="<%= String(t("instructorPickVisibleError")).replace(/"/g, "&quot;").replace(/</g, "&lt;") %>"
       data-training-pick-msg="<%= String(t("trainingOfferPickVisibleError")).replace(/"/g, "&quot;").replace(/</g, "&lt;") %>"
+      data-name-invalid-msg="<%= String(t('registerNameInvalid')).replace(/\"/g, '&quot;').replace(/</g, '&lt;') %>"
+      data-phone-invalid-msg="<%= String(t('registerPhoneInvalid')).replace(/\"/g, '&quot;').replace(/</g, '&lt;') %>"
+      data-isikukood-invalid-msg="<%= String(t('registerIsikukoodInvalid')).replace(/\"/g, '&quot;').replace(/</g, '&lt;') %>"
     >
       <input type="hidden" name="uiLang" id="hid_uiLang" value="<%= lang %>" />
       <%- include("./register/partials/step-lang") %>

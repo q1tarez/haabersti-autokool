@@ -26,6 +26,10 @@
     const registrationContactDialog = document.getElementById("registration-contact-dialog");
     const registrationPaymentDialog = document.getElementById("registration-payment-dialog");
     const registrationContactNextBtn = document.getElementById("registrationContactNext");
+    const nameInvalidMsg = form.getAttribute("data-name-invalid-msg") || "Name must not contain digits.";
+    const phoneInvalidMsg = form.getAttribute("data-phone-invalid-msg") || "Please enter a valid phone number.";
+    const isikukoodInvalidMsg =
+      form.getAttribute("data-isikukood-invalid-msg") || "Please enter a valid Estonian personal code (11 digits).";
 
     const WIZARD_STORAGE_KEY = "haaberstiRegisterWizard";
     const STEP_STORAGE_KEY_LEGACY = "haaberstiRegisterWizardStep";
@@ -218,6 +222,82 @@
 
     function pickedRadio() {
       return courseRadios().find((r) => r.checked);
+    }
+
+    function sanitizeIsikukoodInput(value) {
+      return String(value || "").replace(/\D/g, "").slice(0, 11);
+    }
+
+    function sanitizePhoneInput(value) {
+      const s = String(value || "").replace(/\p{L}/gu, "");
+      return s.replace(/\s{2,}/g, " ");
+    }
+
+    function isPhoneValidClient(value) {
+      const v = String(value || "").trim();
+      if (!/^[+\d\s()\-]{7,25}$/.test(v)) return false;
+      return v.replace(/\D/g, "").length >= 7;
+    }
+
+    function isEstonianPersonalCodeValidClient(value) {
+      const v = String(value || "").trim();
+      if (!/^\d{11}$/.test(v)) return false;
+      const d = v.split("").map((x) => Number(x));
+      const w1 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 1];
+      const w2 = [3, 4, 5, 6, 7, 8, 9, 1, 2, 3];
+      const sum1 = w1.reduce((acc, w, i) => acc + w * d[i], 0);
+      let check = sum1 % 11;
+      if (check === 10) {
+        const sum2 = w2.reduce((acc, w, i) => acc + w * d[i], 0);
+        check = sum2 % 11;
+        if (check === 10) check = 0;
+      }
+      return check === d[10];
+    }
+
+    function validateContactField(el) {
+      if (!el) return true;
+      el.setCustomValidity("");
+      const id = el.id;
+      const val = String(el.value || "");
+
+      if (id === "regFirstName" || id === "regLastName") {
+        if (/\d/.test(val)) {
+          el.setCustomValidity(nameInvalidMsg);
+          return false;
+        }
+      }
+      if (id === "regPhone") {
+        if (val.trim() && !isPhoneValidClient(val)) {
+          el.setCustomValidity(phoneInvalidMsg);
+          return false;
+        }
+      }
+      if (id === "regIsikukood") {
+        if (val.trim() && !isEstonianPersonalCodeValidClient(val)) {
+          el.setCustomValidity(isikukoodInvalidMsg);
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function validateContactFieldsAndReport() {
+      const ids = ["regFirstName", "regLastName", "regIsikukood", "regPhone", "regEmail"];
+      for (let i = 0; i < ids.length; i += 1) {
+        const el = document.getElementById(ids[i]);
+        if (!el) continue;
+        if (!validateContactField(el) || !el.checkValidity()) {
+          el.reportValidity();
+          return false;
+        }
+      }
+      const agree = document.getElementById("regAgreeTerms");
+      if (agree && !agree.checked) {
+        agree.reportValidity();
+        return false;
+      }
+      return true;
     }
 
     function needsInstructor() {
@@ -715,37 +795,13 @@
     );
 
     registrationContactNextBtn?.addEventListener("click", () => {
-      const ids = ["regFirstName", "regLastName", "regIsikukood", "regPhone", "regEmail"];
-      for (let i = 0; i < ids.length; i += 1) {
-        const el = document.getElementById(ids[i]);
-        if (el && !el.checkValidity()) {
-          el.reportValidity();
-          return;
-        }
-      }
-      const agree = document.getElementById("regAgreeTerms");
-      if (agree && !agree.checked) {
-        agree.reportValidity();
-        return;
-      }
+      if (!validateContactFieldsAndReport()) return;
       registrationContactDialog?.close();
       registrationPaymentDialog?.showModal?.();
     });
 
     document.getElementById("registrationFinalizeBtn")?.addEventListener("click", () => {
-      const ids = ["regFirstName", "regLastName", "regIsikukood", "regPhone", "regEmail"];
-      for (let i = 0; i < ids.length; i += 1) {
-        const el = document.getElementById(ids[i]);
-        if (el && !el.checkValidity()) {
-          el.reportValidity();
-          return;
-        }
-      }
-      const agree = document.getElementById("regAgreeTerms");
-      if (agree && !agree.checked) {
-        agree.reportValidity();
-        return;
-      }
+      if (!validateContactFieldsAndReport()) return;
       const pay = registrationPaymentDialog?.querySelector('input[name="regPaymentMethod"]:checked');
       if (!pay) {
         const first = registrationPaymentDialog?.querySelector('input[name="regPaymentMethod"]');
@@ -816,7 +872,15 @@
     ["regFirstName", "regLastName", "regIsikukood", "regPhone", "regEmail", "regComment"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) {
-        el.addEventListener("input", () => persistWizardSnapshot());
+        el.addEventListener("input", () => {
+          if (id === "regIsikukood") {
+            el.value = sanitizeIsikukoodInput(el.value);
+          } else if (id === "regPhone") {
+            el.value = sanitizePhoneInput(el.value);
+          }
+          validateContactField(el);
+          persistWizardSnapshot();
+        });
         el.addEventListener("change", () => persistWizardSnapshot());
       }
     });
