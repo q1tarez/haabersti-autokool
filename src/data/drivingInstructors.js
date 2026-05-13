@@ -85,6 +85,24 @@ function normalizeDrivingInstructorRow(rowIn) {
   row.priceLessonFormatted = String(row.priceLessonFormatted || "").trim();
   row.pricePerLesson = String(row.pricePerLesson || "").trim();
   row.totalCourseEuroDisplayed = String(row.totalCourseEuroDisplayed || "").trim();
+  const carPhotosRaw = Array.isArray(row.carPhotos) ? row.carPhotos : [];
+  row.carPhotos = carPhotosRaw
+    .map((x) => String(x || "").trim())
+    .filter((u) => u.startsWith("/") || u.startsWith("http://") || u.startsWith("https://"));
+  const carPhotosExplicitlyCleared =
+    rowIn &&
+    typeof rowIn === "object" &&
+    "carPhotos" in rowIn &&
+    Array.isArray(rowIn.carPhotos) &&
+    rowIn.carPhotos.length === 0;
+  if (!carPhotosExplicitlyCleared && row.carPhotos.length === 0 && row.id) {
+    const def = RAW_DEFAULT_INSTRUCTORS.find((r) => r.id === row.id);
+    if (def && Array.isArray(def.carPhotos) && def.carPhotos.length) {
+      row.carPhotos = def.carPhotos
+        .map((x) => String(x || "").trim())
+        .filter((u) => u.startsWith("/") || u.startsWith("http://") || u.startsWith("https://"));
+    }
+  }
   return row;
 }
 

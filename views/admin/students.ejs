@@ -25,11 +25,13 @@
           <th>Контакты</th>
           <th>Курс</th>
           <th>Комментарий</th>
+          <th>Оплата</th>
           <th>Статус</th>
         </tr>
       </thead>
       <tbody>
         <% students.forEach((item) => { %>
+          <% const pay = item.payment_status === "paid" ? "paid" : "unpaid"; %>
           <tr>
             <td><%= formatEtDateTime(item.created_at) %></td>
             <td><strong><%= item.full_name %></strong></td>
@@ -41,8 +43,17 @@
             <td><%= item.course_name %><br /><small>Start: <%= item.start_date || "-" %></small></td>
             <td><%= item.comment || "-" %></td>
             <td>
-              <form method="POST" action="/admin/students/<%= item.id %>/status" class="inline-form">
-                <select name="status">
+              <form method="POST" action="/admin/students/<%= item.id %>/payment" class="inline-form admin-student-form">
+                <select name="payment_status" aria-label="Статус оплаты">
+                  <option value="unpaid" <%= pay === "unpaid" ? "selected" : "" %>>Не оплачено</option>
+                  <option value="paid" <%= pay === "paid" ? "selected" : "" %>>Оплачено</option>
+                </select>
+                <button class="btn secondary" type="submit">OK</button>
+              </form>
+            </td>
+            <td>
+              <form method="POST" action="/admin/students/<%= item.id %>/status" class="inline-form admin-student-form">
+                <select name="status" aria-label="Статус заявки">
                   <option value="new" <%= item.status === "new" ? "selected" : "" %>>Новая</option>
                   <option value="contacted" <%= item.status === "contacted" ? "selected" : "" %>>Связались</option>
                   <option value="closed" <%= item.status === "closed" ? "selected" : "" %>>Закрыта</option>

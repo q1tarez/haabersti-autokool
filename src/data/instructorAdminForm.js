@@ -14,6 +14,14 @@ function coerceArray(val) {
   return [val];
 }
 
+function parseCarPhotosFromForm(body) {
+  const raw = String(body.car_photos ?? "");
+  return raw
+    .split(/[\r\n]+/)
+    .map((s) => s.trim())
+    .filter((s) => s.startsWith("/") || s.startsWith("http://") || s.startsWith("https://"));
+}
+
 const ALLOW_LANGS = new Set(["et", "ru", "en"]);
 const ALLOW_CATS = new Set(["b", "be", "moto"]);
 
@@ -47,6 +55,7 @@ function formBodyToDrivingInstructor(body, { editingId = null } = {}) {
     base.name = "";
     base.searchAliases = "";
     base.photo = "/images/instructors/talehh.svg";
+    base.carPhotos = [];
   }
 
   delete base.id;
@@ -77,6 +86,8 @@ function formBodyToDrivingInstructor(body, { editingId = null } = {}) {
   if (locs.length) base.filterLocationIds = locs;
 
   base.photo = String(body.photo || "").trim() || base.photo;
+  base.carPhotos = parseCarPhotosFromForm(body);
+
   base.badgePro = body.badge_pro === "1";
   base.payPerLessonOk = body.pay_per_lesson === "1";
 

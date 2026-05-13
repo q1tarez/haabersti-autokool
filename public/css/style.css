@@ -69,11 +69,27 @@ h1 {
 }
 
 .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   text-decoration: none;
   color: var(--text);
   font-weight: 800;
   letter-spacing: 0.2px;
   white-space: nowrap;
+}
+
+.logo-mark {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  object-fit: cover;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.25);
+}
+
+.logo-text {
+  line-height: 1.15;
 }
 
 .nav {
@@ -277,6 +293,12 @@ select:focus {
 .alert.success {
   background: #dcfce7;
   color: #166534;
+}
+
+.alert.success .success-bank-note {
+  margin: 10px 0 0;
+  font-size: 14px;
+  opacity: 0.95;
 }
 
 .visually-hidden {
@@ -1658,6 +1680,41 @@ select:focus {
   align-items: start;
 }
 
+.inst-dialog-subtitle {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.inst-car-gallery {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 4px;
+}
+
+@media (min-width: 520px) {
+  .inst-car-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.inst-car-gallery__item {
+  margin: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e8eef8;
+  background: #f6f8fc;
+}
+
+.inst-car-gallery__item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 240px;
+  object-fit: cover;
+}
+
 .inst-dialog-photo {
   width: 88px;
   height: 88px;
@@ -2012,6 +2069,20 @@ select:focus {
   gap: 8px;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.admin-student-form {
+  flex-direction: column;
+  align-items: stretch;
+  max-width: 168px;
+}
+
+.admin-student-form select {
+  width: 100%;
+}
+
+.admin-student-form .btn {
+  width: 100%;
 }
 
 .filter-bar {

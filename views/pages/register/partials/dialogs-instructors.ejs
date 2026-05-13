@@ -47,6 +47,16 @@
           </dl>
         </div>
       </div>
+      <% if (instr.carPhotos && instr.carPhotos.length) { %>
+        <h3 class="inst-dialog-subtitle"><%= t("instructorCarGallery") %></h3>
+        <div class="inst-car-gallery" role="list">
+          <% instr.carPhotos.forEach(function (carSrc) { %>
+            <figure class="inst-car-gallery__item" role="listitem">
+              <img src="<%= carSrc %>" alt="" loading="lazy" decoding="async" width="640" height="400" />
+            </figure>
+          <% }); %>
+        </div>
+      <% } %>
       <hr class="inst-dialog-line" />
       <div class="inst-dialog-prose"><%- instr.modalArticleHtml %></div>
       <button type="button" class="btn inst-dialog-cta" data-select-instructor="<%= instr.id %>"><%= t("instructorModalRegisterCta") %> ›</button>

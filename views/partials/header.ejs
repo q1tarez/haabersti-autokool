@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= title %> | Haabersti Autokool</title>
+    <link rel="icon" type="image/png" href="/images/haabersti-autokool-icon.png" sizes="any" />
+    <link rel="apple-touch-icon" href="/images/haabersti-autokool-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -12,7 +14,10 @@
   <body>
     <header class="site-header">
       <div class="container nav-wrap">
-        <a class="logo" href="/">Haabersti Autokool</a>
+        <a class="logo" href="/">
+          <img class="logo-mark" src="/images/haabersti-autokool-icon.png" alt="" width="40" height="40" decoding="async" />
+          <span class="logo-text">Haabersti Autokool</span>
+        </a>
         <nav class="nav" aria-label="Main navigation">
           <a href="/"><%= t("navHome") %></a>
           <a href="/courses"><%= t("navCourses") %></a>

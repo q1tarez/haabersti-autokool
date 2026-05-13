@@ -2,6 +2,7 @@ const express = require("express");
 const { runAsync, allAsync, getAsync } = require("../db/database");
 const { courseRequiresInstructor, getInstructorsForLang, getInstructorById } = require("../data/drivingInstructors");
 const { courseRequiresTrainingOffer, mergeTrainingOfferRow } = require("../data/trainingOffers");
+const { sendBankTransferInstructionsMail } = require("../mail/bankTransferMail");
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ function registerViewLocals(req, overrides = {}) {
     selectedCourseId: "",
     error: null,
     success: null,
+    successBankInfo: null,
     ...overrides,
   };
 }
@@ -263,9 +265,31 @@ router.post("/register", async (req, res, next) => {
       [fullName, isikukood, phone, email, chosenCourse.id, chosenCourse.name, "", registrationNote]
     );
 
+    let successBankInfo = null;
+    if (payNorm === "bank") {
+      successBankInfo = req.t("registerBankEmailExtra");
+      try {
+        await sendBankTransferInstructionsMail({
+          to: email,
+          lang: req.lang,
+          fullName,
+          courseName: chosenCourse.name,
+        });
+      } catch (mailErr) {
+        // eslint-disable-next-line no-console
+        console.error("Bank transfer email failed:", mailErr.message);
+      }
+    }
+
     res.render(
       "pages/register",
-      registerViewLocals(req, { courses, trainingOffers, selectedCourseId: "", success: req.t("registerSuccess") })
+      registerViewLocals(req, {
+        courses,
+        trainingOffers,
+        selectedCourseId: "",
+        success: req.t("registerSuccess"),
+        successBankInfo,
+      })
     );
   } catch (error) {
     next(error);

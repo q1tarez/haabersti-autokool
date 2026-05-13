@@ -120,6 +120,7 @@ function runAsync(sql, params = []) {
         start_date: params[6],
         comment: params[7],
         status: "new",
+        payment_status: "unpaid",
         created_at: new Date().toISOString(),
       });
       return Promise.resolve({ lastID: memory.courseRegistrations.length });
@@ -163,6 +164,11 @@ function runAsync(sql, params = []) {
     if (query.startsWith("DELETE FROM COURSES")) {
       memory.courses = memory.courses.filter((c) => c.id !== params[0]);
       return Promise.resolve({ changes: 1 });
+    }
+    if (query.startsWith("UPDATE COURSE_REGISTRATIONS SET PAYMENT_STATUS = ?")) {
+      const row = memory.courseRegistrations.find((s) => String(s.id) === String(params[1]));
+      if (row) row.payment_status = params[0];
+      return Promise.resolve({ changes: row ? 1 : 0 });
     }
     if (query.startsWith("UPDATE COURSE_REGISTRATIONS SET STATUS")) {
       const row = memory.courseRegistrations.find((s) => String(s.id) === String(params[1]));
@@ -566,6 +572,7 @@ async function initDatabase() {
       start_date TEXT,
       comment TEXT,
       status TEXT DEFAULT 'new',
+      payment_status TEXT DEFAULT 'unpaid',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -594,6 +601,10 @@ async function initDatabase() {
 
   await runAsync(`
     ALTER TABLE course_registrations ADD COLUMN isikukood TEXT
+  `).catch(() => null);
+
+  await runAsync(`
+    ALTER TABLE course_registrations ADD COLUMN payment_status TEXT DEFAULT 'unpaid'
   `).catch(() => null);
 
   const adminCredentials = [

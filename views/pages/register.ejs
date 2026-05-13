@@ -10,7 +10,12 @@
     <p class="alert error"><%= error %></p>
   <% } %>
   <% if (success) { %>
-    <p class="alert success"><%= success %></p>
+    <div class="alert success">
+      <p><%= success %></p>
+      <% if (typeof successBankInfo !== "undefined" && successBankInfo) { %>
+        <p class="success-bank-note"><%= successBankInfo %></p>
+      <% } %>
+    </div>
   <% } %>
 
   <div class="registration-layout registration-layout--sky">

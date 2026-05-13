@@ -25,6 +25,10 @@
         <label>Фото (путь или URL от /images/…)</label>
         <input type="text" name="photo" value="<%= editingInstructor ? editingInstructor.photo : '' %>" placeholder="/images/instructors/name.svg" />
 
+        <label>Фото учебного авто (по одному пути или URL на строку)</label>
+        <textarea name="car_photos" rows="4" placeholder="/images/instructors/cars/oppeauto.png"><%= editingInstructor && editingInstructor.carPhotos && editingInstructor.carPhotos.length ? editingInstructor.carPhotos.join('\n') : '' %></textarea>
+        <p class="form-hint">Только пути с сайта (/images/…) или полные https-ссылки. Пустые строки игнорируются.</p>
+
         <label class="check-label">
           <input type="checkbox" name="badge_pro" value="1" <%= editingInstructor && editingInstructor.badgePro ? "checked" : "" %> />
           <span>Плашка PRO</span>

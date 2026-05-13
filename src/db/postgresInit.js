@@ -38,6 +38,7 @@ async function runPostgresMigrations(db) {
       start_date TEXT,
       comment TEXT,
       status TEXT NOT NULL DEFAULT 'new',
+      payment_status TEXT NOT NULL DEFAULT 'unpaid',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
@@ -83,6 +84,9 @@ async function runPostgresMigrations(db) {
 
   await runAsync(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'new'`).catch(() => null);
   await runAsync(`ALTER TABLE course_registrations ADD COLUMN IF NOT EXISTS isikukood TEXT`).catch(() => null);
+  await runAsync(
+    `ALTER TABLE course_registrations ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'unpaid'`
+  ).catch(() => null);
 
   const adminCredentials = [
     { username: "talehh_gusseinov", password: "hab_autokool2026" },

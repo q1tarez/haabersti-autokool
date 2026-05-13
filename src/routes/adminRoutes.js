@@ -255,7 +255,20 @@ router.get("/students", requireAdmin, async (req, res, next) => {
 
 router.post("/students/:id/status", requireAdmin, async (req, res, next) => {
   try {
-    await runAsync("UPDATE course_registrations SET status = ? WHERE id = ?", [req.body.status, req.params.id]);
+    const allowedStatus = ["new", "contacted", "closed"];
+    const st = allowedStatus.includes(String(req.body.status || "")) ? req.body.status : "new";
+    await runAsync("UPDATE course_registrations SET status = ? WHERE id = ?", [st, req.params.id]);
+    res.redirect(303, "/admin/students");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/students/:id/payment", requireAdmin, async (req, res, next) => {
+  try {
+    const allowedPay = ["unpaid", "paid"];
+    const pay = allowedPay.includes(String(req.body.payment_status || "")) ? req.body.payment_status : "unpaid";
+    await runAsync("UPDATE course_registrations SET payment_status = ? WHERE id = ?", [pay, req.params.id]);
     res.redirect(303, "/admin/students");
   } catch (error) {
     next(error);

@@ -91,6 +91,10 @@ module.exports = [
     id: "talehh-mkpp",
     name: "Talehh",
     photo: "/images/instructors/talehh.svg",
+    carPhotos: [
+      "/images/instructors/cars/talehh-mkpp-rear.png",
+      "/images/instructors/cars/talehh-mkpp-front.png",
+    ],
     badgePro: true,
     rating: 4.88,
     reviewCount: 64,
