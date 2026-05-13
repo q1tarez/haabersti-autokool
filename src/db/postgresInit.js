@@ -136,7 +136,7 @@ async function runPostgresMigrations(db) {
         "Kindluse kasvatamine enne ARK soidueksamit.",
         "Уверенность и практика перед экзаменом в ARK.",
         "Build confidence before the ARK driving exam.",
-        "65 EUR",
+        "55 EUR",
         "Paindlik graafik",
         "Гибкий график",
         "Flexible schedule",
@@ -185,7 +185,7 @@ async function runPostgresMigrations(db) {
     );
   }
 
-  await runAsync("UPDATE courses SET price = ? WHERE id = ?", ["65 EUR", "extra-driving"]).catch(() => null);
+  await runAsync("UPDATE courses SET price = ? WHERE id = ?", ["55 EUR", "extra-driving"]).catch(() => null);
 
   const upsertExtraCourses = [
     [

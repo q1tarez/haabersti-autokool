@@ -602,7 +602,7 @@ const courseCatalog = {
     },
   },
   "extra-driving": {
-    price: "45 EUR / h",
+    price: "55 EUR",
     duration: { et: "Paindlik graafik", ru: "Гибкий график", en: "Flexible schedule" },
     name: {
       et: "Lisasoit enne eksamit",

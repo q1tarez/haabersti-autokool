@@ -465,7 +465,7 @@ async function initDatabase() {
           description_et: "Kindluse kasvatamine enne ARK soidueksamit.",
           description_ru: "Уверенность и практика перед экзаменом в ARK.",
           description_en: "Build confidence before the ARK driving exam.",
-          price: "65 EUR",
+          price: "55 EUR",
           duration_et: "Paindlik graafik",
           duration_ru: "Гибкий график",
           duration_en: "Flexible schedule",
@@ -688,7 +688,7 @@ async function initDatabase() {
         "Kindluse kasvatamine enne ARK soidueksamit.",
         "Уверенность и практика перед экзаменом в ARK.",
         "Build confidence before the ARK driving exam.",
-        "65 EUR",
+        "55 EUR",
         "Paindlik graafik",
         "Гибкий график",
         "Flexible schedule",
@@ -739,7 +739,7 @@ async function initDatabase() {
 
   await runAsync(
     "UPDATE courses SET price = ? WHERE id = ?",
-    ["65 EUR", "extra-driving"]
+    ["55 EUR", "extra-driving"]
   ).catch(() => null);
 
   const upsertExtraCourses = [

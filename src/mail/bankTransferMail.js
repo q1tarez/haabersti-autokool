@@ -26,6 +26,18 @@ function siteBaseUrl() {
   return "";
 }
 
+const DRIVING_COURSE_IDS = new Set(["driving-lessons-26", "extra-driving"]);
+const STUDENT_MEMO_TITLE = "Õpilase meelespea";
+const STUDENT_MEMO_LINES = [
+  "⏰ Teavita puudumisest vähemalt 24 tundi ette",
+  "❗️ Hilinemine üle 15 minuti – tund loetakse toimunuks",
+  "💸 Etteteatamata puudumise korral raha ei tagastata",
+  "🔧 Õpetaja või tehnilise põhjuse tõttu ära jäänud tund -> lepitakse kokku uus aeg",
+  "🚫 Tundi ei tohi tulla joobes ega joobetunnustega",
+  "🪪 Kaasa võtta isikut tõendav dokument",
+  "💶 Lisatunnid: 55 EUR / 90 min",
+];
+
 const COPY = {
   et: {
     subject: "Pangaumberkande andmed — Haabersti Autokool",
@@ -36,6 +48,7 @@ const COPY = {
       `Valisite kursile «${course}» tasumise pangaumberkandega. All on meie rekvizidid. Makse selgituse väljale kirjutage oma nimi ja kursus.`,
     labelBeneficiary: "Saaja",
     labelIban: "IBAN",
+    labelAmount: "Summa",
     labelPurpose: "Makse selgitus",
     notice:
       "Kui summa või saaja ei vasta kokkuleppele, helistage või kirjutage enne tasumist. Lõplik hind võib kinnituda telefoni teel.",
@@ -55,6 +68,7 @@ const COPY = {
       `Вы выбрали оплату банковским переводом по курсу «${course}». Ниже — наши реквизиты. В назначении платежа укажите своё имя и курс.`,
     labelBeneficiary: "Получатель",
     labelIban: "IBAN",
+    labelAmount: "Сумма",
     labelPurpose: "Назначение платежа",
     notice:
       "Если сумма или получатель не совпадают с договорённостью, свяжитесь с нами до оплаты. Итоговая цена может быть подтверждена по телефону.",
@@ -74,6 +88,7 @@ const COPY = {
       `You chose bank transfer for «${course}». Below are our payment details. Please put your name and course in the payment reference.`,
     labelBeneficiary: "Beneficiary",
     labelIban: "IBAN",
+    labelAmount: "Amount",
     labelPurpose: "Payment reference",
     notice:
       "If the amount or beneficiary does not match what we agreed, contact us before paying. The final price may be confirmed by phone.",
@@ -103,13 +118,15 @@ function formatIbanDisplay(iban) {
   return compact.replace(/(.{4})/g, "$1 ").trim();
 }
 
-function buildMessage(lang, fullName, courseName, bank) {
+function buildMessage(lang, fullName, courseName, amount, courseId, bank) {
   const L = COPY[langOrEt(lang)];
   const purpose = `${fullName} — ${courseName}`;
   const safePurpose = escapeHtml(purpose);
 
   const ben = bank.beneficiary;
   const iban = bank.iban;
+  const amountLine = String(amount || "").trim();
+  const includeMemo = DRIVING_COURSE_IDS.has(String(courseId || "").trim());
 
   const textLines = [
     L.greeting(fullName),
@@ -118,6 +135,7 @@ function buildMessage(lang, fullName, courseName, bank) {
     "",
     `${L.labelBeneficiary}: ${ben}`,
     `${L.labelIban}: ${iban}`,
+    ...(amountLine ? [`${L.labelAmount}: ${amountLine}`] : []),
     `${L.labelPurpose}: ${purpose}`,
     "",
     L.notice,
@@ -125,6 +143,7 @@ function buildMessage(lang, fullName, courseName, bank) {
     `${L.footerBrand} — ${L.footerCity}`,
     ...(bank.phone ? [`${L.footerContact}: ${bank.phone}`] : []),
     ...(bank.contactEmail ? [`Email: ${bank.contactEmail}`] : []),
+    ...(includeMemo ? ["", STUDENT_MEMO_TITLE, ...STUDENT_MEMO_LINES] : []),
     "",
     L.disclaimer,
   ];
@@ -147,6 +166,15 @@ function buildMessage(lang, fullName, courseName, bank) {
           }
         </p>`
       : "";
+
+  const memoHtml = includeMemo
+    ? `<div style="margin:16px 0 0;padding:14px 14px 8px;border:1px solid #c7d2fe;border-radius:10px;background:#eef2ff;">
+          <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#1e3a8a;">${STUDENT_MEMO_TITLE}</p>
+          <ul style="margin:0;padding:0 0 0 18px;color:#1f2937;font-size:13px;line-height:1.55;">
+            ${STUDENT_MEMO_LINES.map((line) => `<li style="margin:0 0 6px;">${escapeHtml(line)}</li>`).join("")}
+          </ul>
+        </div>`
+    : "";
 
   const html = `<!DOCTYPE html>
 <html lang="${langOrEt(lang)}">
@@ -190,6 +218,14 @@ function buildMessage(lang, fullName, courseName, bank) {
                         <td style="padding:8px 0;font-size:13px;color:#64748b;vertical-align:top;">${L.labelIban}</td>
                         <td style="padding:8px 0;font-size:16px;font-weight:700;color:#0f172a;letter-spacing:0.06em;font-family:Consolas,'Courier New',monospace;">${escapeHtml(formatIbanDisplay(iban))}</td>
                       </tr>
+                      ${
+                        amountLine
+                          ? `<tr>
+                        <td style="padding:8px 0;font-size:13px;color:#64748b;vertical-align:top;">${L.labelAmount}</td>
+                        <td style="padding:8px 0;font-size:15px;font-weight:700;color:#0f172a;">${escapeHtml(amountLine)}</td>
+                      </tr>`
+                          : ""
+                      }
                       <tr>
                         <td style="padding:8px 0;font-size:13px;color:#64748b;vertical-align:top;">${L.labelPurpose}</td>
                         <td style="padding:8px 0;font-size:15px;color:#0f172a;line-height:1.45;">${safePurpose}</td>
@@ -212,6 +248,7 @@ function buildMessage(lang, fullName, courseName, bank) {
                 ${L.footerCity}
               </p>
               ${contactBlock}
+              ${memoHtml}
             </td>
           </tr>
         </table>
@@ -238,7 +275,7 @@ function hasSmtpConfig() {
   return Boolean(smtpUrl || smtpHost || hasGmailAuth);
 }
 
-async function sendBankTransferInstructionsMail({ to, lang, fullName, courseName }) {
+async function sendBankTransferInstructionsMail({ to, lang, fullName, courseName, amount, courseId }) {
   const bank = getBankDetails();
 
   if (!bank.isComplete) {
@@ -249,7 +286,7 @@ async function sendBankTransferInstructionsMail({ to, lang, fullName, courseName
     return { ok: false, mode: "skipped", reason: "missing-bank-config" };
   }
 
-  const { subject, text, html } = buildMessage(langOrEt(lang), fullName, courseName, bank);
+  const { subject, text, html } = buildMessage(langOrEt(lang), fullName, courseName, amount, courseId, bank);
 
   if (!hasSmtpConfig()) {
     // eslint-disable-next-line no-console

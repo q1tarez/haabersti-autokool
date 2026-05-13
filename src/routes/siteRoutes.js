@@ -287,6 +287,8 @@ router.post("/register", async (req, res, next) => {
           lang: req.lang,
           fullName,
           courseName: chosenCourse.name,
+          amount: chosenCourse.price,
+          courseId: chosenCourse.id,
         });
         if (mailResult.mode === "smtp") {
           successBankInfo = req.t("registerBankEmailSent");
