@@ -175,6 +175,9 @@ const translations = {
     contactRequired: "Palun sisesta nimi ja telefon.",
     contactSuccess: "Aitah! Me votame peagi uhendust.",
     registerRequired: "Palun taida kohustuslikud valjad.",
+    registerNameInvalid: "Nimi ei tohi sisaldada numbreid.",
+    registerPhoneInvalid: "Sisesta korrektne telefoninumber.",
+    registerIsikukoodInvalid: "Sisesta korrektne isikukood (11 numbrit).",
     registerSuccess: "Registreerimine on vastu voetud! Voetame sinuga peagi uhendust.",
     registerBankEmailSent:
       "Makse juhised saadeti teie e-postile (kui kiri ei jõua, kontrollige rämpsposti).",
@@ -369,6 +372,9 @@ const translations = {
     contactRequired: "Пожалуйста, укажите имя и телефон.",
     contactSuccess: "Спасибо! Мы скоро с вами свяжемся.",
     registerRequired: "Пожалуйста, заполните обязательные поля.",
+    registerNameInvalid: "Имя не должно содержать цифры.",
+    registerPhoneInvalid: "Введите корректный номер телефона.",
+    registerIsikukoodInvalid: "Введите корректный исикукод (11 цифр).",
     registerSuccess: "Заявка принята! Мы скоро с вами свяжемся.",
     registerBankEmailSent:
       "Инструкция и реквизиты отправлены на вашу почту (если письма нет, проверьте спам).",
@@ -563,6 +569,9 @@ const translations = {
     contactRequired: "Please enter your name and phone.",
     contactSuccess: "Thank you! We will contact you soon.",
     registerRequired: "Please fill in all required fields.",
+    registerNameInvalid: "Name must not contain digits.",
+    registerPhoneInvalid: "Please enter a valid phone number.",
+    registerIsikukoodInvalid: "Please enter a valid Estonian personal code (11 digits).",
     registerSuccess: "Registration received! We will contact you soon.",
     registerBankEmailSent:
       "Payment instructions were sent to your email (if you do not see it, check spam).",

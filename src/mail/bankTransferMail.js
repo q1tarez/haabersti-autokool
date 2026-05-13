@@ -27,16 +27,6 @@ function siteBaseUrl() {
 }
 
 const DRIVING_COURSE_IDS = new Set(["driving-lessons-26", "extra-driving"]);
-const STUDENT_MEMO_TITLE = "Õpilase meelespea";
-const STUDENT_MEMO_LINES = [
-  "⏰ Teavita puudumisest vähemalt 24 tundi ette",
-  "❗️ Hilinemine üle 15 minuti – tund loetakse toimunuks",
-  "💸 Etteteatamata puudumise korral raha ei tagastata",
-  "🔧 Õpetaja või tehnilise põhjuse tõttu ära jäänud tund -> lepitakse kokku uus aeg",
-  "🚫 Tundi ei tohi tulla joobes ega joobetunnustega",
-  "🪪 Kaasa võtta isikut tõendav dokument",
-  "💶 Lisatunnid: 55 EUR / 90 min",
-];
 
 const COPY = {
   et: {
@@ -56,6 +46,16 @@ const COPY = {
     footerBrand: "Haabersti Autokool",
     footerCity: "Tallinn, Eesti",
     footerContact: "Kontakt",
+    memoTitle: "Õpilase meelespea",
+    memoLines: [
+      "⏰ Teavita puudumisest vähemalt 24 tundi ette",
+      "❗️ Hilinemine üle 15 minuti – tund loetakse toimunuks",
+      "💸 Etteteatamata puudumise korral raha ei tagastata",
+      "🔧 Õpetaja või tehnilise põhjuse tõttu ära jäänud tund -> lepitakse kokku uus aeg",
+      "🚫 Tundi ei tohi tulla joobes ega joobetunnustega",
+      "🪪 Kaasa võtta isikut tõendav dokument",
+      "💶 Lisatunnid: 55 EUR / 90 min",
+    ],
     disclaimer:
       "See kiri saadetakse automaatselt pärast registreerumist. Kui te ei nõustunud selle kirja saamisega, võtke meiega ühendust.",
   },
@@ -76,6 +76,16 @@ const COPY = {
     footerBrand: "Haabersti Autokool",
     footerCity: "Tallinn, Eesti",
     footerContact: "Контакты",
+    memoTitle: "Памятка ученика",
+    memoLines: [
+      "⏰ Сообщайте об отмене занятия минимум за 24 часа",
+      "❗️ Опоздание более чем на 15 минут — урок считается состоявшимся",
+      "💸 При отсутствии без предупреждения оплата не возвращается",
+      "🔧 Если урок отменён по вине инструктора или по технической причине — согласовывается новое время",
+      "🚫 Нельзя приходить на занятие в состоянии опьянения или с его признаками",
+      "🪪 Возьмите с собой документ, удостоверяющий личность",
+      "💶 Дополнительные занятия: 55 EUR / 90 мин",
+    ],
     disclaimer:
       "Это автоматическое письмо после регистрации. Если вы получили его по ошибке, напишите нам.",
   },
@@ -96,6 +106,16 @@ const COPY = {
     footerBrand: "Haabersti Autokool",
     footerCity: "Tallinn, Estonia",
     footerContact: "Contact",
+    memoTitle: "Student memo",
+    memoLines: [
+      "⏰ Notify about absence at least 24 hours in advance",
+      "❗️ If you are more than 15 minutes late, the lesson is considered completed",
+      "💸 No refund is provided for no-shows without notice",
+      "🔧 If a lesson is canceled due to the instructor or technical reasons, a new time will be agreed",
+      "🚫 Do not attend the lesson under the influence of alcohol or with intoxication signs",
+      "🪪 Bring an identity document with you",
+      "💶 Additional lessons: 55 EUR / 90 min",
+    ],
     disclaimer:
       "This message was sent automatically after registration. If you believe this was sent in error, please contact us.",
   },
@@ -143,7 +163,7 @@ function buildMessage(lang, fullName, courseName, amount, courseId, bank) {
     `${L.footerBrand} — ${L.footerCity}`,
     ...(bank.phone ? [`${L.footerContact}: ${bank.phone}`] : []),
     ...(bank.contactEmail ? [`Email: ${bank.contactEmail}`] : []),
-    ...(includeMemo ? ["", STUDENT_MEMO_TITLE, ...STUDENT_MEMO_LINES] : []),
+    ...(includeMemo ? ["", L.memoTitle, ...L.memoLines] : []),
     "",
     L.disclaimer,
   ];
@@ -169,9 +189,9 @@ function buildMessage(lang, fullName, courseName, amount, courseId, bank) {
 
   const memoHtml = includeMemo
     ? `<div style="margin:16px 0 0;padding:14px 14px 8px;border:1px solid #c7d2fe;border-radius:10px;background:#eef2ff;">
-          <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#1e3a8a;">${STUDENT_MEMO_TITLE}</p>
+          <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#1e3a8a;">${escapeHtml(L.memoTitle)}</p>
           <ul style="margin:0;padding:0 0 0 18px;color:#1f2937;font-size:13px;line-height:1.55;">
-            ${STUDENT_MEMO_LINES.map((line) => `<li style="margin:0 0 6px;">${escapeHtml(line)}</li>`).join("")}
+            ${L.memoLines.map((line) => `<li style="margin:0 0 6px;">${escapeHtml(line)}</li>`).join("")}
           </ul>
         </div>`
     : "";

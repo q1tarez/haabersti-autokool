@@ -19,6 +19,37 @@ function applyUiLangFromBody(req, res) {
   }
 }
 
+function isNameValid(fullName) {
+  const value = String(fullName || "").trim();
+  if (!value) return false;
+  // Names can include letters, spaces, hyphens and apostrophes, but not digits.
+  return !/\d/.test(value);
+}
+
+function isPhoneValid(phone) {
+  const value = String(phone || "").trim();
+  if (!value) return false;
+  if (!/^[+\d\s()\-]{7,25}$/.test(value)) return false;
+  const digitsOnly = value.replace(/\D/g, "");
+  return digitsOnly.length >= 7;
+}
+
+function isEstonianPersonalCodeValid(code) {
+  const value = String(code || "").trim();
+  if (!/^\d{11}$/.test(value)) return false;
+  const digits = value.split("").map((x) => Number(x));
+  const w1 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 1];
+  const w2 = [3, 4, 5, 6, 7, 8, 9, 1, 2, 3];
+  const sum1 = w1.reduce((acc, w, i) => acc + w * digits[i], 0);
+  let check = sum1 % 11;
+  if (check === 10) {
+    const sum2 = w2.reduce((acc, w, i) => acc + w * digits[i], 0);
+    check = sum2 % 11;
+    if (check === 10) check = 0;
+  }
+  return check === digits[10];
+}
+
 const REG_COMMENT_STUDY_LANG_KEYS = { et: "filterLangEt", ru: "filterLangRu", en: "filterLangEn" };
 const REG_COMMENT_PAYMENT_KEYS = { cash: "paymentCash", card: "paymentCard", bank: "paymentBank" };
 
@@ -190,6 +221,45 @@ router.post("/register", async (req, res, next) => {
       return;
     }
 
+    if (!isNameValid(fullName)) {
+      res.status(400).render(
+        "pages/register",
+        registerViewLocals(req, {
+          courses,
+          trainingOffers,
+          selectedCourseId: courseId || "",
+          error: req.t("registerNameInvalid"),
+        })
+      );
+      return;
+    }
+
+    if (!isPhoneValid(phone)) {
+      res.status(400).render(
+        "pages/register",
+        registerViewLocals(req, {
+          courses,
+          trainingOffers,
+          selectedCourseId: courseId || "",
+          error: req.t("registerPhoneInvalid"),
+        })
+      );
+      return;
+    }
+
+    if (!isEstonianPersonalCodeValid(isikukood)) {
+      res.status(400).render(
+        "pages/register",
+        registerViewLocals(req, {
+          courses,
+          trainingOffers,
+          selectedCourseId: courseId || "",
+          error: req.t("registerIsikukoodInvalid"),
+        })
+      );
+      return;
+    }
+
     let trainingOfferRowForNote = null;
     if (courseRequiresTrainingOffer(courseId)) {
       const tid = String(trainingOfferId || "").trim();
@@ -281,10 +351,11 @@ router.post("/register", async (req, res, next) => {
 
     let successBankInfo = null;
     if (payNorm === "bank") {
+      const mailLang = supportedLanguages.includes(String(studyLang || "").trim()) ? String(studyLang).trim() : req.lang;
       try {
         const mailResult = await sendBankTransferInstructionsMail({
           to: email,
-          lang: req.lang,
+          lang: mailLang,
           fullName,
           courseName: chosenCourse.name,
           amount: chosenCourse.price,
