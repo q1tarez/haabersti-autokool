@@ -177,21 +177,21 @@ function buildMessage(lang, fullName, courseName, amount, courseId, bank) {
 
   const contactBlock =
     bank.phone || bank.contactEmail
-      ? `<p style="margin:12px 0 0;font-size:13px;color:#64748b;line-height:1.6;">
-          <strong style="color:#334155;">${L.footerContact}</strong><br />
+      ? `<p style="margin:12px 0 0;font-size:13px;color:#334155 !important;-webkit-text-fill-color:#334155 !important;line-height:1.6;">
+          <strong style="color:#0f172a !important;-webkit-text-fill-color:#0f172a !important;">${L.footerContact}</strong><br />
           ${bank.phone ? escapeHtml(bank.phone) : ""}${bank.phone && bank.contactEmail ? " · " : ""}${
             bank.contactEmail
-              ? `<a href="mailto:${escapeHtml(bank.contactEmail)}" style="color:#2563eb;">${escapeHtml(bank.contactEmail)}</a>`
+              ? `<a href="mailto:${escapeHtml(bank.contactEmail)}" style="color:#1d4ed8 !important;-webkit-text-fill-color:#1d4ed8 !important;">${escapeHtml(bank.contactEmail)}</a>`
               : ""
           }
         </p>`
       : "";
 
   const memoHtml = includeMemo
-    ? `<div style="margin:16px 0 0;padding:14px 14px 8px;border:1px solid #c7d2fe;border-radius:10px;background:#eef2ff;">
-          <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#1e3a8a;">${escapeHtml(L.memoTitle)}</p>
-          <ul style="margin:0;padding:0 0 0 18px;color:#1f2937;font-size:13px;line-height:1.55;">
-            ${L.memoLines.map((line) => `<li style="margin:0 0 6px;">${escapeHtml(line)}</li>`).join("")}
+    ? `<div style="margin:16px 0 0;padding:14px 14px 8px;border:1px solid #c7d2fe;border-radius:10px;background-color:#eef2ff !important;">
+          <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#1e3a8a !important;-webkit-text-fill-color:#1e3a8a !important;">${escapeHtml(L.memoTitle)}</p>
+          <ul style="margin:0;padding:0 0 0 18px;font-size:13px;line-height:1.55;color:#0f172a !important;-webkit-text-fill-color:#0f172a !important;">
+            ${L.memoLines.map((line) => `<li style="margin:0 0 6px;color:#0f172a !important;-webkit-text-fill-color:#0f172a !important;">${escapeHtml(line)}</li>`).join("")}
           </ul>
         </div>`
     : "";
@@ -201,54 +201,66 @@ function buildMessage(lang, fullName, courseName, amount, courseId, bank) {
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <meta name="supported-color-schemes" content="light" />
   <meta name="description" content="${escapeHtml(L.preheader)}" />
   <title>${escapeHtml(L.subject)}</title>
+  <style type="text/css">
+    :root { color-scheme: light only; supported-color-schemes: light; }
+    @media (prefers-color-scheme: dark) {
+      .hm-body { background-color: #f4f6fb !important; }
+      .hm-intro p { color: #0f172a !important; -webkit-text-fill-color: #0f172a !important; }
+      .hm-card td { color: #0f172a !important; -webkit-text-fill-color: #0f172a !important; background-color: #f1f5f9 !important; }
+      .hm-card td.hm-label { color: #334155 !important; -webkit-text-fill-color: #334155 !important; }
+      .hm-notice { color: #334155 !important; -webkit-text-fill-color: #334155 !important; }
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background-color:#f4f6fb;font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+<body class="hm-body" style="margin:0;padding:0;background-color:#f4f6fb !important;font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased;color-scheme:light only;">
   <div style="display:none;max-height:0;overflow:hidden;">${escapeHtml(L.preheader)}</div>
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f4f6fb;padding:24px 12px;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#f4f6fb" style="background-color:#f4f6fb !important;padding:24px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5eaf2;box-shadow:0 4px 24px rgba(15,23,42,0.06);">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" bgcolor="#ffffff" style="max-width:600px;width:100%;background-color:#ffffff !important;border-radius:12px;overflow:hidden;border:1px solid #e5eaf2;box-shadow:0 4px 24px rgba(15,23,42,0.06);">
           <tr>
             <td style="background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);padding:24px 28px 22px;">
               ${logoHtml}
-              <p style="margin:0;font-size:13px;font-weight:700;color:rgba(255,255,255,0.9);letter-spacing:0.06em;text-transform:uppercase;">Haabersti Autokool</p>
-              <p style="margin:8px 0 0;font-size:22px;font-weight:800;color:#ffffff;line-height:1.25;">${L.headline}</p>
+              <p style="margin:0;font-size:13px;font-weight:700;color:rgba(255,255,255,0.95) !important;-webkit-text-fill-color:rgba(255,255,255,0.95) !important;letter-spacing:0.06em;text-transform:uppercase;">Haabersti Autokool</p>
+              <p style="margin:8px 0 0;font-size:22px;font-weight:800;color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;line-height:1.25;">${L.headline}</p>
             </td>
           </tr>
           <tr>
-            <td style="padding:28px 28px 8px;">
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.55;color:#1e293b;">${escapeHtml(L.greeting(fullName))}</p>
-              <p style="margin:0;font-size:15px;line-height:1.6;color:#475569;">${escapeHtml(L.intro(courseName))}</p>
+            <td class="hm-intro" bgcolor="#ffffff" style="padding:28px 28px 8px;background-color:#ffffff !important;">
+              <p style="margin:0 0 14px;font-size:16px;line-height:1.55;color:#0f172a !important;-webkit-text-fill-color:#0f172a !important;">${escapeHtml(L.greeting(fullName))}</p>
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#1e293b !important;-webkit-text-fill-color:#1e293b !important;">${escapeHtml(L.intro(courseName))}</p>
             </td>
           </tr>
           <tr>
-            <td style="padding:12px 28px 28px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid #dbeafe;border-radius:10px;background:linear-gradient(180deg,#f8fafc 0%,#f1f5f9 100%);">
+            <td style="padding:12px 28px 28px;background-color:#ffffff !important;">
+              <table role="presentation" class="hm-card" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#f1f5f9" style="border:1px solid #dbeafe;border-radius:10px;background-color:#f1f5f9 !important;">
                 <tr>
-                  <td style="padding:18px 20px;">
-                    <p style="margin:0 0 14px;font-size:13px;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:0.04em;">${L.cardTitle}</p>
+                  <td style="padding:18px 20px;background-color:#f1f5f9 !important;">
+                    <p style="margin:0 0 14px;font-size:13px;font-weight:700;color:#1d4ed8 !important;-webkit-text-fill-color:#1d4ed8 !important;text-transform:uppercase;letter-spacing:0.04em;">${L.cardTitle}</p>
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                       <tr>
-                        <td style="padding:8px 0;font-size:13px;color:#64748b;width:132px;vertical-align:top;">${L.labelBeneficiary}</td>
-                        <td style="padding:8px 0;font-size:15px;font-weight:700;color:#0f172a;line-height:1.35;">${escapeHtml(ben)}</td>
+                        <td class="hm-label" style="padding:8px 0;font-size:13px;color:#334155 !important;-webkit-text-fill-color:#334155 !important;width:132px;vertical-align:top;background-color:transparent !important;">${L.labelBeneficiary}</td>
+                        <td style="padding:8px 0;font-size:15px;font-weight:700;color:#0f172a !important;-webkit-text-fill-color:#0f172a !important;line-height:1.35;background-color:transparent !important;">${escapeHtml(ben)}</td>
                       </tr>
                       <tr>
-                        <td style="padding:8px 0;font-size:13px;color:#64748b;vertical-align:top;">${L.labelIban}</td>
-                        <td style="padding:8px 0;font-size:16px;font-weight:700;color:#0f172a;letter-spacing:0.06em;font-family:Consolas,'Courier New',monospace;">${escapeHtml(formatIbanDisplay(iban))}</td>
+                        <td class="hm-label" style="padding:8px 0;font-size:13px;color:#334155 !important;-webkit-text-fill-color:#334155 !important;vertical-align:top;background-color:transparent !important;">${L.labelIban}</td>
+                        <td style="padding:8px 0;font-size:16px;font-weight:700;color:#0f172a !important;-webkit-text-fill-color:#0f172a !important;letter-spacing:0.06em;font-family:Consolas,'Courier New',monospace;background-color:transparent !important;">${escapeHtml(formatIbanDisplay(iban))}</td>
                       </tr>
                       ${
                         amountLine
                           ? `<tr>
-                        <td style="padding:8px 0;font-size:13px;color:#64748b;vertical-align:top;">${L.labelAmount}</td>
-                        <td style="padding:8px 0;font-size:15px;font-weight:700;color:#0f172a;">${escapeHtml(amountLine)}</td>
+                        <td class="hm-label" style="padding:8px 0;font-size:13px;color:#334155 !important;-webkit-text-fill-color:#334155 !important;vertical-align:top;background-color:transparent !important;">${L.labelAmount}</td>
+                        <td style="padding:8px 0;font-size:15px;font-weight:700;color:#0f172a !important;-webkit-text-fill-color:#0f172a !important;background-color:transparent !important;">${escapeHtml(amountLine)}</td>
                       </tr>`
                           : ""
                       }
                       <tr>
-                        <td style="padding:8px 0;font-size:13px;color:#64748b;vertical-align:top;">${L.labelPurpose}</td>
-                        <td style="padding:8px 0;font-size:15px;color:#0f172a;line-height:1.45;">${safePurpose}</td>
+                        <td class="hm-label" style="padding:8px 0;font-size:13px;color:#334155 !important;-webkit-text-fill-color:#334155 !important;vertical-align:top;background-color:transparent !important;">${L.labelPurpose}</td>
+                        <td style="padding:8px 0;font-size:15px;color:#0f172a !important;-webkit-text-fill-color:#0f172a !important;line-height:1.45;background-color:transparent !important;">${safePurpose}</td>
                       </tr>
                     </table>
                   </td>
@@ -257,22 +269,22 @@ function buildMessage(lang, fullName, courseName, amount, courseId, bank) {
             </td>
           </tr>
           <tr>
-            <td style="padding:0 28px 24px;">
-              <p style="margin:0;font-size:13px;line-height:1.55;color:#64748b;border-left:3px solid #93c5fd;padding-left:14px;">${L.notice}</p>
+            <td style="padding:0 28px 24px;background-color:#ffffff !important;">
+              <p class="hm-notice" style="margin:0;font-size:13px;line-height:1.55;color:#334155 !important;-webkit-text-fill-color:#334155 !important;border-left:3px solid #93c5fd;padding-left:14px;">${L.notice}</p>
             </td>
           </tr>
           <tr>
-            <td style="padding:18px 28px;background:#f1f5f9;border-top:1px solid #e2e8f0;">
-              <p style="margin:0;font-size:13px;color:#64748b;line-height:1.5;">
-                <strong style="color:#334155;">${L.footerBrand}</strong><br />
-                ${L.footerCity}
+            <td style="padding:18px 28px;background-color:#e8edf3 !important;border-top:1px solid #e2e8f0;">
+              <p style="margin:0;font-size:13px;color:#334155 !important;-webkit-text-fill-color:#334155 !important;line-height:1.5;">
+                <strong style="color:#0f172a !important;-webkit-text-fill-color:#0f172a !important;">${L.footerBrand}</strong><br />
+                <span style="color:#334155 !important;-webkit-text-fill-color:#334155 !important;">${L.footerCity}</span>
               </p>
               ${contactBlock}
               ${memoHtml}
             </td>
           </tr>
         </table>
-        <p style="margin:16px 0 0;font-size:11px;color:#94a3b8;max-width:600px;line-height:1.45;">${L.disclaimer}</p>
+        <p style="margin:16px 0 0;font-size:11px;color:#64748b !important;-webkit-text-fill-color:#64748b !important;max-width:600px;line-height:1.45;">${L.disclaimer}</p>
       </td>
     </tr>
   </table>
