@@ -10,6 +10,18 @@ const { TRAINING_OFFER_COURSE_IDS } = require("../data/trainingOffers");
 
 const router = express.Router();
 
+router.use((req, res, next) => {
+  res.locals.adminPath = req.path;
+  const cookieValue = req.cookies && req.cookies.admin_auth;
+  if (cookieValue) {
+    const parts = String(cookieValue).split(":");
+    if (parts[1]) {
+      res.locals.adminUsername = parts[1];
+    }
+  }
+  next();
+});
+
 const TRAINING_COURSE_LABELS = {
   "winter-training": "Зимнее вождение",
   "first-aid": "Первая помощь",

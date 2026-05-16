@@ -1,19 +1,19 @@
-<%- include("../partials/header", { title }) %>
+<%- include("../partials/admin-header", { title, adminLogin: true }) %>
 
-<section class="auth-box">
+<section class="card auth-box admin-auth-box">
   <h1><%= t("adminLoginTitle") %></h1>
   <% if (error) { %>
     <p class="alert error"><%= error %></p>
   <% } %>
   <form class="form" method="POST" action="/admin/login">
     <label for="username"><%= t("username") %></label>
-    <input id="username" name="username" type="text" required />
+    <input id="username" name="username" type="text" required autocomplete="username" />
 
     <label for="password"><%= t("password") %></label>
-    <input id="password" name="password" type="password" required />
+    <input id="password" name="password" type="password" required autocomplete="current-password" />
 
     <button class="btn" type="submit"><%= t("signIn") %></button>
   </form>
 </section>
 
-<%- include("../partials/footer") %>
+<%- include("../partials/admin-footer", { adminLogin: true }) %>

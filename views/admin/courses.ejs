@@ -1,14 +1,18 @@
-<%- include("../partials/header", { title }) %>
+<%- include("../partials/admin-header", { title }) %>
 
-<section>
+<header class="admin-page-header">
   <h1>Управление курсами</h1>
   <p class="section-lead">Добавление, редактирование, скрытие и удаление курсов со всеми деталями.</p>
-  <%- include("./_nav") %>
+</header>
 
-  <div class="registration-layout">
+<div class="registration-layout admin-split-layout">
     <div class="card">
       <h2><%= editingCourse ? "Редактировать курс" : "Добавить новый курс" %></h2>
       <form class="form" method="POST" action="<%= editingCourse ? `/admin/courses/${editingCourse.id}/update` : '/admin/courses' %>">
+        <% if (!editingCourse) { %>
+          <label>ID курса (латиница, уникальный)</label>
+          <input name="id" type="text" placeholder="например: b-premium" />
+        <% } %>
 
         <label>Название (EST)</label>
         <input name="name_et" type="text" value="<%= editingCourse?.name_et || '' %>" required />
@@ -71,3 +75,15 @@
                 <td class="table-actions">
                   <a class="btn secondary" href="/admin/courses/<%= course.id %>/edit">Изменить</a>
                   <form method="POST" action="/admin/courses/<%= course.id %>/delete" onsubmit="return confirm('Удалить курс?');">
+                    <button class="btn danger" type="submit">Удалить</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+</div>
+
+<%- include("../partials/admin-footer") %>

@@ -1,28 +1,27 @@
-<%- include("../partials/header", { title }) %>
+<%- include("../partials/admin-header", { title }) %>
 
-<section>
+<header class="admin-page-header">
   <h1><%= t("dashboardHello") %>, <%= username %>!</h1>
-  <p>Полноценная админ-панель: курсы, ученики, обращения, статусы и быстрые действия.</p>
-  <%- include("./_nav") %>
+  <p class="section-lead">Курсы, ученики, обращения, статусы и быстрые действия.</p>
+</header>
 
-  <div class="stats admin-stats">
-    <article>
-      <p class="number"><%= stats.coursesCount %></p>
-      <p>Активных курсов</p>
-    </article>
-    <article>
-      <p class="number"><%= stats.studentsCount %></p>
-      <p>Всего записей учеников</p>
-    </article>
-    <article>
-      <p class="number"><%= stats.contactsCount %></p>
-      <p>Всего обращений</p>
-    </article>
-    <article>
-      <p class="number"><%= stats.newLeadsCount %></p>
-      <p>Новых заявок</p>
-    </article>
-  </div>
-</section>
+<div class="stats admin-stats">
+  <article>
+    <p class="number"><%= stats.coursesCount %></p>
+    <p>Активных курсов</p>
+  </article>
+  <article>
+    <p class="number"><%= stats.studentsCount %></p>
+    <p>Всего записей учеников</p>
+  </article>
+  <article>
+    <p class="number"><%= stats.contactsCount %></p>
+    <p>Всего обращений</p>
+  </article>
+  <article>
+    <p class="number"><%= stats.newLeadsCount %></p>
+    <p>Новых заявок</p>
+  </article>
+</div>
 
-<%- include("../partials/footer") %>
+<%- include("../partials/admin-footer") %>

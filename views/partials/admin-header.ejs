@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="<%= lang %>">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title><%= title %> | Admin · Haabersti Autokool</title>
+    <link rel="icon" type="image/png" href="/images/haabersti-autokool-icon.png" sizes="any" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body class="admin-page<%= typeof adminLogin !== 'undefined' && adminLogin ? ' admin-page--login' : '' %>">
+    <a class="skip-link" href="#main-content">Перейти к содержимому</a>
+
+    <header class="admin-site-header">
+      <div class="admin-bar-inner">
+        <a class="logo" href="/admin/dashboard">
+          <img class="logo-mark" src="/images/haabersti-autokool-icon.png" alt="" width="36" height="36" decoding="async" />
+          <span class="logo-text">Haabersti Autokool</span>
+        </a>
+        <span class="admin-badge">Админ-панель</span>
+        <% if (typeof adminUsername !== 'undefined' && adminUsername) { %>
+          <span class="admin-user"><%= adminUsername %></span>
+        <% } %>
+        <a class="btn secondary admin-site-link" href="/">На сайт</a>
+        <% if (typeof adminLogin === 'undefined' || !adminLogin) { %>
+          <button
+            type="button"
+            class="admin-nav-toggle"
+            id="adminNavToggle"
+            aria-expanded="false"
+            aria-controls="adminSidebar"
+          >
+            Меню
+          </button>
+        <% } %>
+      </div>
+    </header>
+
+    <% if (typeof adminLogin === 'undefined' || !adminLogin) { %>
+      <div class="admin-shell" id="main-content">
+        <%- include("../admin/_nav") %>
+        <div class="admin-main">
+    <% } else { %>
+      <main class="admin-login-wrap" id="main-content">
+    <% } %>

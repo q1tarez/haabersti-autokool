@@ -1,20 +1,25 @@
-<%- include("../partials/header", { title }) %>
+<%- include("../partials/admin-header", { title }) %>
 
-<section>
+<header class="admin-page-header">
   <h1>Тренинги и группы (карточки регистрации)</h1>
   <p class="section-lead">
     Карточки на шаге «Группа» для зимнего вождения, первой помощи, тёмного и скользкого вождения. Поля совпадают с отображением на сайте.
   </p>
-  <%- include("./_nav") %>
+</header>
 
-  <% if (notice) { %>
-    <p class="admin-notice"><%= notice %></p>
-  <% } %>
+<% if (notice) { %>
+  <p class="admin-notice"><%= notice %></p>
+<% } %>
 
-  <div class="registration-layout">
+<div class="registration-layout admin-split-layout">
     <div class="card">
       <h2><%= editingId ? "Изменить предложение" : "Добавить предложение" %></h2>
       <form class="form instructor-admin-form" method="POST" action="<%= editingId ? `/admin/training-offers/${encodeURIComponent(editingId)}/update` : '/admin/training-offers' %>">
+        <% if (!editingId) { %>
+          <label>ID (латиница, для URL)</label>
+          <input type="text" name="manual_id" placeholder="например winter-manual-laitse" pattern="[a-z0-9\-]*" />
+          <p class="form-hint">Если пусто — сгенерируется из курса и ключа варианта.</p>
+        <% } %>
 
         <label>Тип курса *</label>
         <select name="course_id" required>
@@ -137,3 +142,15 @@
                 <td class="admin-actions">
                   <a class="btn secondary small" href="/admin/training-offers/<%= encodeURIComponent(o.id) %>/edit">Изменить</a>
                   <form method="POST" action="/admin/training-offers/<%= encodeURIComponent(o.id) %>/delete" onsubmit="return confirm('Удалить запись?');">
+                    <button type="submit" class="btn danger small">Удалить</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+</div>
+
+<%- include("../partials/admin-footer") %>

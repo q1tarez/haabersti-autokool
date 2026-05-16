@@ -1,8 +1,21 @@
-<div class="admin-nav card">
-  <a href="/admin/dashboard">Дашборд</a>
-  <a href="/admin/courses">Курсы</a>
-  <a href="/admin/instructors">Инструкторы</a>
-  <a href="/admin/training-offers">Тренинги / группы</a>
-  <a href="/admin/students">Ученики</a>
-  <a href="/admin/contacts">Обращения</a>
-  <form method="POST" action="/admin/logout">
+<%
+  const path = typeof adminPath !== "undefined" ? adminPath : "";
+  function isNavActive(prefix) {
+    if (prefix === "/dashboard") return path === "/dashboard";
+    return path === prefix || path.startsWith(prefix + "/");
+  }
+%>
+<aside class="admin-sidebar card" id="adminSidebar" aria-label="Навигация админ-панели">
+  <p class="admin-sidebar-title">Разделы</p>
+  <nav class="admin-nav">
+    <a href="/admin/dashboard" class="<%= isNavActive('/dashboard') ? 'is-active' : '' %>">Дашборд</a>
+    <a href="/admin/courses" class="<%= isNavActive('/courses') ? 'is-active' : '' %>">Курсы</a>
+    <a href="/admin/instructors" class="<%= isNavActive('/instructors') ? 'is-active' : '' %>">Инструкторы</a>
+    <a href="/admin/training-offers" class="<%= isNavActive('/training-offers') ? 'is-active' : '' %>">Тренинги / группы</a>
+    <a href="/admin/students" class="<%= isNavActive('/students') ? 'is-active' : '' %>">Ученики</a>
+    <a href="/admin/contacts" class="<%= isNavActive('/contacts') ? 'is-active' : '' %>">Обращения</a>
+  </nav>
+  <form class="admin-logout" method="POST" action="/admin/logout">
+    <button class="btn danger" type="submit"><%= t("signOut") %></button>
+  </form>
+</aside>

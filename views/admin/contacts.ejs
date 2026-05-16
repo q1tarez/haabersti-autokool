@@ -1,40 +1,39 @@
-<%- include("../partials/header", { title }) %>
+<%- include("../partials/admin-header", { title }) %>
 
-<section>
+<header class="admin-page-header">
   <h1>Обращения с сайта</h1>
   <p class="section-lead">Все сообщения из формы контактов и управление статусом обработки.</p>
-  <%- include("./_nav") %>
+</header>
 
-  <div class="card table-wrap">
-    <table class="admin-table">
-      <thead>
+<div class="card table-wrap">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Дата</th>
+        <th>Имя</th>
+        <th>Телефон</th>
+        <th>Сообщение</th>
+        <th>Статус</th>
+        <th>Действия</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% contacts.forEach((item) => { %>
         <tr>
-          <th>Дата</th>
-          <th>Имя</th>
-          <th>Телефон</th>
-          <th>Сообщение</th>
-          <th>Статус</th>
-          <th>Действия</th>
+          <td><%= formatEtDateTime(item.created_at) %></td>
+          <td><%= item.full_name %></td>
+          <td><%= item.phone %></td>
+          <td><%= item.message || "-" %></td>
+          <td><%= item.status || "new" %></td>
+          <td class="table-actions">
+            <form method="POST" action="/admin/contacts/<%= item.id %>/status" class="inline-form">
+              <button class="btn danger" type="submit">Удалить</button>
+            </form>
+          </td>
         </tr>
-      </thead>
-      <tbody>
-        <% contacts.forEach((item) => { %>
-          <tr>
-            <td><%= formatEtDateTime(item.created_at) %></td>
-            <td><%= item.full_name %></td>
-            <td><%= item.phone %></td>
-            <td><%= item.message || "-" %></td>
-            <td><%= item.status || "new" %></td>
-            <td class="table-actions">
-              <form method="POST" action="/admin/contacts/<%= item.id %>/status" class="inline-form">
-                <button class="btn danger" type="submit">Удалить</button>
-              </form>
-            </td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
-</section>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
 
-<%- include("../partials/footer") %>
+<%- include("../partials/admin-footer") %>

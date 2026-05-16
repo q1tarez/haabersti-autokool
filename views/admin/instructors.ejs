@@ -1,18 +1,23 @@
-<%- include("../partials/header", { title }) %>
+<%- include("../partials/admin-header", { title }) %>
 
-<section>
+<header class="admin-page-header">
   <h1>Инструкторы</h1>
   <p class="section-lead">Появление на регистрации (шаг со списком) и сохранённые фильтры. Добавление — новая строка с полным описанием.</p>
-  <%- include("./_nav") %>
+</header>
 
-  <% if (notice) { %>
-    <p class="admin-notice"><%= notice %></p>
-  <% } %>
+<% if (notice) { %>
+  <p class="admin-notice"><%= notice %></p>
+<% } %>
 
-  <div class="registration-layout">
+<div class="registration-layout admin-split-layout">
     <div class="card">
       <h2><%= editingId ? "Изменить инструктора" : "Добавить инструктора" %></h2>
       <form class="form instructor-admin-form" method="POST" action="<%= editingId ? `/admin/instructors/${encodeURIComponent(editingId)}/update` : '/admin/instructors' %>">
+        <% if (!editingId) { %>
+          <label>ID (латиница, только в URL/данных)</label>
+          <input type="text" name="manual_id" placeholder="например ivan-smirnov" pattern="[a-z0-9\-]+" />
+          <p class="form-hint">Если не заполнено — код создаётся из имени. Только маленькие латинские буквы, цифры и дефис.</p>
+        <% } %>
 
         <label>Отображаемое имя *</label>
         <input type="text" name="name" required value="<%= editingInstructor ? editingInstructor.name : '' %>" />
@@ -195,3 +200,15 @@
                 <td class="table-actions">
                   <a class="btn secondary" href="/admin/instructors/<%= encodeURIComponent(instr.id) %>/edit">Изменить</a>
                   <form method="POST" action="/admin/instructors/<%= encodeURIComponent(instr.id) %>/delete" onsubmit="return confirm('Удалить инструктора «<%= instr.name %>»?');">
+                    <button class="btn danger" type="submit">Удалить</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+</div>
+
+<%- include("../partials/admin-footer") %>
