@@ -580,15 +580,29 @@ router.post("/students/:id/payment-reminder", requireAdmin, async (req, res, nex
       ? await getAsync("SELECT price FROM courses WHERE id = ?", [row.course_id])
       : null;
     const amount = courseRow?.price || "";
-    const result = await sendPaymentReminderMail({
-      to: row.email,
-      lang: mailLang,
-      fullName: row.full_name,
-      courseName: row.course_name,
-      amount,
-      registrationId: row.id,
-      price: amount,
-    });
+    let result;
+    try {
+      result = await sendPaymentReminderMail({
+        to: row.email,
+        lang: mailLang,
+        fullName: row.full_name,
+        courseName: row.course_name,
+        amount,
+        registrationId: row.id,
+        price: amount,
+      });
+    } catch (mailErr) {
+      // eslint-disable-next-line no-console
+      console.error("[payment-reminder]", mailErr.message);
+      await logAudit(req, {
+        action: "payment_reminder",
+        entityType: "student",
+        entityId: req.params.id,
+        details: { email: row.email, sent: false, error: mailErr.message },
+      });
+      res.redirect(303, "/admin/students?reminder=failed");
+      return;
+    }
     await logAudit(req, {
       action: "payment_reminder",
       entityType: "student",

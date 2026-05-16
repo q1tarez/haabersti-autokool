@@ -374,4 +374,4 @@ async function sendBankTransferInstructionsMail({ to, lang, fullName, courseName
   return { ok: true, mode: "smtp" };
 }
 
-module.exports = { sendBankTransferInstructionsMail };
+module.exports = { sendBankTransferInstructionsMail, getBankDetails };
