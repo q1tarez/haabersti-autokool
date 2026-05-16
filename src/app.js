@@ -1,6 +1,5 @@
 const path = require("path");
 const express = require("express");
-const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
@@ -57,32 +56,29 @@ app.set("views", path.join(__dirname, "../views"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "../public")));
 app.use(cookieParser(appSecret));
-app.use(
-  session({
-    secret: appSecret,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-    },
-  })
-);
 
-// CSRF protection (must be after session and cookieParser)
-const csrfProtection = csurf({ cookie: false });
+// CSRF protection (cookie-based — works on Vercel serverless, no session needed)
+const csrfProtection = csurf({ cookie: { httpOnly: true, sameSite: "lax" } });
 
 app.use((req, res, next) => {
+  // Language: prefer query param, then cookie, then default
   const queryLang = req.query.lang;
   if (queryLang && supportedLanguages.includes(queryLang)) {
-    req.session.lang = queryLang;
+    // Persist language choice in a plain cookie (works on Vercel serverless)
+    res.cookie("lang", queryLang, {
+      maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
+      httpOnly: false, // readable by JS if needed
+      sameSite: "lax",
+      path: "/",
+    });
+    req.lang = queryLang;
+  } else {
+    const cookieLang = req.cookies && req.cookies.lang;
+    req.lang = (cookieLang && supportedLanguages.includes(cookieLang)) ? cookieLang : defaultLanguage;
   }
 
-  const activeLang = req.session.lang || defaultLanguage;
-  req.lang = activeLang;
-  req.t = (key) => t(activeLang, key);
-  res.locals.lang = activeLang;
+  req.t = (key) => t(req.lang, key);
+  res.locals.lang = req.lang;
   res.locals.t = req.t;
   res.locals.formatEtDateTime = formatEtDateTime;
   next();
@@ -100,15 +96,19 @@ app.use((req, res) => {
   res.status(404).render("pages/404", { title: "404" });
 });
 
-// CSRF error handler
+// Global error handler
 app.use((err, req, res, next) => {
   if (err.code === "EBADCSRFTOKEN") {
     res.status(403).send("Invalid or missing CSRF token. Please reload the page and try again.");
     return;
   }
   // eslint-disable-next-line no-console
-  console.error(err);
-  res.status(500).send(req.t ? req.t("serverError") : "Server error");
+  console.error("[APP ERROR]", err.message, err.stack);
+  const isDev = process.env.NODE_ENV !== "production";
+  const msg = isDev
+    ? `Server error: ${err.message}`
+    : (req.t ? req.t("serverError") : "Server error");
+  res.status(500).send(msg);
 });
 
 if (require.main === module) {

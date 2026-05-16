@@ -1,30 +1,152 @@
 <%- include("../partials/header", { title, currentPath: '/contacts' }) %>
 
-<section>
-  <h1><%= t("contactsTitle") %></h1>
-  <p class="section-lead"><%= t("contactsLead") %></p>
+<div class="contacts-page">
+
+  <!-- Page hero -->
+  <div class="contacts-hero">
+    <div class="contacts-hero-inner">
+      <span class="section-eyebrow"><%= lang === 'ru' ? 'Контакты' : lang === 'en' ? 'Contact' : 'Kontakt' %></span>
+      <h1 class="contacts-hero-title"><%= t("contactsTitle") %></h1>
+      <p class="contacts-hero-lead"><%= t("contactsLead") %></p>
+    </div>
+  </div>
+
+  <!-- Alerts -->
   <% if (error) { %>
-    <p class="alert error"><%= error %></p>
+    <div class="container contacts-alerts">
+      <p class="alert error"><%= error %></p>
+    </div>
   <% } %>
   <% if (success) { %>
-    <p class="alert success"><%= success %></p>
+    <div class="container contacts-alerts">
+      <p class="alert success">✓ <%= success %></p>
+    </div>
   <% } %>
 
-  <form class="form card form-card" method="POST" action="/contacts">
-    <% if (typeof csrfToken !== 'undefined') { %>
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-    <% } %>
-    <label for="fullName"><%= t("name") %></label>
-    <input id="fullName" name="fullName" type="text" required />
+  <!-- Main grid -->
+  <div class="container contacts-grid">
 
-    <label for="phone"><%= t("phone") %></label>
-    <input id="phone" name="phone" type="text" required />
+    <!-- Left: info cards -->
+    <div class="contacts-info">
 
-    <label for="message"><%= t("message") %></label>
-    <textarea id="message" name="message" rows="5"></textarea>
+      <div class="contact-card fade-up">
+        <div class="contact-card-icon">📞</div>
+        <div class="contact-card-body">
+          <div class="contact-card-label"><%= lang === 'ru' ? 'Телефон' : lang === 'en' ? 'Phone' : 'Telefon' %></div>
+          <div class="contact-card-value">
+            <a href="tel:+3725684 7904">+372 5684 7904</a>
+          </div>
+        </div>
+      </div>
 
-    <button class="btn" type="submit"><%= t("send") %></button>
-  </form>
-</section>
+      <div class="contact-card fade-up">
+        <div class="contact-card-icon">✉️</div>
+        <div class="contact-card-body">
+          <div class="contact-card-label">Email</div>
+          <div class="contact-card-value">
+            <a href="mailto:haaberstiautokool@gmail.com">haaberstiautokool@gmail.com</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-card fade-up">
+        <div class="contact-card-icon">🕐</div>
+        <div class="contact-card-body">
+          <div class="contact-card-label"><%= lang === 'ru' ? 'Часы работы' : lang === 'en' ? 'Working hours' : 'Lahtiolekuajad' %></div>
+          <div class="contact-card-value">
+            <%= lang === 'ru' ? 'Пн–Пт: 09:00–19:00' : lang === 'en' ? 'Mon–Fri: 09:00–19:00' : 'E–R: 09:00–19:00' %><br />
+            <%= lang === 'ru' ? 'Сб: 10:00–16:00' : lang === 'en' ? 'Sat: 10:00–16:00' : 'L: 10:00–16:00' %>
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-card fade-up">
+        <div class="contact-card-icon">📍</div>
+        <div class="contact-card-body">
+          <div class="contact-card-label"><%= lang === 'ru' ? 'Адрес' : lang === 'en' ? 'Address' : 'Aadress' %></div>
+          <div class="contact-card-value">
+            <%= lang === 'ru' ? 'Таллин, Эстония' : lang === 'en' ? 'Tallinn, Estonia' : 'Tallinn, Eesti' %><br />
+            <span style="font-size:13px;color:var(--text-muted);">
+              <%= lang === 'ru' ? 'Район Хааберсти' : lang === 'en' ? 'Haabersti district' : 'Haabersti linnaosa' %>
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right: contact form -->
+    <div class="contact-form-card fade-up">
+      <h2 class="contact-form-title">
+        <%= lang === 'ru' ? 'Написать нам' : lang === 'en' ? 'Send us a message' : 'Kirjuta meile' %>
+      </h2>
+      <p class="contact-form-lead">
+        <%= lang === 'ru' ? 'Ответим в течение рабочего дня.' : lang === 'en' ? 'We reply within one business day.' : 'Vastame ühe tööpäeva jooksul.' %>
+      </p>
+
+      <form class="contact-form" method="POST" action="/contacts" novalidate>
+        <% if (typeof csrfToken !== 'undefined') { %>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <% } %>
+
+        <div class="cf-group">
+          <label class="cf-label" for="fullName"><%= t("name") %> <span class="cf-required">*</span></label>
+          <input
+            class="cf-input"
+            id="fullName"
+            name="fullName"
+            type="text"
+            autocomplete="name"
+            placeholder="<%= lang === 'ru' ? 'Иван Петров' : lang === 'en' ? 'John Smith' : 'Jaan Tamm' %>"
+            required
+          />
+        </div>
+
+        <div class="cf-group">
+          <label class="cf-label" for="phone"><%= t("phone") %> <span class="cf-required">*</span></label>
+          <input
+            class="cf-input"
+            id="phone"
+            name="phone"
+            type="tel"
+            autocomplete="tel"
+            placeholder="+372 5123 4567"
+            required
+          />
+        </div>
+
+        <div class="cf-group">
+          <label class="cf-label" for="message"><%= t("message") %></label>
+          <textarea
+            class="cf-input cf-textarea"
+            id="message"
+            name="message"
+            rows="4"
+            placeholder="<%= lang === 'ru' ? 'Ваш вопрос или пожелание...' : lang === 'en' ? 'Your question or comment...' : 'Teie küsimus või soov...' %>"
+          ></textarea>
+        </div>
+
+        <button class="btn-contact-submit" type="submit">
+          <%= t("send") %> →
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<!-- Scroll animation script (contacts page only) -->
+<script>
+  (function () {
+    var els = document.querySelectorAll('.fade-up');
+    if (!els.length) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('fade-up--visible'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.1 });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+</script>
 
 <%- include("../partials/footer") %>

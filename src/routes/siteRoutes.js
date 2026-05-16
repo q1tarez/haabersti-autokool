@@ -8,11 +8,17 @@ const { contactSchema, registrationSchema, validate } = require("../validation/s
 
 const router = express.Router();
 
-/** Интерфейсный язык из формы (на serverless сессия теряется — без этого POST отдаётся на et). */
+/** Интерфейсный язык из формы (сохраняем в куке — работает на Vercel serverless). */
 function applyUiLangFromBody(req, res) {
   const raw = String(req.body.uiLang || "").trim();
   if (raw && supportedLanguages.includes(raw)) {
-    req.session.lang = raw;
+    // Persist in cookie (works on Vercel serverless, unlike express-session in-memory store)
+    res.cookie("lang", raw, {
+      maxAge: 365 * 24 * 60 * 60 * 1000,
+      httpOnly: false,
+      sameSite: "lax",
+      path: "/",
+    });
     req.lang = raw;
     res.locals.lang = raw;
     req.t = (key) => t(raw, key);
