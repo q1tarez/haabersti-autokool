@@ -62,7 +62,9 @@
                   <option value="registered">Запись на курс</option>
                 </select>
                 <label><%= adminT("replyMessage") %></label>
-                <textarea name="message" rows="3" placeholder="Или свой текст…"></textarea>
+                <textarea name="message" rows="3" class="reply-message-field" placeholder="Или свой текст…"></textarea>
+                <button type="button" class="btn secondary reply-preview-btn">Превью письма</button>
+                <div class="admin-email-preview" hidden></div>
                 <button class="btn" type="submit"><%= adminT("replySend") %></button>
               </form>
             </details>
@@ -78,4 +80,29 @@
   </table>
 </div>
 
+<script>
+(function () {
+  var tpl = {
+    received: "Спасибо за обращение! Мы получили ваше сообщение и свяжемся с вами в ближайшее рабочее время.",
+    call: "Мы перезвоним вам в течение рабочего дня.",
+    registered: "Для записи на курс используйте форму на сайте или ответьте на это письмо."
+  };
+  document.querySelectorAll(".admin-reply-form").forEach(function (form) {
+    var sel = form.querySelector('[name="template"]');
+    var msg = form.querySelector(".reply-message-field");
+    var prev = form.querySelector(".reply-preview-btn");
+    var box = form.querySelector(".admin-email-preview");
+    if (!sel || !msg || !prev || !box) return;
+    sel.addEventListener("change", function () {
+      if (!msg.value.trim() && tpl[sel.value]) msg.value = tpl[sel.value];
+    });
+    prev.addEventListener("click", function () {
+      var name = form.closest("tr").querySelector(".admin-col-name strong");
+      var greeting = name ? "Здравствуйте, " + name.textContent.trim() + "!" : "Здравствуйте!";
+      box.innerHTML = "<p><strong>" + greeting + "</strong></p><p>" + (msg.value || tpl[sel.value] || "").replace(/\n/g, "<br>") + "</p>";
+      box.hidden = false;
+    });
+  });
+})();
+</script>
 <%- include("../partials/admin-footer") %>

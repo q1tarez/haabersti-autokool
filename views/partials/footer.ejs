@@ -12,7 +12,7 @@
         <div itemprop="contactPoint" itemscope itemtype="https://schema.org/ContactPoint">
           <p class="footer-title"><%= lang === 'ru' ? 'Контакт' : lang === 'en' ? 'Contact' : 'Kontakt' %></p>
           <p class="footer-text">
-            <a href="tel:+3725684 7904" itemprop="telephone" class="footer-link">+372 5684 7904</a>
+            <a href="tel:<%= phoneE164 %>" itemprop="telephone" class="footer-link"><%= phoneDisplay %></a>
           </p>
           <p class="footer-text">
             <a href="mailto:haaberstiautokool@gmail.com" itemprop="email" class="footer-link">haaberstiautokool@gmail.com</a>
@@ -32,7 +32,7 @@
         </div>
       </div>
       <div class="container footer-bottom">
-        <p>© <%= new Date().getFullYear() %> Haabersti Autokool</p>
+        <p>© <%= new Date().getFullYear() %> Haabersti Autokool · <a class="footer-link" href="/privacy"><%= t("navPrivacy") %></a></p>
       </div>
     </footer>
 
@@ -44,7 +44,7 @@
       "name": "Haabersti Autokool",
       "url": "https://haabersti-autokool.vercel.app",
       "logo": "https://haabersti-autokool.vercel.app/images/haabersti-autokool-icon.png",
-      "telephone": "+3725684 7904",
+      "telephone": "<%= phoneE164 %>",
       "email": "haaberstiautokool@gmail.com",
       "address": {
         "@type": "PostalAddress",
@@ -106,6 +106,7 @@
         });
       })();
     </script>
+    <%- include("./sticky-cta") %>
     <%- include("./cookie-banner") %>
   </body>
 </html>

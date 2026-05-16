@@ -29,7 +29,7 @@
       </div>
       <label class="check-label registration-terms-label">
         <input type="checkbox" id="regAgreeTerms" required />
-        <span><%= t("agreeTerms") %></span>
+        <span><%= t("agreeTermsPrefix") %> <a href="/privacy" target="_blank" rel="noopener"><%= t("agreeTermsLink") %></a></span>
       </label>
     </div>
     <button type="button" class="btn inst-dialog-cta" id="registrationContactNext"><%= t("registrationContactNext") %> ›</button>

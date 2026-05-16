@@ -1,0 +1,23 @@
+<%- include("../partials/header", { title, currentPath: '/consultation' }) %>
+
+<section class="page-intro">
+  <h1><%= t("consultationTitle") %></h1>
+  <p class="section-lead"><%= t("consultationLead") %></p>
+</section>
+
+<% if (error) { %><p class="alert error"><%= error %></p><% } %>
+<% if (success) { %><p class="alert success">✓ <%= success %></p><% } %>
+
+<form class="card form-card consultation-form" method="POST" action="/consultation">
+  <div class="cf-group">
+    <label for="fullName"><%= t("name") %></label>
+    <input class="cf-input" id="fullName" name="fullName" required autocomplete="name" />
+  </div>
+  <div class="cf-group">
+    <label for="phone"><%= t("phone") %></label>
+    <input class="cf-input" id="phone" name="phone" type="tel" required autocomplete="tel" />
+  </div>
+  <button class="btn btn-accent" type="submit"><%= t("send") %></button>
+</form>
+
+<%- include("../partials/footer") %>

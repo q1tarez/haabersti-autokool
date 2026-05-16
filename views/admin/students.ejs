@@ -42,7 +42,8 @@
     <tbody>
       <% students.forEach((item) => { %>
         <% const pay = item.payment_status === "paid" ? "paid" : "unpaid"; %>
-        <tr>
+        <% const st = item.status || "new"; %>
+        <tr class="student-row student-row--<%= st %>">
           <td class="admin-col-date"><%= formatEtDateTime(item.created_at) %></td>
           <td><strong><%= item.full_name %></strong></td>
           <td>
@@ -51,7 +52,14 @@
             <%= item.email %>
           </td>
           <td><%= item.course_name %><br /><small>Start: <%= item.start_date || "-" %></small></td>
-          <td><%= item.comment || "-" %></td>
+          <td>
+            <p><%= item.comment || "—" %></p>
+            <form method="POST" action="/admin/students/<%= item.id %>/note" class="admin-note-form">
+              <label class="visually-hidden">Внутренняя заметка</label>
+              <textarea name="internal_note" rows="2" placeholder="Заметка (только админ)"><%= item.internal_note || "" %></textarea>
+              <button class="btn secondary" type="submit">Заметка</button>
+            </form>
+          </td>
           <td class="admin-col-payment">
             <form method="POST" action="/admin/students/<%= item.id %>/payment" class="inline-form admin-student-form">
               <select name="payment_status" aria-label="Статус оплаты">
@@ -62,8 +70,9 @@
             </form>
           </td>
           <td class="admin-col-status">
+            <span class="status-pill status-pill--<%= st %>"><%= st %></span>
             <form method="POST" action="/admin/students/<%= item.id %>/status" class="inline-form admin-student-form">
-              <select name="status" aria-label="Статус заявки">
+              <select name="status" class="status-select status-select--<%= st %>" aria-label="Статус заявки">
                 <option value="new" <%= item.status === "new" ? "selected" : "" %>>Новая</option>
                 <option value="contacted" <%= item.status === "contacted" ? "selected" : "" %>>Связались</option>
                 <option value="closed" <%= item.status === "closed" ? "selected" : "" %>>Закрыта</option>

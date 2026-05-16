@@ -5,6 +5,8 @@
   --primary: #2563eb;
   --primary-dark: #1d4ed8;
   --primary-soft: #dbeafe;
+  --accent: #f59e0b;
+  --accent-dark: #d97706;
   --danger: #dc2626;
   --border: #d7e0ef;
   --surface: #ffffff;
@@ -3531,4 +3533,189 @@ body.admin-page--login {
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+}
+
+.btn-accent {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  border: none;
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(245, 158, 11, 0.35);
+}
+.btn-accent:hover {
+  filter: brightness(1.05);
+  color: #fff;
+}
+
+.hero--visual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: center;
+  padding: 2rem 0 1rem;
+}
+.hero-title-xl {
+  font-size: clamp(2rem, 5.5vw, 3.25rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.hero-visual-img {
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+  display: block;
+  margin-left: auto;
+}
+.home-pricing-anchor {
+  margin: 1.5rem 0;
+  padding: 1.5rem 2rem;
+}
+.home-pricing-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.home-pricing-price {
+  font-size: 1.75rem;
+  margin: 0;
+}
+.home-pricing-from {
+  font-size: 0.95rem;
+  color: var(--muted);
+  margin-right: 0.35rem;
+}
+.home-feature-icon--svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.home-how-scroll {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.5rem;
+}
+.home-how-slide {
+  flex: 0 0 min(300px, 85vw);
+  scroll-snap-align: start;
+}
+.course-card-v2 {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.course-card-v2:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 44px rgba(30, 58, 138, 0.16);
+}
+.course-for-whom {
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+.course-cards-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+.course-card-cta {
+  width: 100%;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+.sticky-cta {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, transparent, rgba(237, 242, 251, 0.95) 24%);
+  text-align: center;
+  font-weight: 700;
+  text-decoration: none;
+  color: #fff;
+  background-color: var(--accent-dark);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+}
+@media (max-width: 768px) {
+  .sticky-cta {
+    display: block;
+  }
+  body {
+    padding-bottom: 4rem;
+  }
+  .hero--visual {
+    grid-template-columns: 1fr;
+  }
+  .hero-visual {
+    order: -1;
+  }
+}
+.thanks-page {
+  max-width: 560px;
+  margin: 2rem auto;
+  padding: 2rem;
+  text-align: center;
+}
+.thanks-steps {
+  text-align: left;
+  margin: 1.5rem 0;
+}
+.thanks-icon {
+  color: var(--accent);
+  display: flex;
+  justify-content: center;
+}
+.legal-page {
+  padding: 2rem;
+  max-width: 720px;
+}
+.consultation-form {
+  max-width: 420px;
+}
+.status-pill {
+  display: inline-block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+.status-pill--new { background: #dbeafe; color: #1e40af; }
+.status-pill--contacted { background: #fef3c7; color: #92400e; }
+.status-pill--closed { background: #d1fae5; color: #065f46; }
+.student-row--new { box-shadow: inset 3px 0 0 #2563eb; }
+.student-row--contacted { box-shadow: inset 3px 0 0 #f59e0b; }
+.student-row--closed { box-shadow: inset 3px 0 0 #10b981; }
+.admin-note-form textarea {
+  width: 100%;
+  min-height: 3rem;
+  font-size: 0.85rem;
+}
+.admin-email-preview {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+.admin-quick-actions {
+  display: inline-flex;
+  gap: 0.35rem;
+  margin-left: 0.5rem;
+}
+.btn-xs {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+}
+.admin-reminder-list li {
+  margin-bottom: 0.5rem;
 }

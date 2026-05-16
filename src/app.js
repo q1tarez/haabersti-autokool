@@ -8,6 +8,7 @@ require("dotenv").config();
 const { initDatabase } = require("./db/database");
 const { formatEtDateTime } = require("./formatEtDateTime");
 const { supportedLanguages, defaultLanguage, t } = require("./i18n");
+const { PHONE_E164, PHONE_DISPLAY, EMAIL, getSiteUrl, absoluteUrl } = require("./data/siteContact");
 const siteRoutes = require("./routes/siteRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const apiRoutes = require("./routes/apiRoutes");
@@ -75,7 +76,15 @@ app.use((req, res, next) => {
     req.lang = queryLang;
   } else {
     const cookieLang = req.cookies && req.cookies.lang;
-    req.lang = (cookieLang && supportedLanguages.includes(cookieLang)) ? cookieLang : defaultLanguage;
+    if (cookieLang && supportedLanguages.includes(cookieLang)) {
+      req.lang = cookieLang;
+    } else {
+      const accept = String(req.headers["accept-language"] || "").toLowerCase();
+      if (accept.includes("ru")) req.lang = "ru";
+      else if (accept.includes("en")) req.lang = "en";
+      else if (accept.includes("et")) req.lang = "et";
+      else req.lang = defaultLanguage;
+    }
   }
 
   req.t = (key) => t(req.lang, key);
@@ -84,14 +93,20 @@ app.use((req, res, next) => {
   res.locals.formatEtDateTime = formatEtDateTime;
   res.locals.gaId = String(process.env.GA_MEASUREMENT_ID || "").trim();
   res.locals.whatsappPhone = String(process.env.WHATSAPP_PHONE || "37256847904").replace(/\D/g, "");
-  res.locals.telegramUrl = String(process.env.TELEGRAM_PUBLIC_URL || "").trim();
   res.locals.instagramUrl = String(process.env.INSTAGRAM_URL || "").trim();
+  res.locals.phoneE164 = PHONE_E164;
+  res.locals.phoneDisplay = PHONE_DISPLAY;
+  res.locals.siteEmail = EMAIL;
+  res.locals.siteUrl = getSiteUrl();
+  res.locals.ogImage = absoluteUrl("/images/og-share.jpg");
+  res.locals.canonicalBase = getSiteUrl();
   next();
 });
 
 // Attach rate limiters to routes
 app.use("/admin/login", loginLimiter);
 app.use("/contacts", formLimiter);
+app.use("/consultation", formLimiter);
 app.use("/register", formLimiter);
 
 app.use("/api", apiRoutes);

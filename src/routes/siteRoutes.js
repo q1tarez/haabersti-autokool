@@ -5,7 +5,8 @@ const { courseRequiresTrainingOffer, mergeTrainingOfferRow } = require("../data/
 const { sendBankTransferInstructionsMail } = require("../mail/bankTransferMail");
 const { notifyNewContact, notifyNewRegistration } = require("../mail/notifySchool");
 const { sendRegistrationReceivedMail } = require("../mail/registrationReceivedMail");
-const { getReviewsForLang } = require("../data/reviews");
+const { getTestimonialsForLang } = require("../lib/testimonials");
+const { courseForWhom } = require("../data/courseMeta");
 const { supportedLanguages, t } = require("../i18n");
 const { contactSchema, registrationSchema, validate } = require("../validation/schemas");
 
@@ -44,6 +45,7 @@ function registerViewLocals(req, overrides = {}) {
     error: null,
     success: null,
     successBankInfo: null,
+    hideStickyCta: true,
     ...overrides,
   };
 }
@@ -57,6 +59,7 @@ async function getLocalizedCoursesFromDb(lang, onlyActive = true) {
     description: course[`description_${lang}`] || course.description_et,
     duration: course[`duration_${lang}`] || course.duration_et,
     price: course.price,
+    forWhom: courseForWhom(course.id, lang),
   }));
 }
 
@@ -108,13 +111,15 @@ router.get("/", async (req, res, next) => {
       en: "Haabersti Autokool — modern driving school in Tallinn. Category B driving courses, experienced instructors, flexible schedule. Register now!",
     };
     const courses = await getLocalizedCoursesFromDb(req.lang);
+    const bCourse = courses.find((c) => c.id === "b-category");
     res.render("pages/home", {
       title: "Haabersti Autokool",
       metaTitle: "Haabersti Autokool — Autokool Tallinnas",
       metaDescription: metaDescriptions[req.lang] || metaDescriptions.et,
       courses,
-      reviews: getReviewsForLang(req.lang),
+      reviews: await getTestimonialsForLang(req.lang),
       instagramUrl: String(process.env.INSTAGRAM_URL || "").trim(),
+      bCategoryPrice: bCourse ? bCourse.price : null,
     });
   } catch (error) {
     next(error);
@@ -465,16 +470,83 @@ router.post("/register", async (req, res, next) => {
       }
     }
 
-    res.render(
-      "pages/register",
-      registerViewLocals(req, {
-        courses,
-        trainingOffers,
-        selectedCourseId: "",
-        success: req.t("registerSuccess"),
-        successBankInfo,
-      })
-    );
+    const thanksQs = new URLSearchParams();
+    if (successBankInfo) thanksQs.set("bank", "1");
+    if (payNorm === "bank") thanksQs.set("pay", "bank");
+    res.redirect(303, `/register/thanks${thanksQs.toString() ? `?${thanksQs}` : ""}`);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/register/thanks", (req, res) => {
+  res.render("pages/register-thanks", {
+    title: req.t("thanksTitle"),
+    hideStickyCta: true,
+    bankNote: req.query.bank === "1",
+    currentPath: "/register/steps",
+    metaDescription: req.t("thanksLead"),
+  });
+});
+
+router.get("/prices", async (req, res, next) => {
+  try {
+    const courses = await getLocalizedCoursesFromDb(req.lang);
+    res.render("pages/prices", {
+      title: req.t("pricesTitle"),
+      metaDescription: req.t("pricesLead"),
+      courses,
+      currentPath: "/prices",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/privacy", (req, res) => {
+  res.render("pages/privacy", { title: req.t("privacyTitle"), currentPath: "/privacy" });
+});
+
+router.get("/consultation", (req, res) => {
+  res.render("pages/consultation", {
+    title: req.t("consultationTitle"),
+    error: null,
+    success: null,
+    currentPath: "/consultation",
+  });
+});
+
+router.post("/consultation", async (req, res, next) => {
+  try {
+    const fullName = String(req.body.fullName || "").trim();
+    const phone = String(req.body.phone || "").trim();
+    if (!fullName || !phone) {
+      res.status(400).render("pages/consultation", {
+        title: req.t("consultationTitle"),
+        error: req.t("contactRequired"),
+        success: null,
+        currentPath: "/consultation",
+      });
+      return;
+    }
+    await runAsync("INSERT INTO lead_inquiries (full_name, phone, source) VALUES (?, ?, ?)", [
+      fullName,
+      phone,
+      "consultation",
+    ]);
+    notifyNewRegistration({
+      fullName,
+      phone,
+      email: "—",
+      courseName: req.t("consultationTitle"),
+      comment: "Consultation / callback request",
+    }).catch(() => null);
+    res.render("pages/consultation", {
+      title: req.t("consultationTitle"),
+      error: null,
+      success: req.t("consultationSuccess"),
+      currentPath: "/consultation",
+    });
   } catch (error) {
     next(error);
   }

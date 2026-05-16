@@ -1066,4 +1066,72 @@ router.post("/training-offers/:id/delete", requireAdmin, requireDirector, async 
   }
 });
 
+router.post("/students/:id/note", requireAdmin, async (req, res, next) => {
+  try {
+    const row = await getStudentRow(req.params.id);
+    if (!row || !canAccessStudent(req.admin, row)) {
+      res.status(404).send("Not found");
+      return;
+    }
+    const note = String(req.body.internal_note || "").trim();
+    await runAsync("UPDATE course_registrations SET internal_note = ? WHERE id = ?", [
+      note,
+      req.params.id,
+    ]);
+    await logAudit(req, {
+      action: "student_note",
+      entityType: "student",
+      entityId: req.params.id,
+    });
+    res.redirect(303, "/admin/students");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/reviews", requireAdmin, requireDirector, async (req, res, next) => {
+  try {
+    const items = await allAsync("SELECT * FROM testimonials ORDER BY sort_order ASC, id ASC");
+    res.render("admin/reviews", { title: "Отзывы", items, saved: req.query.saved === "1" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/reviews", requireAdmin, requireDirector, async (req, res, next) => {
+  try {
+    const { name, text_et, text_ru, text_en, rating, sort_order } = req.body;
+    await runAsync(
+      `INSERT INTO testimonials (name, text_et, text_ru, text_en, rating, sort_order, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, 1)`,
+      [
+        String(name || "").trim(),
+        String(text_et || "").trim(),
+        String(text_ru || text_et || "").trim(),
+        String(text_en || text_et || "").trim(),
+        Number(rating) || 5,
+        Number(sort_order) || 0,
+      ]
+    );
+    res.redirect(303, "/admin/reviews?saved=1");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/reviews/:id/toggle", requireAdmin, requireDirector, async (req, res, next) => {
+  try {
+    const row = await getAsync("SELECT is_active FROM testimonials WHERE id = ?", [req.params.id]);
+    if (row) {
+      await runAsync("UPDATE testimonials SET is_active = ? WHERE id = ?", [
+        row.is_active ? 0 : 1,
+        req.params.id,
+      ]);
+    }
+    res.redirect(303, "/admin/reviews?saved=1");
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

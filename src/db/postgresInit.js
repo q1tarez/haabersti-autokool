@@ -106,6 +106,47 @@ async function runPostgresMigrations(db) {
   await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS totp_secret TEXT`).catch(() => null);
   await runAsync(`ALTER TABLE course_registrations ADD COLUMN IF NOT EXISTS instructor_id TEXT`).catch(() => null);
   await runAsync(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS email TEXT`).catch(() => null);
+  await runAsync(
+    `ALTER TABLE course_registrations ADD COLUMN IF NOT EXISTS internal_note TEXT`
+  ).catch(() => null);
+
+  await runAsync(`
+    CREATE TABLE IF NOT EXISTS testimonials (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      text_et TEXT NOT NULL,
+      text_ru TEXT,
+      text_en TEXT,
+      rating INTEGER NOT NULL DEFAULT 5,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      is_active SMALLINT NOT NULL DEFAULT 1,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await runAsync(`
+    CREATE TABLE IF NOT EXISTS lead_inquiries (
+      id SERIAL PRIMARY KEY,
+      full_name TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      source TEXT DEFAULT 'consultation',
+      status TEXT NOT NULL DEFAULT 'new',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  const testimonialCount = await getAsync("SELECT COUNT(*) AS count FROM testimonials");
+  if (!testimonialCount || Number(testimonialCount.count) === 0) {
+    const seed = require("../data/reviews").reviews;
+    let order = 0;
+    for (const r of seed) {
+      order += 1;
+      await runAsync(
+        `INSERT INTO testimonials (name, text_et, text_ru, text_en, rating, sort_order) VALUES (?, ?, ?, ?, ?, ?)`,
+        [r.name, r.text.et, r.text.ru, r.text.en, r.rating || 5, order]
+      );
+    }
+  }
 
   const adminCredentials = [
     { username: "talehh_gusseinov", password: "hab_autokool2026" },

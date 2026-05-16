@@ -1,26 +1,36 @@
 <%- include("../partials/header", { title, currentPath: '/' }) %>
 
 <div class="home-page">
-  <section class="hero">
-    <div>
+  <section class="hero hero--visual">
+    <div class="hero-copy">
       <p class="eyebrow">Haabersti Autokool</p>
-      <h1><%= t("heroTitle") %></h1>
+      <h1 class="hero-title-xl"><%= t("heroTitle") %></h1>
       <p class="hero-text"><%= t("heroText") %></p>
       <div class="hero-actions">
-        <a class="btn" href="/register/steps"><%= t("registerCourse") %></a>
+        <a class="btn btn-accent" href="/register/steps"><%= t("registerCourse") %></a>
         <a class="btn secondary" href="/courses"><%= t("viewCourses") %></a>
-        <a class="btn secondary" href="/contacts"><%= t("navContacts") %></a>
       </div>
     </div>
-    <aside class="hero-card">
-      <h2><%= t("whyChooseUs") %></h2>
-      <ul>
-        <li><%= t("heroPoint1") %></li>
-        <li><%= t("heroPoint2") %></li>
-        <li><%= t("heroPoint3") %></li>
-      </ul>
-    </aside>
+    <div class="hero-visual" aria-hidden="true">
+      <img src="/images/hero/hero-scene.svg" alt="" width="640" height="416" loading="eager" decoding="async" class="hero-visual-img" />
+    </div>
   </section>
+
+  <% if (bCategoryPrice) { %>
+  <section class="home-pricing-anchor card" id="pricing">
+    <div class="home-pricing-inner">
+      <div>
+        <h2><%= t("homePricingTitle") %></h2>
+        <p class="section-lead"><%= t("homePricingLead") %></p>
+      </div>
+      <p class="home-pricing-price"><span class="home-pricing-from"><%= lang === 'ru' ? 'от' : lang === 'en' ? 'from' : 'alates' %></span> <strong><%= bCategoryPrice %></strong></p>
+      <div class="hero-actions">
+        <a class="btn btn-accent" href="/register/steps?course=b-category"><%= t("registerShort") %></a>
+        <a class="btn secondary" href="/prices"><%= t("homePricingCta") %></a>
+      </div>
+    </div>
+  </section>
+  <% } %>
 
   <section class="home-section">
     <div class="home-section-head">
@@ -29,24 +39,47 @@
     </div>
     <div class="home-features">
       <article class="home-feature card">
-        <span class="home-feature-icon" aria-hidden="true">👨‍🏫</span>
+        <span class="home-feature-icon home-feature-icon--svg" aria-hidden="true"><%- include("../partials/icons", { icon: 'instructor' }) %></span>
         <h3><%= t("homeFeature1Title") %></h3>
         <p><%= t("homeFeature1Text") %></p>
       </article>
       <article class="home-feature card">
-        <span class="home-feature-icon" aria-hidden="true">🕐</span>
+        <span class="home-feature-icon home-feature-icon--svg" aria-hidden="true"><%- include("../partials/icons", { icon: 'clock' }) %></span>
         <h3><%= t("homeFeature2Title") %></h3>
         <p><%= t("homeFeature2Text") %></p>
       </article>
       <article class="home-feature card">
-        <span class="home-feature-icon" aria-hidden="true">📚</span>
+        <span class="home-feature-icon home-feature-icon--svg" aria-hidden="true"><%- include("../partials/icons", { icon: 'book' }) %></span>
         <h3><%= t("homeFeature3Title") %></h3>
         <p><%= t("homeFeature3Text") %></p>
       </article>
       <article class="home-feature card">
-        <span class="home-feature-icon" aria-hidden="true">❄️</span>
+        <span class="home-feature-icon home-feature-icon--svg" aria-hidden="true"><%- include("../partials/icons", { icon: 'snow' }) %></span>
         <h3><%= t("homeFeature4Title") %></h3>
         <p><%= t("homeFeature4Text") %></p>
+      </article>
+    </div>
+  </section>
+
+  <section class="home-section">
+    <div class="home-section-head">
+      <h2><%= t("homeHowTitle") %></h2>
+    </div>
+    <div class="home-how-scroll" tabindex="0">
+      <article class="home-how-slide card">
+        <span class="home-step-num">1</span>
+        <h3><%= t("homeHow1Title") %></h3>
+        <p><%= t("homeHow1Text") %></p>
+      </article>
+      <article class="home-how-slide card">
+        <span class="home-step-num">2</span>
+        <h3><%= t("homeHow2Title") %></h3>
+        <p><%= t("homeHow2Text") %></p>
+      </article>
+      <article class="home-how-slide card">
+        <span class="home-step-num">3</span>
+        <h3><%= t("homeHow3Title") %></h3>
+        <p><%= t("homeHow3Text") %></p>
       </article>
     </div>
   </section>
@@ -94,14 +127,15 @@
       </div>
       <div class="cards home-course-cards">
         <% courses.forEach((course) => { %>
-          <article class="card home-course-card">
+          <article class="card home-course-card course-card-v2">
             <h3><%= course.name %></h3>
+            <% if (course.forWhom) { %><p class="course-for-whom"><strong><%= t("courseForWhom") %>:</strong> <%= course.forWhom %></p><% } %>
             <p class="home-course-desc"><%= course.description %></p>
             <p class="price-badge"><strong><%= t("price") %>:</strong> <%= course.price %></p>
             <% if (course.duration) { %>
               <p class="home-course-meta"><strong><%= t("duration") %>:</strong> <%= course.duration %></p>
             <% } %>
-            <a class="btn" href="/register/steps?course=<%= course.id %>"><%= t("registerShort") %></a>
+            <a class="btn btn-accent" href="/register/steps?course=<%= course.id %>"><%= t("registerShort") %></a>
           </article>
         <% }) %>
       </div>
@@ -202,8 +236,8 @@
     <h2><%= t("homeCtaTitle") %></h2>
     <p><%= t("homeCtaText") %></p>
     <div class="hero-actions">
-      <a class="btn" href="/register/steps"><%= t("registerCourse") %></a>
-      <a class="btn secondary" href="/contacts"><%= t("homeCtaContact") %></a>
+      <a class="btn btn-accent" href="/register/steps"><%= t("registerCourse") %></a>
+      <a class="btn secondary" href="/consultation"><%= t("navConsultation") %></a>
     </div>
   </section>
 </div>

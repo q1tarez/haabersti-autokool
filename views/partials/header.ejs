@@ -15,14 +15,14 @@
     <meta property="og:site_name" content="Haabersti Autokool" />
     <meta property="og:title" content="<%= typeof metaTitle !== 'undefined' ? metaTitle : (title + ' | Haabersti Autokool') %>" />
     <meta property="og:description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription : (lang === 'ru' ? 'Автошкола в Таллине. Курсы вождения, опытные инструкторы, гибкий график.' : 'Driving school in Tallinn. Driving courses, experienced instructors, flexible schedule.') %>" />
-    <meta property="og:image" content="/images/haabersti-autokool-icon.png" />
+    <meta property="og:image" content="<%= typeof ogImage !== 'undefined' && ogImage ? ogImage : '/images/og-share.jpg' %>" />
     <meta property="og:locale" content="<%= lang === 'ru' ? 'ru_RU' : lang === 'en' ? 'en_US' : 'et_EE' %>" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="<%= typeof metaTitle !== 'undefined' ? metaTitle : (title + ' | Haabersti Autokool') %>" />
     <meta name="twitter:description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'Haabersti Autokool — driving school in Tallinn.' %>" />
-    <meta name="twitter:image" content="/images/haabersti-autokool-icon.png" />
+    <meta name="twitter:image" content="<%= typeof ogImage !== 'undefined' && ogImage ? ogImage : '/images/og-share.jpg' %>" />
 
     <!-- Favicons -->
     <link rel="icon" type="image/png" href="/images/haabersti-autokool-icon.png" sizes="any" />
@@ -35,7 +35,7 @@
 
     <link rel="stylesheet" href="/css/style.css" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#2563eb" />
+    <meta name="theme-color" content="#1d4ed8" />
   </head>
   <body>
     <!-- Skip to main content (accessibility) -->
@@ -44,7 +44,7 @@
     <header class="site-header">
       <div class="container nav-wrap">
         <a class="logo" href="/">
-          <img class="logo-mark" src="/images/haabersti-autokool-icon.png" alt="Haabersti Autokool logo" width="40" height="40" decoding="async" />
+          <img class="logo-mark" src="/images/haabersti-autokool-icon.png" alt="Haabersti Autokool logo" width="40" height="40" loading="lazy" decoding="async" />
           <span class="logo-text">Haabersti Autokool</span>
         </a>
 
@@ -65,6 +65,7 @@
         <nav class="nav" id="mainNav" aria-label="Main navigation">
           <a href="/" <%= typeof currentPath !== 'undefined' && currentPath === '/' ? 'aria-current="page"' : '' %>><%= t("navHome") %></a>
           <a href="/courses" <%= typeof currentPath !== 'undefined' && currentPath === '/courses' ? 'aria-current="page"' : '' %>><%= t("navCourses") %></a>
+          <a href="/prices" <%= typeof currentPath !== 'undefined' && currentPath === '/prices' ? 'aria-current="page"' : '' %>><%= t("navPrices") %></a>
           <a href="/instructors" <%= typeof currentPath !== 'undefined' && currentPath === '/instructors' ? 'aria-current="page"' : '' %>><%= t("navInstructors") %></a>
           <a href="/faq" <%= typeof currentPath !== 'undefined' && currentPath === '/faq' ? 'aria-current="page"' : '' %>><%= t("navFaq") %></a>
           <a href="/register/steps" <%= typeof currentPath !== 'undefined' && currentPath === '/register/steps' ? 'aria-current="page"' : '' %>><%= t("navRegister") %></a>

@@ -659,6 +659,32 @@ async function initDatabase() {
   await runAsync(`ALTER TABLE admins ADD COLUMN totp_secret TEXT`).catch(() => null);
   await runAsync(`ALTER TABLE course_registrations ADD COLUMN instructor_id TEXT`).catch(() => null);
   await runAsync(`ALTER TABLE contacts ADD COLUMN email TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE course_registrations ADD COLUMN internal_note TEXT`).catch(() => null);
+
+  await runAsync(`
+    CREATE TABLE IF NOT EXISTS testimonials (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      text_et TEXT NOT NULL,
+      text_ru TEXT,
+      text_en TEXT,
+      rating INTEGER NOT NULL DEFAULT 5,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await runAsync(`
+    CREATE TABLE IF NOT EXISTS lead_inquiries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      full_name TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      source TEXT DEFAULT 'consultation',
+      status TEXT NOT NULL DEFAULT 'new',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 
   const adminCredentials = [
     { username: "talehh_gusseinov", password: "hab_autokool2026" },

@@ -19,6 +19,7 @@
     <a href="/admin/students" class="<%= isNavActive('/students') ? 'is-active' : '' %>"><%= at("navStudents") %></a>
     <% if (director) { %>
       <a href="/admin/contacts" class="<%= isNavActive('/contacts') ? 'is-active' : '' %>"><%= at("navContacts") %></a>
+      <a href="/admin/reviews" class="<%= isNavActive('/reviews') ? 'is-active' : '' %>">Отзывы</a>
       <a href="/admin/audit-log" class="<%= isNavActive('/audit-log') ? 'is-active' : '' %>"><%= at("navAudit") %></a>
       <a href="/admin/team" class="<%= isNavActive('/team') ? 'is-active' : '' %>"><%= at("navTeam") %></a>
     <% } %>

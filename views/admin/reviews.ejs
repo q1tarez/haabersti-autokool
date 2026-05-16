@@ -1,0 +1,41 @@
+<%- include("../partials/admin-header", { title }) %>
+
+<header class="admin-page-header">
+  <h1>Отзывы на сайте</h1>
+</header>
+<% if (saved) { %><p class="admin-alert admin-alert--ok">Сохранено.</p><% } %>
+
+<div class="card admin-form-card">
+  <h2>Добавить отзыв</h2>
+  <form method="POST" action="/admin/reviews" class="admin-form-stack">
+    <input name="name" placeholder="Имя (Анна К.)" required />
+    <textarea name="text_et" rows="2" placeholder="Текст ET" required></textarea>
+    <textarea name="text_ru" rows="2" placeholder="Текст RU"></textarea>
+    <textarea name="text_en" rows="2" placeholder="Текст EN"></textarea>
+    <input name="rating" type="number" min="1" max="5" value="5" />
+    <input name="sort_order" type="number" value="0" />
+    <button class="btn" type="submit">Добавить</button>
+  </form>
+</div>
+
+<div class="card table-wrap admin-table-card">
+  <table class="admin-table">
+    <thead><tr><th>Имя</th><th>ET</th><th>★</th><th></th></tr></thead>
+    <tbody>
+      <% items.forEach((item) => { %>
+        <tr>
+          <td><%= item.name %></td>
+          <td><%= (item.text_et || "").slice(0, 80) %>…</td>
+          <td><%= item.rating %></td>
+          <td>
+            <form method="POST" action="/admin/reviews/<%= item.id %>/toggle" class="inline-form">
+              <button class="btn secondary" type="submit"><%= item.is_active ? "Скрыть" : "Показать" %></button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include("../partials/admin-footer") %>

@@ -1,0 +1,30 @@
+<%- include("../partials/header", { title, currentPath: '/privacy' }) %>
+
+<article class="card legal-page">
+  <h1><%= t("privacyTitle") %></h1>
+  <% if (lang === 'ru') { %>
+    <p>Haabersti Autokool (Таллин, Эстония) обрабатывает персональные данные, которые вы указываете при регистрации, в форме контактов или консультации: имя, телефон, e-mail, исикукод (при регистрации на курс), выбранный курс и комментарии.</p>
+    <h2>Цели</h2>
+    <ul>
+      <li>запись на обучение и связь с вами;</li>
+      <li>выполнение договора и требований законодательства;</li>
+      <li>улучшение сервиса (анонимная аналитика при согласии на cookies).</li>
+    </ul>
+    <h2>Хранение и передача</h2>
+    <p>Данные хранятся на защищённых серверах (хостинг Vercel / база Neon). Мы не продаём данные третьим лицам. Доступ имеют только уполномоченные сотрудники автошколы.</p>
+    <h2>Ваши права</h2>
+    <p>Вы можете запросить доступ, исправление или удаление данных: <a href="mailto:<%= siteEmail %>"><%= siteEmail %></a>.</p>
+  <% } else if (lang === 'en') { %>
+    <p>Haabersti Autokool processes personal data you submit when registering, contacting us, or requesting a callback.</p>
+    <h2>Purposes</h2>
+    <ul><li>course enrolment and communication;</li><li>contract and legal compliance;</li><li>analytics if you accept cookies.</li></ul>
+    <p>Contact: <a href="mailto:<%= siteEmail %>"><%= siteEmail %></a> for access, correction, or deletion.</p>
+  <% } else { %>
+    <p>Haabersti Autokool töötleb isikuandmeid, mida esitate registreerimisel või kontaktivormis.</p>
+    <h2>Eesmärgid</h2>
+    <ul><li>kursusele registreerimine ja suhtlus;</li><li>leping ja seadused;</li><li>analüütika küpsiste nõusolekul.</li></ul>
+    <p>Õigused: <a href="mailto:<%= siteEmail %>"><%= siteEmail %></a>.</p>
+  <% } %>
+</article>
+
+<%- include("../partials/footer") %>

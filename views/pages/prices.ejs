@@ -1,0 +1,26 @@
+<%- include("../partials/header", { title, currentPath: '/prices' }) %>
+
+<section class="page-intro">
+  <h1><%= t("pricesTitle") %></h1>
+  <p class="section-lead"><%= t("pricesLead") %></p>
+</section>
+
+<div class="cards course-cards-grid">
+  <% courses.forEach((course) => { %>
+    <article class="card course-card-v2">
+      <h2><%= course.name %></h2>
+      <% if (course.forWhom) { %><p class="course-for-whom"><%= course.forWhom %></p><% } %>
+      <p class="home-pricing-price course-price-large"><%= course.price %></p>
+      <p><strong><%= t("duration") %>:</strong> <%= course.duration %></p>
+      <a class="btn btn-accent" href="/register/steps?course=<%= course.id %>"><%= t("registerShort") %></a>
+    </article>
+  <% }) %>
+</div>
+
+<section class="home-cta card">
+  <h2><%= t("consultationTitle") %></h2>
+  <p><%= t("consultationLead") %></p>
+  <a class="btn secondary" href="/consultation"><%= t("navConsultation") %></a>
+</section>
+
+<%- include("../partials/footer") %>

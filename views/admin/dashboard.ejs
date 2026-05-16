@@ -34,17 +34,32 @@
     <h2><%= adminT("remindersTitle") %></h2>
     <% if (staleStudents.length) { %>
       <h3><%= adminT("remindersStudents") %> (<%= staleStudents.length %>)</h3>
-      <ul>
+      <ul class="admin-reminder-list">
         <% staleStudents.slice(0, 10).forEach((s) => { %>
-          <li><a href="/admin/students?search=<%= encodeURIComponent(s.full_name) %>">#<%= s.id %> <%= s.full_name %> — <%= s.course_name %></a></li>
+          <li>
+            <a href="/admin/students?search=<%= encodeURIComponent(s.full_name) %>">#<%= s.id %> <%= s.full_name %> — <%= s.course_name %></a>
+            <% if (s.phone) { %>
+              <span class="admin-quick-actions">
+                <a class="btn secondary btn-xs" href="tel:<%= phoneE164 %>">Звонок</a>
+                <a class="btn secondary btn-xs" href="https://wa.me/<%= whatsappPhone %>?text=<%= encodeURIComponent('Tere! Haabersti Autokool — ' + s.full_name) %>" target="_blank" rel="noopener">WA</a>
+              </span>
+            <% } %>
+          </li>
         <% }) %>
       </ul>
     <% } %>
     <% if (isDirector && staleContacts.length) { %>
       <h3><%= adminT("remindersContacts") %> (<%= staleContacts.length %>)</h3>
-      <ul>
+      <ul class="admin-reminder-list">
         <% staleContacts.slice(0, 10).forEach((c) => { %>
-          <li><a href="/admin/contacts">#<%= c.id %> <%= c.name %></a></li>
+          <li>
+            <a href="/admin/contacts">#<%= c.id %> <%= c.name %></a>
+            <% if (c.phone) { %>
+              <span class="admin-quick-actions">
+                <a class="btn secondary btn-xs" href="tel:<%= String(c.phone).replace(/\D/g,'').replace(/^/,'+') %>">Звонок</a>
+              </span>
+            <% } %>
+          </li>
         <% }) %>
       </ul>
     <% } %>

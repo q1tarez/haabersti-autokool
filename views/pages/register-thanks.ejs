@@ -1,0 +1,22 @@
+<%- include("../partials/header", { title, hideStickyCta: true, currentPath: '/register/steps' }) %>
+
+<section class="thanks-page card">
+  <div class="thanks-icon" aria-hidden="true"><%- include("../partials/icons", { icon: 'check' }) %></div>
+  <h1><%= t("thanksTitle") %></h1>
+  <p class="section-lead"><%= t("thanksLead") %></p>
+  <ol class="thanks-steps">
+    <li><%= t("thanksStep1") %></li>
+    <li><%= t("thanksStep2") %></li>
+    <li><%= t("thanksStep3") %></li>
+  </ol>
+  <div class="thanks-actions hero-actions">
+    <a class="btn" href="https://wa.me/<%= whatsappPhone %>" target="_blank" rel="noopener">WhatsApp</a>
+    <a class="btn secondary" href="tel:<%= phoneE164 %>"><%= phoneDisplay %></a>
+  </div>
+  <div class="hero-actions" style="margin-top:1rem">
+    <a class="btn secondary" href="/"><%= t("thanksCtaRegister") %></a>
+    <a class="btn secondary" href="/contacts"><%= t("thanksCtaContact") %></a>
+  </div>
+</section>
+
+<%- include("../partials/footer") %>

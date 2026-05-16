@@ -34,7 +34,7 @@
         <div class="contact-card-body">
           <div class="contact-card-label"><%= lang === 'ru' ? 'Телефон' : lang === 'en' ? 'Phone' : 'Telefon' %></div>
           <div class="contact-card-value">
-            <a href="tel:+3725684 7904">+372 5684 7904</a>
+            <a href="tel:<%= phoneE164 %>"><%= phoneDisplay %></a>
           </div>
         </div>
       </div>
@@ -45,21 +45,10 @@
         <div class="contact-card-body">
           <div class="contact-card-label">WhatsApp</div>
           <div class="contact-card-value">
-            <a href="https://wa.me/<%= whatsappPhone %>" target="_blank" rel="noopener noreferrer">+372 5684 7904</a>
+            <a href="https://wa.me/<%= whatsappPhone %>" target="_blank" rel="noopener noreferrer"><%= phoneDisplay %></a>
           </div>
         </div>
       </div>
-      <% if (telegramUrl) { %>
-      <div class="contact-card fade-up">
-        <div class="contact-card-icon">✈️</div>
-        <div class="contact-card-body">
-          <div class="contact-card-label">Telegram</div>
-          <div class="contact-card-value">
-            <a href="<%= telegramUrl %>" target="_blank" rel="noopener noreferrer">Telegram</a>
-          </div>
-        </div>
-      </div>
-      <% } %>
       <div class="contact-card fade-up">
         <div class="contact-card-icon">✉️</div>
         <div class="contact-card-body">

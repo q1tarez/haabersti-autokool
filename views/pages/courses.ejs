@@ -1,19 +1,26 @@
 <%- include("../partials/header", { title, currentPath: '/courses' }) %>
 
-<section>
+<section class="page-intro">
   <h1><%= t("coursesTitle") %></h1>
   <p class="section-lead"><%= t("coursesLead") %></p>
-  <div class="cards">
-    <% courses.forEach((course) => { %>
-      <article class="card">
-        <h2><%= course.name %></h2>
-        <p><%= course.description %></p>
+  <p><a class="text-link" href="/prices"><%= t("homePricingCta") %> →</a></p>
+</section>
+
+<div class="cards course-cards-grid">
+  <% courses.forEach((course) => { %>
+    <article class="card course-card-v2">
+      <h2><%= course.name %></h2>
+      <% if (course.forWhom) { %>
+        <p class="course-for-whom"><strong><%= t("courseForWhom") %>:</strong> <%= course.forWhom %></p>
+      <% } %>
+      <p class="course-card-desc"><%= course.description %></p>
+      <div class="course-card-meta">
         <p class="price-badge"><strong><%= t("price") %>:</strong> <%= course.price %></p>
         <p><strong><%= t("duration") %>:</strong> <%= course.duration %></p>
-        <a class="btn" href="/register/steps?course=<%= course.id %>"><%= t("registerShort") %></a>
-      </article>
-    <% }) %>
-  </div>
-</section>
+      </div>
+      <a class="btn btn-accent course-card-cta" href="/register/steps?course=<%= course.id %>"><%= t("registerShort") %></a>
+    </article>
+  <% }) %>
+</div>
 
 <%- include("../partials/footer") %>
