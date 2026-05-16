@@ -3,3 +3,5 @@ node_modules/
 data.sqlite
 
 .vercel
+cookies.txt
+*.db

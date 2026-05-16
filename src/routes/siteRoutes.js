@@ -4,6 +4,7 @@ const { courseRequiresInstructor, getInstructorsForLang, getInstructorById } = r
 const { courseRequiresTrainingOffer, mergeTrainingOfferRow } = require("../data/trainingOffers");
 const { sendBankTransferInstructionsMail } = require("../mail/bankTransferMail");
 const { supportedLanguages, t } = require("../i18n");
+const { contactSchema, registrationSchema, validate } = require("../validation/schemas");
 
 const router = express.Router();
 
@@ -19,36 +20,7 @@ function applyUiLangFromBody(req, res) {
   }
 }
 
-function isNameValid(fullName) {
-  const value = String(fullName || "").trim();
-  if (!value) return false;
-  // Names can include letters, spaces, hyphens and apostrophes, but not digits.
-  return !/\d/.test(value);
-}
-
-function isPhoneValid(phone) {
-  const value = String(phone || "").trim();
-  if (!value) return false;
-  if (!/^[+\d\s()\-]{7,25}$/.test(value)) return false;
-  const digitsOnly = value.replace(/\D/g, "");
-  return digitsOnly.length >= 7;
-}
-
-function isEstonianPersonalCodeValid(code) {
-  const value = String(code || "").trim();
-  if (!/^\d{11}$/.test(value)) return false;
-  const digits = value.split("").map((x) => Number(x));
-  const w1 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 1];
-  const w2 = [3, 4, 5, 6, 7, 8, 9, 1, 2, 3];
-  const sum1 = w1.reduce((acc, w, i) => acc + w * digits[i], 0);
-  let check = sum1 % 11;
-  if (check === 10) {
-    const sum2 = w2.reduce((acc, w, i) => acc + w * digits[i], 0);
-    check = sum2 % 11;
-    if (check === 10) check = 0;
-  }
-  return check === digits[10];
-}
+// Validation is now handled by Zod schemas in src/validation/schemas.js
 
 const REG_COMMENT_STUDY_LANG_KEYS = { et: "filterLangEt", ru: "filterLangRu", en: "filterLangEn" };
 const REG_COMMENT_PAYMENT_KEYS = { cash: "paymentCash", card: "paymentCard", bank: "paymentBank" };
@@ -120,21 +92,47 @@ async function getRegistrationCourses(lang) {
 }
 
 router.get("/", (req, res) => {
-  res.render("pages/home", { title: "Haabersti Autokool" });
+  const metaDescriptions = {
+    et: "Haabersti Autokool — kaasaegne autokool Tallinnas. B-kategooria sõiduõpe, kogenud instruktorid, paindlik graafik. Registreeru juhiloale!",
+    ru: "Haabersti Autokool — современная автошкола в Таллине. Курсы вождения категории B, опытные инструкторы, гибкий график. Запишитесь на права!",
+    en: "Haabersti Autokool — modern driving school in Tallinn. Category B driving courses, experienced instructors, flexible schedule. Register now!",
+  };
+  res.render("pages/home", {
+    title: "Haabersti Autokool",
+    metaTitle: "Haabersti Autokool — Autokool Tallinnas",
+    metaDescription: metaDescriptions[req.lang] || metaDescriptions.et,
+  });
 });
 
 router.get("/courses", async (req, res, next) => {
   try {
     const courses = await getLocalizedCoursesFromDb(req.lang);
-    res.render("pages/courses", { title: "Kursused", courses });
+    const courseTitles = { et: "Kursused", ru: "Курсы", en: "Courses" };
+    const courseDesc = {
+      et: "Haabersti Autokool kursused: B-kategooria, talvesõit, esmaabi, öine sõit ja muud. Vaata hinnad ja registreeru.",
+      ru: "Курсы Haabersti Autokool: категория B, зимнее вождение, первая помощь, ночное вождение и другие. Смотри цены и записывайся.",
+      en: "Haabersti Autokool courses: category B, winter driving, first aid, night driving and more. View prices and register.",
+    };
+    res.render("pages/courses", {
+      title: courseTitles[req.lang] || "Kursused",
+      metaDescription: courseDesc[req.lang] || courseDesc.et,
+      courses,
+    });
   } catch (error) {
     next(error);
   }
 });
 
 router.get("/contacts", (req, res) => {
+  const contactTitles = { et: "Kontakt", ru: "Контакты", en: "Contact" };
+  const contactDesc = {
+    et: "Võtke ühendust Haabersti Autokooliga. Telefon, e-post ja tööaeg.",
+    ru: "Свяжитесь с Haabersti Autokool. Телефон, e-mail и часы работы.",
+    en: "Contact Haabersti Autokool. Phone, email and working hours.",
+  };
   res.render("pages/contacts", {
-    title: "Kontakt",
+    title: contactTitles[req.lang] || "Kontakt",
+    metaDescription: contactDesc[req.lang] || contactDesc.et,
     error: null,
     success: null,
   });
@@ -206,9 +204,25 @@ router.post("/register", async (req, res, next) => {
       studyLang,
       trainingOfferId,
     } = req.body;
-    const chosenCourse = courses.find((course) => course.id === courseId);
+        const chosenCourse = courses.find((course) => course.id === courseId);
 
-    if (!fullName || !isikukood || !phone || !email || !courseId || !chosenCourse) {
+    // Zod validation
+    const validation = validate(registrationSchema, {
+      firstName,
+      lastName: lastName || firstName, // fallback if single field
+      isikukood,
+      phone,
+      email,
+      courseId,
+      paymentMethod,
+      studyLang,
+      lessonTime,
+      comment,
+      instructorId,
+      trainingOfferId,
+    });
+
+    if (!fullName || !courseId || !chosenCourse) {
       res.status(400).render(
         "pages/register",
         registerViewLocals(req, {
@@ -221,40 +235,21 @@ router.post("/register", async (req, res, next) => {
       return;
     }
 
-    if (!isNameValid(fullName)) {
+    if (!validation.success) {
+      // Map Zod error messages to i18n keys where possible
+      const firstError = validation.errors[0] || "";
+      let errorKey = "registerRequired";
+      if (firstError.toLowerCase().includes("name")) errorKey = "registerNameInvalid";
+      else if (firstError.toLowerCase().includes("phone")) errorKey = "registerPhoneInvalid";
+      else if (firstError.toLowerCase().includes("personal code") || firstError.toLowerCase().includes("isikukood")) errorKey = "registerIsikukoodInvalid";
+      else if (firstError.toLowerCase().includes("email")) errorKey = "registerRequired";
       res.status(400).render(
         "pages/register",
         registerViewLocals(req, {
           courses,
           trainingOffers,
           selectedCourseId: courseId || "",
-          error: req.t("registerNameInvalid"),
-        })
-      );
-      return;
-    }
-
-    if (!isPhoneValid(phone)) {
-      res.status(400).render(
-        "pages/register",
-        registerViewLocals(req, {
-          courses,
-          trainingOffers,
-          selectedCourseId: courseId || "",
-          error: req.t("registerPhoneInvalid"),
-        })
-      );
-      return;
-    }
-
-    if (!isEstonianPersonalCodeValid(isikukood)) {
-      res.status(400).render(
-        "pages/register",
-        registerViewLocals(req, {
-          courses,
-          trainingOffers,
-          selectedCourseId: courseId || "",
-          error: req.t("registerIsikukoodInvalid"),
+          error: req.t(errorKey),
         })
       );
       return;

@@ -1,4 +1,4 @@
-<%- include("../partials/header", { title }) %>
+<%- include("../partials/header", { title, currentPath: '/contacts' }) %>
 
 <section>
   <h1><%= t("contactsTitle") %></h1>
@@ -11,6 +11,9 @@
   <% } %>
 
   <form class="form card form-card" method="POST" action="/contacts">
+    <% if (typeof csrfToken !== 'undefined') { %>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+    <% } %>
     <label for="fullName"><%= t("name") %></label>
     <input id="fullName" name="fullName" type="text" required />
 

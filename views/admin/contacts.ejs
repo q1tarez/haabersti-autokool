@@ -27,6 +27,7 @@
             <td><%= item.status || "new" %></td>
             <td class="table-actions">
               <form method="POST" action="/admin/contacts/<%= item.id %>/status" class="inline-form">
+    <% if (typeof csrfToken !== 'undefined') { %><input type="hidden" name="_csrf" value="<%= csrfToken %>" /><% } %>
                 <select name="status">
                   <option value="new" <%= (item.status || "new") === "new" ? "selected" : "" %>>Новая</option>
                   <option value="in_progress" <%= item.status === "in_progress" ? "selected" : "" %>>В работе</option>
@@ -35,6 +36,7 @@
                 <button class="btn secondary" type="submit">OK</button>
               </form>
               <form method="POST" action="/admin/contacts/<%= item.id %>/delete" onsubmit="return confirm('Удалить обращение?');">
+    <% if (typeof csrfToken !== 'undefined') { %><input type="hidden" name="_csrf" value="<%= csrfToken %>" /><% } %>
                 <button class="btn danger" type="submit">Удалить</button>
               </form>
             </td>

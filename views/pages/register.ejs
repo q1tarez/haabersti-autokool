@@ -1,6 +1,6 @@
 <% const showInstrBoot = courses.some((c) => c.id === selectedCourseId && c.requiresInstructor); %>
 <% const showTrainingBoot = courses.some((c) => c.id === selectedCourseId && c.requiresTrainingOffer); %>
-<%- include("../partials/header", { title }) %>
+<%- include("../partials/header", { title, currentPath: '/register/steps' }) %>
 
 <section class="registration-section registration-section--wizard">
   <h1 class="wizard-page-title"><%= t("registerWizardTitle") %></h1>

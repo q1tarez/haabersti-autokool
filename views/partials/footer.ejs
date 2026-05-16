@@ -1,24 +1,110 @@
     </main>
-    <footer class="site-footer">
+
+    <footer class="site-footer" itemscope itemtype="https://schema.org/LocalBusiness">
+      <meta itemprop="name" content="Haabersti Autokool" />
+      <meta itemprop="url" content="https://haabersti-autokool.vercel.app" />
+      <meta itemprop="image" content="/images/haabersti-autokool-icon.png" />
       <div class="container footer-wrap">
         <div>
-          <p class="footer-brand">Haabersti Autokool</p>
-          <p class="footer-text">Kaasaegne ja turvaline autoope Tallinnas.</p>
+          <p class="footer-brand" itemprop="name">Haabersti Autokool</p>
+          <p class="footer-text"><%= lang === 'ru' ? 'Современная и безопасная автошкола в Таллине.' : lang === 'en' ? 'Modern and safe driving school in Tallinn.' : 'Kaasaegne ja turvaline autoõpe Tallinnas.' %></p>
         </div>
-        <div>
-          <p class="footer-title">Kontakt</p>
-          <p class="footer-text">+372 5684 7904</p>
-          <p class="footer-text">haaberstiautokool@gmail.com</p>
+        <div itemprop="contactPoint" itemscope itemtype="https://schema.org/ContactPoint">
+          <p class="footer-title"><%= lang === 'ru' ? 'Контакт' : lang === 'en' ? 'Contact' : 'Kontakt' %></p>
+          <p class="footer-text">
+            <a href="tel:+3725684 7904" itemprop="telephone" class="footer-link">+372 5684 7904</a>
+          </p>
+          <p class="footer-text">
+            <a href="mailto:haaberstiautokool@gmail.com" itemprop="email" class="footer-link">haaberstiautokool@gmail.com</a>
+          </p>
         </div>
-        <div>
-          <p class="footer-title">Aeg</p>
-          <p class="footer-text">E-R 09:00-19:00</p>
-          <p class="footer-text">L 10:00-16:00</p>
+        <div itemprop="openingHoursSpecification" itemscope itemtype="https://schema.org/OpeningHoursSpecification">
+          <p class="footer-title"><%= lang === 'ru' ? 'Часы работы' : lang === 'en' ? 'Hours' : 'Aeg' %></p>
+          <p class="footer-text">
+            <meta itemprop="dayOfWeek" content="Monday Tuesday Wednesday Thursday Friday" />
+            <span itemprop="opens">09:00</span>–<span itemprop="closes">19:00</span>
+            (<%= lang === 'ru' ? 'Пн–Пт' : lang === 'en' ? 'Mon–Fri' : 'E–R' %>)
+          </p>
+          <p class="footer-text">
+            <meta itemprop="dayOfWeek" content="Saturday" />
+            10:00–16:00 (<%= lang === 'ru' ? 'Сб' : lang === 'en' ? 'Sat' : 'L' %>)
+          </p>
         </div>
       </div>
       <div class="container footer-bottom">
         <p>© <%= new Date().getFullYear() %> Haabersti Autokool</p>
       </div>
     </footer>
+
+    <!-- Schema.org JSON-LD for local business -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "DrivingSchool",
+      "name": "Haabersti Autokool",
+      "url": "https://haabersti-autokool.vercel.app",
+      "logo": "https://haabersti-autokool.vercel.app/images/haabersti-autokool-icon.png",
+      "telephone": "+3725684 7904",
+      "email": "haaberstiautokool@gmail.com",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Tallinn",
+        "addressCountry": "EE"
+      },
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"],
+          "opens": "09:00",
+          "closes": "19:00"
+        },
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": "Saturday",
+          "opens": "10:00",
+          "closes": "16:00"
+        }
+      ]
+    }
+    </script>
+
+    <!-- Mobile hamburger menu script -->
+    <script>
+      (function () {
+        var btn = document.getElementById("navHamburger");
+        var nav = document.getElementById("mainNav");
+        if (!btn || !nav) return;
+
+        btn.addEventListener("click", function () {
+          var isOpen = nav.classList.toggle("nav--open");
+          btn.classList.toggle("nav-hamburger--open", isOpen);
+          btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+          btn.setAttribute(
+            "aria-label",
+            isOpen
+              ? btn.dataset.closeLabel || "Close menu"
+              : btn.dataset.openLabel || "Open menu"
+          );
+        });
+
+        // Close nav when a link is clicked (mobile UX)
+        nav.querySelectorAll("a").forEach(function (link) {
+          link.addEventListener("click", function () {
+            nav.classList.remove("nav--open");
+            btn.classList.remove("nav-hamburger--open");
+            btn.setAttribute("aria-expanded", "false");
+          });
+        });
+
+        // Close nav on outside click
+        document.addEventListener("click", function (e) {
+          if (!nav.contains(e.target) && !btn.contains(e.target)) {
+            nav.classList.remove("nav--open");
+            btn.classList.remove("nav-hamburger--open");
+            btn.setAttribute("aria-expanded", "false");
+          }
+        });
+      })();
+    </script>
   </body>
 </html>

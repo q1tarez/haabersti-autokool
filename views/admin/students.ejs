@@ -45,6 +45,7 @@
             <td><%= item.comment || "-" %></td>
             <td>
               <form method="POST" action="/admin/students/<%= item.id %>/payment" class="inline-form admin-student-form">
+    <% if (typeof csrfToken !== 'undefined') { %><input type="hidden" name="_csrf" value="<%= csrfToken %>" /><% } %>
                 <select name="payment_status" aria-label="Статус оплаты">
                   <option value="unpaid" <%= pay === "unpaid" ? "selected" : "" %>>Не оплачено</option>
                   <option value="paid" <%= pay === "paid" ? "selected" : "" %>>Оплачено</option>
@@ -54,6 +55,7 @@
             </td>
             <td>
               <form method="POST" action="/admin/students/<%= item.id %>/status" class="inline-form admin-student-form">
+    <% if (typeof csrfToken !== 'undefined') { %><input type="hidden" name="_csrf" value="<%= csrfToken %>" /><% } %>
                 <select name="status" aria-label="Статус заявки">
                   <option value="new" <%= item.status === "new" ? "selected" : "" %>>Новая</option>
                   <option value="contacted" <%= item.status === "contacted" ? "selected" : "" %>>Связались</option>

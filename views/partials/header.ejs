@@ -3,32 +3,76 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= title %> | Haabersti Autokool</title>
+    <title><%= typeof metaTitle !== 'undefined' ? metaTitle : (title + ' | Haabersti Autokool') %></title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription : (lang === 'ru' ? 'Haabersti Autokool — современная автошкола в Таллине. Курсы вождения категории B, опытные инструкторы, гибкий график.' : lang === 'en' ? 'Haabersti Autokool — modern driving school in Tallinn. Category B driving courses, experienced instructors, flexible schedule.' : 'Haabersti Autokool — kaasaegne autokool Tallinnas. B-kategooria sõiduõpe, kogenud instruktorid, paindlik graafik.') %>" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="<%= typeof canonicalUrl !== 'undefined' ? canonicalUrl : '' %>" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Haabersti Autokool" />
+    <meta property="og:title" content="<%= typeof metaTitle !== 'undefined' ? metaTitle : (title + ' | Haabersti Autokool') %>" />
+    <meta property="og:description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription : (lang === 'ru' ? 'Автошкола в Таллине. Курсы вождения, опытные инструкторы, гибкий график.' : 'Driving school in Tallinn. Driving courses, experienced instructors, flexible schedule.') %>" />
+    <meta property="og:image" content="/images/haabersti-autokool-icon.png" />
+    <meta property="og:locale" content="<%= lang === 'ru' ? 'ru_RU' : lang === 'en' ? 'en_US' : 'et_EE' %>" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="<%= typeof metaTitle !== 'undefined' ? metaTitle : (title + ' | Haabersti Autokool') %>" />
+    <meta name="twitter:description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'Haabersti Autokool — driving school in Tallinn.' %>" />
+    <meta name="twitter:image" content="/images/haabersti-autokool-icon.png" />
+
+    <!-- Favicons -->
     <link rel="icon" type="image/png" href="/images/haabersti-autokool-icon.png" sizes="any" />
     <link rel="apple-touch-icon" href="/images/haabersti-autokool-icon.png" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
     <link rel="stylesheet" href="/css/style.css" />
   </head>
   <body>
+    <!-- Skip to main content (accessibility) -->
+    <a class="skip-link" href="#main-content"><%= lang === 'ru' ? 'Перейти к основному содержимому' : lang === 'en' ? 'Skip to main content' : 'Mine põhisisule' %></a>
+
     <header class="site-header">
       <div class="container nav-wrap">
         <a class="logo" href="/">
-          <img class="logo-mark" src="/images/haabersti-autokool-icon.png" alt="" width="40" height="40" decoding="async" />
+          <img class="logo-mark" src="/images/haabersti-autokool-icon.png" alt="Haabersti Autokool logo" width="40" height="40" decoding="async" />
           <span class="logo-text">Haabersti Autokool</span>
         </a>
-        <nav class="nav" aria-label="Main navigation">
-          <a href="/"><%= t("navHome") %></a>
-          <a href="/courses"><%= t("navCourses") %></a>
-          <a href="/register/steps"><%= t("navRegister") %></a>
-          <a href="/contacts"><%= t("navContacts") %></a>
+
+        <!-- Hamburger button (mobile only) -->
+        <button
+          class="nav-hamburger"
+          id="navHamburger"
+          aria-label="<%= lang === 'ru' ? 'Открыть меню' : lang === 'en' ? 'Open menu' : 'Ava menüü' %>"
+          aria-expanded="false"
+          aria-controls="mainNav"
+          type="button"
+        >
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+
+        <nav class="nav" id="mainNav" aria-label="Main navigation">
+          <a href="/" <%= typeof currentPath !== 'undefined' && currentPath === '/' ? 'aria-current="page"' : '' %>><%= t("navHome") %></a>
+          <a href="/courses" <%= typeof currentPath !== 'undefined' && currentPath === '/courses' ? 'aria-current="page"' : '' %>><%= t("navCourses") %></a>
+          <a href="/register/steps" <%= typeof currentPath !== 'undefined' && currentPath === '/register/steps' ? 'aria-current="page"' : '' %>><%= t("navRegister") %></a>
+          <a href="/contacts" <%= typeof currentPath !== 'undefined' && currentPath === '/contacts' ? 'aria-current="page"' : '' %>><%= t("navContacts") %></a>
         </nav>
+
         <div class="lang-switch">
-          <a href="?lang=et" class="<%= lang === 'et' ? 'active' : '' %>">EST</a>
-          <a href="?lang=ru" class="<%= lang === 'ru' ? 'active' : '' %>">RU</a>
-          <a href="?lang=en" class="<%= lang === 'en' ? 'active' : '' %>">EN</a>
+          <a href="?lang=et" class="<%= lang === 'et' ? 'active' : '' %>" hreflang="et">EST</a>
+          <a href="?lang=ru" class="<%= lang === 'ru' ? 'active' : '' %>" hreflang="ru">RU</a>
+          <a href="?lang=en" class="<%= lang === 'en' ? 'active' : '' %>" hreflang="en">EN</a>
         </div>
       </div>
     </header>
-    <main class="container">
+
+    <main class="container" id="main-content">
