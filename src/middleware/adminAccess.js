@@ -38,6 +38,7 @@ function requireAdmin(req, res, next) {
         return;
       }
       req.admin = admin;
+      res.locals.isDirector = isDirector(admin);
       next();
     })
     .catch(next);
@@ -65,7 +66,9 @@ function adminI18nMiddleware(req, res, next) {
   const adminLang = adminLangOr(cookieLang || "ru");
   res.locals.adminLang = adminLang;
   res.locals.adminT = createAdminT(adminLang);
-  res.locals.isDirector = req.admin ? isDirector(req.admin) : false;
+  if (req.admin) {
+    res.locals.isDirector = isDirector(req.admin);
+  }
   next();
 }
 

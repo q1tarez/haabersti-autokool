@@ -654,6 +654,7 @@ async function initDatabase() {
   `).catch(() => null);
 
   await runAsync(`ALTER TABLE admins ADD COLUMN role TEXT DEFAULT 'director'`).catch(() => null);
+  await runAsync(`UPDATE admins SET role = 'director' WHERE role IS NULL OR role = ''`).catch(() => null);
   await runAsync(`ALTER TABLE admins ADD COLUMN instructor_id TEXT`).catch(() => null);
   await runAsync(`ALTER TABLE admins ADD COLUMN totp_secret TEXT`).catch(() => null);
   await runAsync(`ALTER TABLE course_registrations ADD COLUMN instructor_id TEXT`).catch(() => null);

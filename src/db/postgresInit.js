@@ -101,6 +101,7 @@ async function runPostgresMigrations(db) {
     `ALTER TABLE course_registrations ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'unpaid'`
   ).catch(() => null);
   await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'director'`).catch(() => null);
+  await runAsync(`UPDATE admins SET role = 'director' WHERE role IS NULL OR TRIM(role) = ''`).catch(() => null);
   await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS instructor_id TEXT`).catch(() => null);
   await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS totp_secret TEXT`).catch(() => null);
   await runAsync(`ALTER TABLE course_registrations ADD COLUMN IF NOT EXISTS instructor_id TEXT`).catch(() => null);
