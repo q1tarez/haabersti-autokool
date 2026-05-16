@@ -43,8 +43,17 @@
           </td>
           <td><%= item.course_name %><br /><small>Start: <%= item.start_date || "-" %></small></td>
           <td><%= item.comment || "-" %></td>
-          <td>
+          <td class="admin-col-payment">
             <form method="POST" action="/admin/students/<%= item.id %>/payment" class="inline-form admin-student-form">
+              <select name="payment_status" aria-label="Статус оплаты">
+                <option value="unpaid" <%= pay === "unpaid" ? "selected" : "" %>>Не оплачено</option>
+                <option value="paid" <%= pay === "paid" ? "selected" : "" %>>Оплачено</option>
+              </select>
+              <button class="btn secondary" type="submit">OK</button>
+            </form>
+          </td>
+          <td class="admin-col-status">
+            <form method="POST" action="/admin/students/<%= item.id %>/status" class="inline-form admin-student-form">
               <select name="status" aria-label="Статус заявки">
                 <option value="new" <%= item.status === "new" ? "selected" : "" %>>Новая</option>
                 <option value="contacted" <%= item.status === "contacted" ? "selected" : "" %>>Связались</option>
@@ -53,7 +62,7 @@
               <button class="btn secondary" type="submit">OK</button>
             </form>
           </td>
-          <td class="table-actions">
+          <td class="table-actions admin-col-actions">
             <form
               method="POST"
               action="/admin/students/<%= item.id %>/delete"

@@ -2264,6 +2264,7 @@ body.admin-page--login {
 .admin-student-form {
   flex-direction: column;
   align-items: stretch;
+  min-width: 132px;
   max-width: 168px;
 }
 
@@ -2273,6 +2274,25 @@ body.admin-page--login {
 
 .admin-student-form .btn {
   width: 100%;
+}
+
+.admin-table .admin-col-payment,
+.admin-table .admin-col-status {
+  width: 1%;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.admin-table .admin-col-actions {
+  width: 1%;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.admin-table th:nth-child(6),
+.admin-table th:nth-child(7),
+.admin-table th:nth-child(8) {
+  white-space: nowrap;
 }
 
 .filter-bar {

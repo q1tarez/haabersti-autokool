@@ -247,8 +247,10 @@ function buildMessage(lang, fullName, courseName, amount, courseId, bank) {
                         <td style="padding:8px 0;font-size:15px;font-weight:700;color:#0f172a !important;-webkit-text-fill-color:#0f172a !important;line-height:1.35;background-color:transparent !important;">${escapeHtml(ben)}</td>
                       </tr>
                       <tr>
-                        <td class="hm-label" style="padding:8px 0;font-size:13px;color:#334155 !important;-webkit-text-fill-color:#334155 !important;vertical-align:top;background-color:transparent !important;">${L.labelIban}</td>
-                        <td style="padding:8px 0;font-size:16px;font-weight:700;color:#0f172a !important;-webkit-text-fill-color:#0f172a !important;letter-spacing:0.06em;font-family:Consolas,'Courier New',monospace;background-color:transparent !important;">${escapeHtml(formatIbanDisplay(iban))}</td>
+                        <td colspan="2" style="padding:10px 0 8px;background-color:transparent !important;">
+                          <span class="hm-label" style="display:block;margin-bottom:6px;font-size:13px;color:#334155 !important;-webkit-text-fill-color:#334155 !important;">${L.labelIban}</span>
+                          <span style="display:block;font-size:14px;font-weight:700;color:#0f172a !important;-webkit-text-fill-color:#0f172a !important;font-family:Consolas,'Courier New',monospace;white-space:nowrap;letter-spacing:0.02em;line-height:1.3;-webkit-text-size-adjust:100%;">${escapeHtml(formatIbanDisplay(iban))}</span>
+                        </td>
                       </tr>
                       ${
                         amountLine
