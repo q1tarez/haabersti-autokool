@@ -2215,6 +2215,14 @@ body.admin-page--login {
   overflow-x: auto;
 }
 
+.admin-table-card {
+  padding: 4px 16px 14px;
+}
+
+.admin-table-card .admin-table {
+  width: 100%;
+}
+
 .admin-table {
   width: 100%;
   border-collapse: collapse;
@@ -2293,6 +2301,64 @@ body.admin-page--login {
 .admin-table th:nth-child(7),
 .admin-table th:nth-child(8) {
   white-space: nowrap;
+}
+
+.admin-table--contacts {
+  table-layout: fixed;
+}
+
+.admin-table--contacts .admin-col-date {
+  width: 148px;
+  white-space: nowrap;
+}
+
+.admin-table--contacts .admin-col-name {
+  width: 14%;
+}
+
+.admin-table--contacts .admin-col-phone {
+  width: 118px;
+  white-space: nowrap;
+}
+
+.admin-table--contacts .admin-col-phone a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.admin-table--contacts .admin-col-phone a:hover {
+  text-decoration: underline;
+}
+
+.admin-table--contacts .admin-col-message {
+  width: auto;
+  word-break: break-word;
+  line-height: 1.45;
+}
+
+.admin-table--contacts .admin-col-status {
+  width: 152px;
+}
+
+.admin-table--contacts .admin-col-actions {
+  width: 108px;
+}
+
+.admin-table-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 28px 12px !important;
+}
+
+.admin-table--students .admin-col-date {
+  width: 148px;
+  white-space: nowrap;
+}
+
+.admin-table--students td:nth-child(5) {
+  word-break: break-word;
+  line-height: 1.45;
 }
 
 .filter-bar {
@@ -2772,6 +2838,291 @@ body.admin-page--login {
     font-weight: 600;
     background: var(--primary-soft);
     border-radius: 8px;
+  }
+}
+
+/* ============================================================
+   HOME PAGE
+   ============================================================ */
+
+.home-page {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  padding-bottom: 12px;
+}
+
+.home-page .hero {
+  margin-bottom: 0;
+}
+
+.home-section {
+  margin: 0;
+}
+
+.home-section--soft {
+  padding: 28px 24px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #f8fbff, #ffffff);
+  box-shadow: var(--shadow);
+}
+
+.home-section-head {
+  margin-bottom: 20px;
+}
+
+.home-section-head h2 {
+  font-size: clamp(22px, 3.5vw, 30px);
+  margin: 0 0 8px;
+}
+
+.home-section-head .section-eyebrow {
+  margin-bottom: 6px;
+}
+
+.home-section-head--row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.home-section-link {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.home-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.home-feature {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 100%;
+}
+
+.home-feature h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.home-feature p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.home-feature-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.home-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.home-step {
+  margin: 0;
+  position: relative;
+  padding-top: 8px;
+}
+
+.home-step h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.home-step p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.home-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  color: #1e40af;
+  font-weight: 800;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.home-steps-cta {
+  margin: 20px 0 0;
+  text-align: center;
+}
+
+.home-course-cards {
+  margin-top: 4px;
+}
+
+.home-course-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-course-card h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.home-course-desc {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.home-course-meta {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.home-course-card .btn {
+  margin-top: 6px;
+  align-self: flex-start;
+}
+
+.home-offerings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.home-offering h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.home-offering p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.home-offering-link {
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.home-offering-link:hover {
+  text-decoration: underline;
+}
+
+.home-lang-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.home-lang-list li {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: #1e40af;
+}
+
+.home-areas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.home-areas li {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+
+.home-areas-note {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.home-cta {
+  text-align: center;
+  padding: 32px 28px;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 55%, #f0f9ff 100%);
+  border-color: #93c5fd;
+}
+
+.home-cta h2 {
+  margin: 0 0 10px;
+  font-size: clamp(22px, 4vw, 32px);
+}
+
+.home-cta p {
+  margin: 0 auto 18px;
+  max-width: 52ch;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.home-cta .hero-actions {
+  justify-content: center;
+  margin-top: 0;
+}
+
+@media (max-width: 760px) {
+  .home-page {
+    gap: 28px;
+  }
+
+  .home-section--soft {
+    padding: 20px 16px;
+  }
+
+  .home-section-head--row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .home-section-link {
+    width: 100%;
+    text-align: center;
+  }
+
+  .home-steps {
+    grid-template-columns: 1fr;
   }
 }
 

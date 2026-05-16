@@ -97,17 +97,23 @@ async function getRegistrationCourses(lang) {
   });
 }
 
-router.get("/", (req, res) => {
-  const metaDescriptions = {
-    et: "Haabersti Autokool — kaasaegne autokool Tallinnas. B-kategooria sõiduõpe, kogenud instruktorid, paindlik graafik. Registreeru juhiloale!",
-    ru: "Haabersti Autokool — современная автошкола в Таллине. Курсы вождения категории B, опытные инструкторы, гибкий график. Запишитесь на права!",
-    en: "Haabersti Autokool — modern driving school in Tallinn. Category B driving courses, experienced instructors, flexible schedule. Register now!",
-  };
-  res.render("pages/home", {
-    title: "Haabersti Autokool",
-    metaTitle: "Haabersti Autokool — Autokool Tallinnas",
-    metaDescription: metaDescriptions[req.lang] || metaDescriptions.et,
-  });
+router.get("/", async (req, res, next) => {
+  try {
+    const metaDescriptions = {
+      et: "Haabersti Autokool — kaasaegne autokool Tallinnas. B-kategooria sõiduõpe, kogenud instruktorid, paindlik graafik. Registreeru juhiloale!",
+      ru: "Haabersti Autokool — современная автошкола в Таллине. Курсы вождения категории B, опытные инструкторы, гибкий график. Запишитесь на права!",
+      en: "Haabersti Autokool — modern driving school in Tallinn. Category B driving courses, experienced instructors, flexible schedule. Register now!",
+    };
+    const courses = await getLocalizedCoursesFromDb(req.lang);
+    res.render("pages/home", {
+      title: "Haabersti Autokool",
+      metaTitle: "Haabersti Autokool — Autokool Tallinnas",
+      metaDescription: metaDescriptions[req.lang] || metaDescriptions.et,
+      courses,
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.get("/courses", async (req, res, next) => {

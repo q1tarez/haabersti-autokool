@@ -5,28 +5,48 @@
   <p class="section-lead">Все сообщения из формы контактов и управление статусом обработки.</p>
 </header>
 
-<div class="card table-wrap">
-  <table class="admin-table">
+<div class="card table-wrap admin-table-card">
+  <table class="admin-table admin-table--contacts">
     <thead>
       <tr>
-        <th>Дата</th>
-        <th>Имя</th>
-        <th>Телефон</th>
-        <th>Сообщение</th>
-        <th>Статус</th>
-        <th>Действия</th>
+        <th class="admin-col-date">Дата</th>
+        <th class="admin-col-name">Имя</th>
+        <th class="admin-col-phone">Телефон</th>
+        <th class="admin-col-message">Сообщение</th>
+        <th class="admin-col-status">Статус</th>
+        <th class="admin-col-actions">Действия</th>
       </tr>
     </thead>
     <tbody>
-      <% contacts.forEach((item) => { %>
+      <% if (!contacts.length) { %>
         <tr>
-          <td><%= formatEtDateTime(item.created_at) %></td>
-          <td><%= item.full_name %></td>
-          <td><%= item.phone %></td>
-          <td><%= item.message || "-" %></td>
-          <td><%= item.status || "new" %></td>
-          <td class="table-actions">
-            <form method="POST" action="/admin/contacts/<%= item.id %>/status" class="inline-form">
+          <td colspan="6" class="admin-table-empty">Обращений пока нет.</td>
+        </tr>
+      <% } %>
+      <% contacts.forEach((item) => { %>
+        <% const st = item.status || "new"; %>
+        <tr>
+          <td class="admin-col-date"><%= formatEtDateTime(item.created_at) %></td>
+          <td class="admin-col-name"><strong><%= item.full_name %></strong></td>
+          <td class="admin-col-phone"><a href="tel:<%= item.phone %>"><%= item.phone %></a></td>
+          <td class="admin-col-message"><%= item.message || "—" %></td>
+          <td class="admin-col-status">
+            <form method="POST" action="/admin/contacts/<%= item.id %>/status" class="inline-form admin-student-form">
+              <select name="status" aria-label="Статус обращения">
+                <option value="new" <%= st === "new" ? "selected" : "" %>>Новая</option>
+                <option value="in_progress" <%= st === "in_progress" ? "selected" : "" %>>В работе</option>
+                <option value="done" <%= st === "done" ? "selected" : "" %>>Закрыта</option>
+              </select>
+              <button class="btn secondary" type="submit">OK</button>
+            </form>
+          </td>
+          <td class="table-actions admin-col-actions">
+            <form
+              method="POST"
+              action="/admin/contacts/<%= item.id %>/delete"
+              class="inline-form"
+              onsubmit="return confirm('Удалить обращение?');"
+            >
               <button class="btn danger" type="submit">Удалить</button>
             </form>
           </td>
