@@ -135,6 +135,24 @@
     </div>
   </section>
 
+  <section class="home-section">
+    <div class="home-section-head home-section-head--row">
+      <div>
+        <h2><%= t("faqTitle") %></h2>
+        <p class="section-lead"><%= t("faqLead") %></p>
+      </div>
+      <a class="btn secondary home-section-link" href="/faq"><%= t("navFaq") %> →</a>
+    </div>
+    <div class="faq-list faq-list--compact">
+      <% [1, 2, 3].forEach((i) => { %>
+        <details class="faq-item card">
+          <summary><%= t("faq" + i + "q") %></summary>
+          <p><%= t("faq" + i + "a") %></p>
+        </details>
+      <% }) %>
+    </div>
+  </section>
+
   <section class="home-section home-section--soft">
     <div class="home-section-head">
       <h2><%= t("homeAreasTitle") %></h2>

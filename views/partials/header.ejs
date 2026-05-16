@@ -34,6 +34,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
     <link rel="stylesheet" href="/css/style.css" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
   </head>
   <body>
     <!-- Skip to main content (accessibility) -->
@@ -63,6 +65,8 @@
         <nav class="nav" id="mainNav" aria-label="Main navigation">
           <a href="/" <%= typeof currentPath !== 'undefined' && currentPath === '/' ? 'aria-current="page"' : '' %>><%= t("navHome") %></a>
           <a href="/courses" <%= typeof currentPath !== 'undefined' && currentPath === '/courses' ? 'aria-current="page"' : '' %>><%= t("navCourses") %></a>
+          <a href="/instructors" <%= typeof currentPath !== 'undefined' && currentPath === '/instructors' ? 'aria-current="page"' : '' %>><%= t("navInstructors") %></a>
+          <a href="/faq" <%= typeof currentPath !== 'undefined' && currentPath === '/faq' ? 'aria-current="page"' : '' %>><%= t("navFaq") %></a>
           <a href="/register/steps" <%= typeof currentPath !== 'undefined' && currentPath === '/register/steps' ? 'aria-current="page"' : '' %>><%= t("navRegister") %></a>
           <a href="/contacts" <%= typeof currentPath !== 'undefined' && currentPath === '/contacts' ? 'aria-current="page"' : '' %>><%= t("navContacts") %></a>
         </nav>

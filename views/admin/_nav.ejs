@@ -14,6 +14,7 @@
     <a href="/admin/training-offers" class="<%= isNavActive('/training-offers') ? 'is-active' : '' %>">Тренинги / группы</a>
     <a href="/admin/students" class="<%= isNavActive('/students') ? 'is-active' : '' %>">Ученики</a>
     <a href="/admin/contacts" class="<%= isNavActive('/contacts') ? 'is-active' : '' %>">Обращения</a>
+    <a href="/admin/audit-log" class="<%= isNavActive('/audit-log') ? 'is-active' : '' %>">Журнал</a>
   </nav>
   <form class="admin-logout" method="POST" action="/admin/logout">
     <button class="btn danger" type="submit"><%= t("signOut") %></button>

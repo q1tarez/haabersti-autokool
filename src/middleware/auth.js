@@ -1,8 +1,5 @@
-/**
- * Admin authentication middleware.
- * Uses httpOnly cookies (no signing required — no SESSION_SECRET dependency).
- * Cookie is protected by httpOnly + sameSite=lax + secure in production.
- */
+const { verifyAdminSession } = require("../lib/signedCookie");
+
 function requireAdmin(req, res, next) {
   const cookieValue = req.cookies && req.cookies.admin_auth;
 
@@ -11,20 +8,15 @@ function requireAdmin(req, res, next) {
     return;
   }
 
-  const parts = String(cookieValue).split(":");
-  const adminId = parts[0];
-  const adminUsername = parts[1];
-
-  if (!adminId || !adminUsername) {
+  const session = verifyAdminSession(cookieValue);
+  if (!session) {
     res.clearCookie("admin_auth", { path: "/" });
     res.redirect("/admin/login");
     return;
   }
 
-  req.admin = { id: adminId, username: adminUsername };
+  req.admin = { id: session.id, username: session.username };
   next();
 }
 
-module.exports = {
-  requireAdmin,
-};
+module.exports = { requireAdmin };

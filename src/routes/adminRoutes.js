@@ -1,7 +1,12 @@
 const express = require("express");
+const path = require("path");
+const fs = require("fs");
 const bcrypt = require("bcrypt");
+const multer = require("multer");
 const { getAsync, allAsync, runAsync } = require("../db/database");
 const { requireAdmin } = require("../middleware/auth");
+const { signAdminSession, verifyAdminSession, COOKIE_MAX_AGE_MS } = require("../lib/signedCookie");
+const { logAudit } = require("../lib/auditLog");
 const { mergeInstructorImported } = require("../data/drivingInstructors");
 const { refreshInstructorsFromDatabase } = require("../data/instructorSync");
 const { formBodyToDrivingInstructor, stripIdForPayload, LOCATION_SLUGS } = require("../data/instructorAdminForm");
@@ -14,12 +19,31 @@ router.use((req, res, next) => {
   res.locals.adminPath = req.path;
   const cookieValue = req.cookies && req.cookies.admin_auth;
   if (cookieValue) {
-    const parts = String(cookieValue).split(":");
-    if (parts[1]) {
-      res.locals.adminUsername = parts[1];
-    }
+    const session = verifyAdminSession(cookieValue);
+    if (session) res.locals.adminUsername = session.username;
   }
   next();
+});
+
+const uploadDir = path.join(__dirname, "../../public/images/uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadDir),
+    filename: (_req, file, cb) => {
+      const safe = String(file.originalname || "file")
+        .replace(/[^a-zA-Z0-9._-]/g, "-")
+        .slice(0, 80);
+      cb(null, `${Date.now()}-${safe}`);
+    },
+  }),
+  limits: { fileSize: 4 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (/^image\/(jpeg|png|gif|webp|svg\+xml|svg)$/.test(file.mimetype)) cb(null, true);
+    else cb(new Error("Only images allowed"));
+  },
 });
 
 const TRAINING_COURSE_LABELS = {
@@ -45,8 +69,6 @@ function summarizeTrainingOfferRows(rows) {
     return { ...row, summaryTitle: title };
   });
 }
-const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
-
 function slugify(text) {
   return String(text || "")
     .toLowerCase()
@@ -79,22 +101,47 @@ router.post("/login", async (req, res, next) => {
       return;
     }
 
-    res.cookie("admin_auth", `${admin.id}:${admin.username}`, {
+    res.cookie("admin_auth", signAdminSession(admin.id, admin.username), {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
-      maxAge: oneWeekMs,
+      maxAge: COOKIE_MAX_AGE_MS,
       path: "/",
     });
+    await logAudit({ admin: { id: admin.id, username: admin.username } }, { action: "login" });
     res.redirect(303, "/admin/dashboard");
   } catch (error) {
     next(error);
   }
 });
 
-router.post("/logout", (req, res) => {
+router.post("/logout", async (req, res) => {
+  if (req.admin) await logAudit(req, { action: "logout" });
   res.clearCookie("admin_auth", { path: "/" });
   res.redirect(303, "/admin/login");
+});
+
+router.post("/upload-image", requireAdmin, upload.single("image"), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ ok: false, error: "No file" });
+      return;
+    }
+    const publicPath = `/images/uploads/${req.file.filename}`;
+    await logAudit(req, { action: "upload_image", entityType: "file", entityId: publicPath });
+    res.json({ ok: true, path: publicPath });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/audit-log", requireAdmin, async (req, res, next) => {
+  try {
+    const logs = await allAsync("SELECT * FROM audit_log ORDER BY created_at DESC LIMIT 200");
+    res.render("admin/audit-log", { title: "Журнал действий", logs });
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.get("/dashboard", requireAdmin, async (req, res, next) => {
@@ -162,6 +209,7 @@ router.post("/courses", requireAdmin, async (req, res, next) => {
     } = req.body;
 
     const courseId = id || slugify(name_en || name_et || name_ru);
+    await logAudit(req, { action: "create", entityType: "course", entityId: courseId });
     await runAsync(
       `INSERT INTO courses
       (id, name_et, name_ru, name_en, description_et, description_ru, description_en, price, duration_et, duration_ru, duration_en, is_active)
@@ -203,6 +251,7 @@ router.post("/courses/:id/update", requireAdmin, async (req, res, next) => {
       is_active,
     } = req.body;
 
+    await logAudit(req, { action: "update", entityType: "course", entityId: req.params.id });
     await runAsync(
       `UPDATE courses SET
         name_et = ?, name_ru = ?, name_en = ?,
@@ -233,33 +282,122 @@ router.post("/courses/:id/update", requireAdmin, async (req, res, next) => {
 router.post("/courses/:id/delete", requireAdmin, async (req, res, next) => {
   try {
     await runAsync("DELETE FROM courses WHERE id = ?", [req.params.id]);
+    await logAudit(req, { action: "delete", entityType: "course", entityId: req.params.id });
     res.redirect(303, "/admin/courses");
   } catch (error) {
     next(error);
   }
 });
 
+router.get("/courses/:id/preview", requireAdmin, async (req, res, next) => {
+  try {
+    const course = await getAsync("SELECT * FROM courses WHERE id = ?", [req.params.id]);
+    if (!course) {
+      res.status(404).send("Course not found");
+      return;
+    }
+    const lang = ["et", "ru", "en"].includes(req.query.lang) ? req.query.lang : "ru";
+    res.render("admin/course-preview", {
+      course: {
+        name: course[`name_${lang}`] || course.name_et,
+        description: course[`description_${lang}`] || course.description_et,
+        duration: course[`duration_${lang}`] || course.duration_et,
+        price: course.price,
+        is_active: course.is_active,
+      },
+      lang,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+function buildStudentsQuery(query) {
+  const search = query.search || "";
+  const status = query.status || "";
+  const courseId = query.courseId || "";
+  const dateFrom = query.dateFrom || "";
+  const dateTo = query.dateTo || "";
+  const params = [];
+  let where = "WHERE 1=1";
+
+  if (search) {
+    where += " AND (full_name LIKE ? OR isikukood LIKE ? OR phone LIKE ? OR email LIKE ? OR course_name LIKE ?)";
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+  }
+  if (status) {
+    where += " AND status = ?";
+    params.push(status);
+  }
+  if (courseId) {
+    where += " AND course_id = ?";
+    params.push(courseId);
+  }
+  if (dateFrom) {
+    where += " AND date(created_at) >= date(?)";
+    params.push(dateFrom);
+  }
+  if (dateTo) {
+    where += " AND date(created_at) <= date(?)";
+    params.push(dateTo);
+  }
+  return { where, params, search, status, courseId, dateFrom, dateTo };
+}
+
 router.get("/students", requireAdmin, async (req, res, next) => {
   try {
-    const search = req.query.search || "";
-    const status = req.query.status || "";
-    const params = [];
-    let where = "WHERE 1=1";
-
-    if (search) {
-      where += " AND (full_name LIKE ? OR isikukood LIKE ? OR phone LIKE ? OR email LIKE ? OR course_name LIKE ?)";
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
-    }
-    if (status) {
-      where += " AND status = ?";
-      params.push(status);
-    }
-
+    const q = buildStudentsQuery(req.query);
     const students = await allAsync(
-      `SELECT * FROM course_registrations ${where} ORDER BY created_at DESC`,
-      params
+      `SELECT * FROM course_registrations ${q.where} ORDER BY created_at DESC`,
+      q.params
     );
-    res.render("admin/students", { title: "Админ - Ученики", students, search, status });
+    const courseOptions = await allAsync("SELECT id, name_ru, name_et FROM courses ORDER BY name_ru");
+    res.render("admin/students", {
+      title: "Админ - Ученики",
+      students,
+      search: q.search,
+      status: q.status,
+      courseId: q.courseId,
+      dateFrom: q.dateFrom,
+      dateTo: q.dateTo,
+      courseOptions,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/students/export.csv", requireAdmin, async (req, res, next) => {
+  try {
+    const q = buildStudentsQuery(req.query);
+    const students = await allAsync(
+      `SELECT * FROM course_registrations ${q.where} ORDER BY created_at DESC`,
+      q.params
+    );
+    const header = "id,created_at,full_name,isikukood,phone,email,course_id,course_name,status,payment_status,comment\n";
+    const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const rows = students
+      .map((s) =>
+        [
+          s.id,
+          s.created_at,
+          s.full_name,
+          s.isikukood,
+          s.phone,
+          s.email,
+          s.course_id,
+          s.course_name,
+          s.status,
+          s.payment_status,
+          s.comment,
+        ]
+          .map(escape)
+          .join(",")
+      )
+      .join("\n");
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="students.csv"');
+    res.send(`\uFEFF${header}${rows}`);
   } catch (error) {
     next(error);
   }
@@ -270,6 +408,7 @@ router.post("/students/:id/status", requireAdmin, async (req, res, next) => {
     const allowedStatus = ["new", "contacted", "closed"];
     const st = allowedStatus.includes(String(req.body.status || "")) ? req.body.status : "new";
     await runAsync("UPDATE course_registrations SET status = ? WHERE id = ?", [st, req.params.id]);
+    await logAudit(req, { action: "update_status", entityType: "student", entityId: req.params.id, details: { status: st } });
     res.redirect(303, "/admin/students");
   } catch (error) {
     next(error);
@@ -281,6 +420,7 @@ router.post("/students/:id/payment", requireAdmin, async (req, res, next) => {
     const allowedPay = ["unpaid", "paid"];
     const pay = allowedPay.includes(String(req.body.payment_status || "")) ? req.body.payment_status : "unpaid";
     await runAsync("UPDATE course_registrations SET payment_status = ? WHERE id = ?", [pay, req.params.id]);
+    await logAudit(req, { action: "update_payment", entityType: "student", entityId: req.params.id, details: { payment_status: pay } });
     res.redirect(303, "/admin/students");
   } catch (error) {
     next(error);
@@ -290,6 +430,7 @@ router.post("/students/:id/payment", requireAdmin, async (req, res, next) => {
 router.post("/students/:id/delete", requireAdmin, async (req, res, next) => {
   try {
     await runAsync("DELETE FROM course_registrations WHERE id = ?", [req.params.id]);
+    await logAudit(req, { action: "delete", entityType: "student", entityId: req.params.id });
     res.redirect(303, "/admin/students");
   } catch (error) {
     next(error);
@@ -307,7 +448,10 @@ router.get("/contacts", requireAdmin, async (req, res, next) => {
 
 router.post("/contacts/:id/status", requireAdmin, async (req, res, next) => {
   try {
-    await runAsync("UPDATE contacts SET status = ? WHERE id = ?", [req.body.status, req.params.id]);
+    const allowed = ["new", "in_progress", "done"];
+    const st = allowed.includes(String(req.body.status || "")) ? req.body.status : "new";
+    await runAsync("UPDATE contacts SET status = ? WHERE id = ?", [st, req.params.id]);
+    await logAudit(req, { action: "update_status", entityType: "contact", entityId: req.params.id, details: { status: st } });
     res.redirect(303, "/admin/contacts");
   } catch (error) {
     next(error);
@@ -317,6 +461,7 @@ router.post("/contacts/:id/status", requireAdmin, async (req, res, next) => {
 router.post("/contacts/:id/delete", requireAdmin, async (req, res, next) => {
   try {
     await runAsync("DELETE FROM contacts WHERE id = ?", [req.params.id]);
+    await logAudit(req, { action: "delete", entityType: "contact", entityId: req.params.id });
     res.redirect(303, "/admin/contacts");
   } catch (error) {
     next(error);

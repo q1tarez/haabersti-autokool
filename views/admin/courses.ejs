@@ -73,6 +73,7 @@
                 <td><%= course.price %></td>
                 <td><%= course.is_active ? "Активен" : "Скрыт" %></td>
                 <td class="table-actions">
+                  <a class="btn secondary" href="/admin/courses/<%= course.id %>/preview" target="_blank" rel="noopener">Превью</a>
                   <a class="btn secondary" href="/admin/courses/<%= course.id %>/edit">Изменить</a>
                   <form method="POST" action="/admin/courses/<%= course.id %>/delete" onsubmit="return confirm('Удалить курс?');">
                     <button class="btn danger" type="submit">Удалить</button>

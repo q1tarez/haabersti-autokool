@@ -1,0 +1,38 @@
+<%- include("../partials/header", { title, currentPath: '/faq' }) %>
+
+<section class="faq-page">
+  <h1><%= t("faqTitle") %></h1>
+  <p class="section-lead"><%= t("faqLead") %></p>
+
+  <div class="faq-list">
+    <% for (let i = 1; i <= 5; i++) { %>
+      <details class="faq-item card">
+        <summary><%= t("faq" + i + "q") %></summary>
+        <p><%= t("faq" + i + "a") %></p>
+      </details>
+    <% } %>
+  </div>
+
+  <div class="hero-actions" style="margin-top: 24px">
+    <a class="btn" href="/register/steps"><%= t("registerCourse") %></a>
+    <a class="btn secondary" href="/contacts"><%= t("navContacts") %></a>
+  </div>
+</section>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    <% for (let i = 1; i <= 5; i++) { %>
+    {
+      "@type": "Question",
+      "name": <%- JSON.stringify(t("faq" + i + "q")) %>,
+      "acceptedAnswer": { "@type": "Answer", "text": <%- JSON.stringify(t("faq" + i + "a")) %> }
+    }<%= i < 5 ? ',' : '' %>
+    <% } %>
+  ]
+}
+</script>
+
+<%- include("../partials/footer") %>

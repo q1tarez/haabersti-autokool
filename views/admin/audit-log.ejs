@@ -1,0 +1,36 @@
+<%- include("../partials/admin-header", { title }) %>
+
+<header class="admin-page-header">
+  <h1>Журнал действий</h1>
+  <p class="section-lead">Последние 200 записей изменений в админ-панели.</p>
+</header>
+
+<div class="card table-wrap admin-table-card">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Дата</th>
+        <th>Админ</th>
+        <th>Действие</th>
+        <th>Сущность</th>
+        <th>Детали</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (!logs.length) { %>
+        <tr><td colspan="5" class="admin-table-empty">Записей пока нет.</td></tr>
+      <% } %>
+      <% logs.forEach((row) => { %>
+        <tr>
+          <td class="admin-col-date"><%= formatEtDateTime(row.created_at) %></td>
+          <td><%= row.admin_username || "—" %></td>
+          <td><%= row.action %></td>
+          <td><%= row.entity_type ? `${row.entity_type} #${row.entity_id || ""}` : "—" %></td>
+          <td><code class="audit-details"><%= row.details || "" %></code></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include("../partials/admin-footer") %>

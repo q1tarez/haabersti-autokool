@@ -611,6 +611,19 @@ async function initDatabase() {
   `);
 
   await runAsync(`
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      admin_id TEXT,
+      admin_username TEXT,
+      action TEXT NOT NULL,
+      entity_type TEXT,
+      entity_id TEXT,
+      details TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await runAsync(`
     CREATE TABLE IF NOT EXISTS courses (
       id TEXT PRIMARY KEY,
       name_et TEXT NOT NULL,

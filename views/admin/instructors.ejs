@@ -23,7 +23,8 @@
         <input type="text" name="name" required value="<%= editingInstructor ? editingInstructor.name : '' %>" />
 
         <label>Фото (путь или URL от /images/…)</label>
-        <input type="text" name="photo" value="<%= editingInstructor ? editingInstructor.photo : '' %>" placeholder="/images/instructors/name.svg" />
+        <input id="instructorPhoto" type="text" name="photo" value="<%= editingInstructor ? editingInstructor.photo : '' %>" placeholder="/images/instructors/name.svg" />
+        <%- include("../partials/admin-image-upload", { targetInputId: "instructorPhoto" }) %>
 
         <label>Фото учебного авто (по одному пути или URL на строку)</label>
         <textarea name="car_photos" rows="4" placeholder="/images/instructors/cars/oppeauto.png"><%= editingInstructor && editingInstructor.carPhotos && editingInstructor.carPhotos.length ? editingInstructor.carPhotos.join('\n') : '' %></textarea>

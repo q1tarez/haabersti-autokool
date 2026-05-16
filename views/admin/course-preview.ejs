@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="<%= lang %>">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Превью: <%= course.name %></title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+      body { padding: 24px; max-width: 520px; margin: 0 auto; }
+      .preview-badge { margin-bottom: 12px; }
+    </style>
+  </head>
+  <body>
+    <p class="preview-badge price-badge"><%= course.is_active ? "Активен на сайте" : "Скрыт" %></p>
+    <article class="card">
+      <h1 style="font-size: 22px; margin-top: 0"><%= course.name %></h1>
+      <p><%= course.description %></p>
+      <p class="price-badge"><strong>Цена:</strong> <%= course.price %></p>
+      <% if (course.duration) { %><p><strong>Длительность:</strong> <%= course.duration %></p><% } %>
+    </article>
+    <p style="margin-top: 16px; color: #64748b; font-size: 13px">Превью карточки курса (<%= lang %>)</p>
+  </body>
+</html>

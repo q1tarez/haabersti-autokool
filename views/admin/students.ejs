@@ -13,7 +13,16 @@
     <option value="contacted" <%= status === "contacted" ? "selected" : "" %>>Связались</option>
     <option value="closed" <%= status === "closed" ? "selected" : "" %>>Закрыта</option>
   </select>
+  <select name="courseId">
+    <option value="">Все курсы</option>
+    <% (courseOptions || []).forEach((c) => { %>
+      <option value="<%= c.id %>" <%= courseId === c.id ? "selected" : "" %>><%= c.name_ru || c.name_et %></option>
+    <% }) %>
+  </select>
+  <input type="date" name="dateFrom" value="<%= dateFrom || '' %>" aria-label="С даты" />
+  <input type="date" name="dateTo" value="<%= dateTo || '' %>" aria-label="По дату" />
   <button class="btn" type="submit">Фильтровать</button>
+  <a class="btn secondary" href="/admin/students/export.csv?search=<%= encodeURIComponent(search || '') %>&status=<%= encodeURIComponent(status || '') %>&courseId=<%= encodeURIComponent(courseId || '') %>&dateFrom=<%= encodeURIComponent(dateFrom || '') %>&dateTo=<%= encodeURIComponent(dateTo || '') %>">CSV</a>
 </form>
 
 <div class="card table-wrap admin-table-card">

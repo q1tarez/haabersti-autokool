@@ -82,6 +82,19 @@ async function runPostgresMigrations(db) {
     )
   `);
 
+  await runAsync(`
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id SERIAL PRIMARY KEY,
+      admin_id TEXT,
+      admin_username TEXT,
+      action TEXT NOT NULL,
+      entity_type TEXT,
+      entity_id TEXT,
+      details TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
   await runAsync(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'new'`).catch(() => null);
   await runAsync(`ALTER TABLE course_registrations ADD COLUMN IF NOT EXISTS isikukood TEXT`).catch(() => null);
   await runAsync(

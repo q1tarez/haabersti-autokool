@@ -1,0 +1,23 @@
+<%- include("../partials/header", { title, currentPath: '/instructors' }) %>
+
+<section>
+  <h1><%= t("navInstructors") %></h1>
+  <p class="section-lead"><%= lang === 'ru' ? 'Опытные инструкторы Haabersti Autokool. Выбор при регистрации на подходящие курсы.' : lang === 'en' ? 'Experienced Haabersti Autokool instructors. Pick yours when registering for eligible courses.' : 'Kogenud Haabersti Autokool instruktorid. Vali registreerimisel sobival kursusel.' %></p>
+
+  <div class="cards instructor-public-cards">
+    <% instructors.forEach((instr) => { %>
+      <article class="card instructor-public-card">
+        <img class="instructor-public-photo" src="<%= instr.photo %>" alt="" width="88" height="88" loading="lazy" />
+        <h2><%= instr.name %></h2>
+        <% if (instr.badgePro) { %><span class="price-badge">PRO</span><% } %>
+        <p class="instructor-public-rating">★ <%= instr.rating %> · <%= instr.reviewCount %> <%= t("instructorReviewsWord") %></p>
+        <p><%= instr.description[lang] || instr.description.et || instr.description.ru %></p>
+        <p class="home-course-meta"><strong><%= t("instructorMeetingPoint") %>:</strong> <%= instr.location[lang] || instr.location.et %></p>
+        <p class="home-course-meta"><strong><%= t("instructorTransmission") %>:</strong> <%= instr.transmission[lang] || instr.transmission.et %></p>
+        <a class="btn" href="/register/steps"><%= t("registerShort") %></a>
+      </article>
+    <% }) %>
+  </div>
+</section>
+
+<%- include("../partials/footer") %>

@@ -3,6 +3,7 @@ const { runAsync, allAsync, getAsync } = require("../db/database");
 const { courseRequiresInstructor, getInstructorsForLang, getInstructorById } = require("../data/drivingInstructors");
 const { courseRequiresTrainingOffer, mergeTrainingOfferRow } = require("../data/trainingOffers");
 const { sendBankTransferInstructionsMail } = require("../mail/bankTransferMail");
+const { notifyNewContact, notifyNewRegistration } = require("../mail/notifySchool");
 const { supportedLanguages, t } = require("../i18n");
 const { contactSchema, registrationSchema, validate } = require("../validation/schemas");
 
@@ -135,6 +136,51 @@ router.get("/courses", async (req, res, next) => {
   }
 });
 
+function siteBaseUrl(req) {
+  const explicit = String(process.env.PUBLIC_SITE_URL || process.env.SITE_URL || "").trim().replace(/\/$/, "");
+  if (explicit) return explicit;
+  if (process.env.VERCEL_URL) return `https://${String(process.env.VERCEL_URL).replace(/^https?:\/\//, "")}`;
+  return `${req.protocol}://${req.get("host")}`;
+}
+
+router.get("/instructors", (req, res) => {
+  const titles = { et: "Instruktorid", ru: "Инструкторы", en: "Instructors" };
+  const desc = {
+    et: "Haabersti Autokool instruktorid — kogenud opetajad Tallinnas.",
+    ru: "Инструкторы Haabersti Autokool — опытные педагоги в Таллине.",
+    en: "Haabersti Autokool instructors — experienced teachers in Tallinn.",
+  };
+  res.render("pages/instructors", {
+    title: titles[req.lang] || titles.et,
+    metaDescription: desc[req.lang] || desc.et,
+    currentPath: "/instructors",
+    instructors: getInstructorsForLang(req.lang),
+  });
+});
+
+router.get("/faq", (req, res) => {
+  const titles = { et: "KKK", ru: "Вопросы и ответы", en: "FAQ" };
+  res.render("pages/faq", {
+    title: titles[req.lang] || titles.et,
+    currentPath: "/faq",
+  });
+});
+
+router.get("/sitemap.xml", async (req, res, next) => {
+  try {
+    const base = siteBaseUrl(req);
+    const courses = await getLocalizedCoursesFromDb(req.lang);
+    const urls = ["/", "/courses", "/register/steps", "/contacts", "/instructors", "/faq", ...courses.map((c) => `/register/steps?course=${c.id}`)];
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.map((u) => `  <url><loc>${base}${u}</loc></url>`).join("\n")}
+</urlset>`;
+    res.type("application/xml").send(xml);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get("/contacts", (req, res) => {
   const contactTitles = { et: "Kontakt", ru: "Контакты", en: "Contact" };
   const contactDesc = {
@@ -166,6 +212,7 @@ router.post("/contacts", async (req, res, next) => {
       "INSERT INTO contacts (full_name, phone, message) VALUES (?, ?, ?)",
       [fullName, phone, message || ""]
     );
+    notifyNewContact({ fullName, phone, message: message || "" }).catch(() => null);
     res.render("pages/contacts", {
       title: "Kontakt",
       error: null,
@@ -355,6 +402,14 @@ router.post("/register", async (req, res, next) => {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [fullName, isikukood, phone, email, chosenCourse.id, chosenCourse.name, "", registrationNote]
     );
+
+    notifyNewRegistration({
+      fullName,
+      phone,
+      email,
+      courseName: chosenCourse.name,
+      comment: registrationNote,
+    }).catch(() => null);
 
     let successBankInfo = null;
     if (payNorm === "bank") {

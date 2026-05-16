@@ -10,6 +10,7 @@ const { formatEtDateTime } = require("./formatEtDateTime");
 const { supportedLanguages, defaultLanguage, t } = require("./i18n");
 const siteRoutes = require("./routes/siteRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const { reportError } = require("./lib/errorReporter");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,9 +27,9 @@ app.use(
         defaultSrc: ["'self'"],
         styleSrc: ["'self'", "https://fonts.googleapis.com", "'unsafe-inline'"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://www.googletagmanager.com"],
         imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", "https://api.telegram.org", "https://www.google-analytics.com"],
       },
     },
   })
@@ -80,6 +81,9 @@ app.use((req, res, next) => {
   res.locals.lang = req.lang;
   res.locals.t = req.t;
   res.locals.formatEtDateTime = formatEtDateTime;
+  res.locals.gaId = String(process.env.GA_MEASUREMENT_ID || "").trim();
+  res.locals.whatsappPhone = String(process.env.WHATSAPP_PHONE || "37256847904").replace(/\D/g, "");
+  res.locals.telegramUrl = String(process.env.TELEGRAM_PUBLIC_URL || "").trim();
   next();
 });
 
@@ -99,6 +103,7 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   // eslint-disable-next-line no-console
   console.error("[APP ERROR]", err.message, err.stack);
+  reportError(err, req).catch(() => null);
   const isDev = process.env.NODE_ENV !== "production";
   const msg = isDev
     ? `Server error: ${err.message}`

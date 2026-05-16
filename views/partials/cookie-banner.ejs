@@ -1,0 +1,28 @@
+<% if (typeof gaId !== 'undefined' && gaId) { %>
+<div class="cookie-banner" id="cookieBanner" hidden>
+  <p>
+    <%= lang === 'ru' ? 'Мы используем cookies для аналитики. Продолжая, вы соглашаетесь.' : lang === 'en' ? 'We use cookies for analytics. By continuing you agree.' : 'Kasutame küpsiseid analüütikaks. Jätkates nõustute.' %>
+  </p>
+  <button type="button" class="btn" id="cookieAccept"><%= lang === 'ru' ? 'Понятно' : lang === 'en' ? 'OK' : 'Selge' %></button>
+</div>
+<script async src="https://www.googletagmanager.com/gtag/js?id=<%= gaId %>"></script>
+<script>
+  (function () {
+    var key = "haabersti_cookie_ok";
+    var banner = document.getElementById("cookieBanner");
+    if (!localStorage.getItem(key) && banner) banner.hidden = false;
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    window.gtag = gtag;
+    gtag("js", new Date());
+    gtag("config", "<%= gaId %>", { anonymize_ip: true });
+    var btn = document.getElementById("cookieAccept");
+    if (btn) {
+      btn.addEventListener("click", function () {
+        localStorage.setItem(key, "1");
+        if (banner) banner.hidden = true;
+      });
+    }
+  })();
+</script>
+<% } %>
