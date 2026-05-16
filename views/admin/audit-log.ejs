@@ -1,8 +1,11 @@
 <%- include("../partials/admin-header", { title }) %>
 
 <header class="admin-page-header">
-  <h1>Журнал действий</h1>
-  <p class="section-lead">Последние 200 записей изменений в админ-панели.</p>
+  <h1><%= adminT("navAudit") %></h1>
+  <form method="GET" action="/admin/audit-log" class="admin-search-form">
+    <input type="search" name="q" value="<%= typeof search !== 'undefined' ? search : '' %>" placeholder="<%= adminT("auditSearch") %>" />
+    <button class="btn secondary" type="submit">OK</button>
+  </form>
 </header>
 
 <div class="card table-wrap admin-table-card">
@@ -18,7 +21,7 @@
     </thead>
     <tbody>
       <% if (!logs.length) { %>
-        <tr><td colspan="5" class="admin-table-empty">Записей пока нет.</td></tr>
+        <tr><td colspan="5" class="admin-table-empty">Записей нет.</td></tr>
       <% } %>
       <% logs.forEach((row) => { %>
         <tr>

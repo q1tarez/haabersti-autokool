@@ -3447,3 +3447,88 @@ body.admin-page--login {
   opacity: 1;
   transform: none;
 }
+
+.home-reviews-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+.home-review-text {
+  margin: 0 0 0.75rem;
+  font-style: italic;
+}
+.home-review-stars {
+  color: #f59e0b;
+  margin-left: 0.35rem;
+}
+.home-instagram {
+  text-align: center;
+}
+.admin-reminders {
+  margin-top: 1.25rem;
+}
+.admin-reminders ul {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.25rem;
+}
+.admin-reminders-ok {
+  color: var(--muted, #64748b);
+  margin-top: 1rem;
+}
+.admin-lang-switch {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.admin-lang-switch a.is-active {
+  font-weight: 700;
+  color: var(--primary, #2563eb);
+}
+.admin-page-header--row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.admin-search-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.admin-reply-details {
+  margin-bottom: 0.5rem;
+}
+.admin-reply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 220px;
+  padding: 0.75rem 0;
+}
+.admin-reply-form textarea {
+  min-height: 4rem;
+}
+.admin-alert {
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+.admin-alert--ok {
+  background: #ecfdf5;
+  color: #065f46;
+}
+.admin-alert--error {
+  background: #fef2f2;
+  color: #991b1b;
+}
+.admin-totp-secret {
+  word-break: break-all;
+  font-size: 0.9rem;
+}
+.admin-team-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}

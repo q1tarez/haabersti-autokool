@@ -42,4 +42,47 @@ function verifyAdminSession(token) {
   return { id: adminId, username, exp };
 }
 
-module.exports = { signAdminSession, verifyAdminSession, COOKIE_MAX_AGE_MS };
+const PENDING_2FA_MS = 10 * 60 * 1000;
+
+function signPending2fa(adminId) {
+  const exp = Date.now() + PENDING_2FA_MS;
+  const payload = `2fa:${adminId}:${exp}`;
+  const sig = crypto.createHmac("sha256", getSecret()).update(payload).digest("base64url");
+  return `${Buffer.from(payload, "utf8").toString("base64url")}.${sig}`;
+}
+
+function verifyPending2fa(token) {
+  if (!token || typeof token !== "string") return null;
+  const dot = token.lastIndexOf(".");
+  if (dot <= 0) return null;
+  const payloadB64 = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  let payload;
+  try {
+    payload = Buffer.from(payloadB64, "base64url").toString("utf8");
+  } catch {
+    return null;
+  }
+  const expected = crypto.createHmac("sha256", getSecret()).update(payload).digest("base64url");
+  const sigBuf = Buffer.from(sig);
+  const expectedBuf = Buffer.from(expected);
+  if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+    return null;
+  }
+  if (!payload.startsWith("2fa:")) return null;
+  const parts = payload.split(":");
+  if (parts.length !== 3) return null;
+  const adminId = parts[1];
+  const exp = Number(parts[2]);
+  if (!adminId || !Number.isFinite(exp) || Date.now() > exp) return null;
+  return { id: adminId, exp };
+}
+
+module.exports = {
+  signAdminSession,
+  verifyAdminSession,
+  signPending2fa,
+  verifyPending2fa,
+  COOKIE_MAX_AGE_MS,
+  PENDING_2FA_MS,
+};

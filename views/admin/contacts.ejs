@@ -1,9 +1,16 @@
 <%- include("../partials/admin-header", { title }) %>
 
-<header class="admin-page-header">
-  <h1>Обращения с сайта</h1>
-  <p class="section-lead">Все сообщения из формы контактов и управление статусом обработки.</p>
+<header class="admin-page-header admin-page-header--row">
+  <div>
+    <h1><%= adminT("navContacts") %></h1>
+    <p class="section-lead">Сообщения с формы контактов.</p>
+  </div>
+  <% if (isDirector) { %>
+    <a class="btn secondary" href="/admin/contacts/export.csv"><%= adminT("exportCsv") %></a>
+  <% } %>
 </header>
+
+<% if (typeof replied !== 'undefined' && replied) { %><p class="admin-alert admin-alert--ok">Ответ отправлен.</p><% } %>
 
 <div class="card table-wrap admin-table-card">
   <table class="admin-table admin-table--contacts">
@@ -12,6 +19,7 @@
         <th class="admin-col-date">Дата</th>
         <th class="admin-col-name">Имя</th>
         <th class="admin-col-phone">Телефон</th>
+        <th class="admin-col-email">Email</th>
         <th class="admin-col-message">Сообщение</th>
         <th class="admin-col-status">Статус</th>
         <th class="admin-col-actions">Действия</th>
@@ -19,9 +27,7 @@
     </thead>
     <tbody>
       <% if (!contacts.length) { %>
-        <tr>
-          <td colspan="6" class="admin-table-empty">Обращений пока нет.</td>
-        </tr>
+        <tr><td colspan="7" class="admin-table-empty">Обращений пока нет.</td></tr>
       <% } %>
       <% contacts.forEach((item) => { %>
         <% const st = item.status || "new"; %>
@@ -29,10 +35,11 @@
           <td class="admin-col-date"><%= formatEtDateTime(item.created_at) %></td>
           <td class="admin-col-name"><strong><%= item.full_name %></strong></td>
           <td class="admin-col-phone"><a href="tel:<%= item.phone %>"><%= item.phone %></a></td>
+          <td class="admin-col-email"><%= item.email || "—" %></td>
           <td class="admin-col-message"><%= item.message || "—" %></td>
           <td class="admin-col-status">
             <form method="POST" action="/admin/contacts/<%= item.id %>/status" class="inline-form admin-student-form">
-              <select name="status" aria-label="Статус обращения">
+              <select name="status" aria-label="Статус">
                 <option value="new" <%= st === "new" ? "selected" : "" %>>Новая</option>
                 <option value="in_progress" <%= st === "in_progress" ? "selected" : "" %>>В работе</option>
                 <option value="done" <%= st === "done" ? "selected" : "" %>>Закрыта</option>
@@ -41,14 +48,29 @@
             </form>
           </td>
           <td class="table-actions admin-col-actions">
-            <form
-              method="POST"
-              action="/admin/contacts/<%= item.id %>/delete"
-              class="inline-form"
-              onsubmit="return confirm('Удалить обращение?');"
-            >
-              <button class="btn danger" type="submit">Удалить</button>
-            </form>
+            <details class="admin-reply-details">
+              <summary class="btn secondary"><%= adminT("replyContact") %></summary>
+              <form method="POST" action="/admin/contacts/<%= item.id %>/reply" class="admin-reply-form">
+                <label><%= adminT("replySubject") %></label>
+                <input name="subject" type="text" value="Haabersti Autokool" />
+                <label>Email</label>
+                <input name="email" type="email" value="<%= item.email || '' %>" required />
+                <label>Шаблон</label>
+                <select name="template">
+                  <option value="received">Получили обращение</option>
+                  <option value="call">Перезвоним</option>
+                  <option value="registered">Запись на курс</option>
+                </select>
+                <label><%= adminT("replyMessage") %></label>
+                <textarea name="message" rows="3" placeholder="Или свой текст…"></textarea>
+                <button class="btn" type="submit"><%= adminT("replySend") %></button>
+              </form>
+            </details>
+            <% if (isDirector) { %>
+              <form method="POST" action="/admin/contacts/<%= item.id %>/delete" class="inline-form" onsubmit="return confirm('Удалить?');">
+                <button class="btn danger" type="submit">Удалить</button>
+              </form>
+            <% } %>
           </td>
         </tr>
       <% }) %>

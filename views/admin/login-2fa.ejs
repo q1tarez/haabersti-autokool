@@ -1,0 +1,11 @@
+<%- include("../partials/admin-header", { title, adminLogin: true }) %>
+<div class="card admin-login-card">
+  <h1><%= adminT("login2faTitle") %></h1>
+  <% if (error) { %><p class="form-error"><%= error %></p><% } %>
+  <form method="POST" action="/admin/login/2fa" class="admin-login-form">
+    <label for="code">Код (6 цифр)</label>
+    <input id="code" name="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code" />
+    <button class="btn" type="submit"><%= adminT("login2faSubmit") %></button>
+  </form>
+</div>
+<%- include("../partials/admin-footer") %>

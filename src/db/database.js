@@ -653,6 +653,12 @@ async function initDatabase() {
     ALTER TABLE course_registrations ADD COLUMN payment_status TEXT DEFAULT 'unpaid'
   `).catch(() => null);
 
+  await runAsync(`ALTER TABLE admins ADD COLUMN role TEXT DEFAULT 'director'`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN instructor_id TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN totp_secret TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE course_registrations ADD COLUMN instructor_id TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE contacts ADD COLUMN email TEXT`).catch(() => null);
+
   const adminCredentials = [
     { username: "talehh_gusseinov", password: "hab_autokool2026" },
     { username: "admin", password: "Bserg_5xg3D11" },

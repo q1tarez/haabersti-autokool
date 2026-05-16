@@ -10,6 +10,7 @@ const { formatEtDateTime } = require("./formatEtDateTime");
 const { supportedLanguages, defaultLanguage, t } = require("./i18n");
 const siteRoutes = require("./routes/siteRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const apiRoutes = require("./routes/apiRoutes");
 const { reportError } = require("./lib/errorReporter");
 
 const app = express();
@@ -84,6 +85,7 @@ app.use((req, res, next) => {
   res.locals.gaId = String(process.env.GA_MEASUREMENT_ID || "").trim();
   res.locals.whatsappPhone = String(process.env.WHATSAPP_PHONE || "37256847904").replace(/\D/g, "");
   res.locals.telegramUrl = String(process.env.TELEGRAM_PUBLIC_URL || "").trim();
+  res.locals.instagramUrl = String(process.env.INSTAGRAM_URL || "").trim();
   next();
 });
 
@@ -92,6 +94,7 @@ app.use("/admin/login", loginLimiter);
 app.use("/contacts", formLimiter);
 app.use("/register", formLimiter);
 
+app.use("/api", apiRoutes);
 app.use("/", siteRoutes);
 app.use("/admin", adminRoutes);
 

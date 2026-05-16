@@ -1,0 +1,44 @@
+<%- include("../partials/admin-header", { title }) %>
+
+<header class="admin-page-header">
+  <h1><%= adminT("teamTitle") %></h1>
+</header>
+
+<% if (saved) { %><p class="admin-alert admin-alert--ok">Сохранено.</p><% } %>
+
+<div class="card table-wrap admin-table-card">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Логин</th>
+        <th>Роль</th>
+        <th>Инструктор ID</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% admins.forEach((a) => { %>
+        <tr>
+          <td><strong><%= a.username %></strong></td>
+          <td colspan="3">
+            <form method="POST" action="/admin/team/<%= a.id %>" class="inline-form admin-team-form">
+              <select name="role">
+                <option value="director" <%= (a.role || "director") === "director" ? "selected" : "" %>><%= adminT("roleDirector") %></option>
+                <option value="instructor" <%= a.role === "instructor" ? "selected" : "" %>><%= adminT("roleInstructor") %></option>
+              </select>
+              <select name="instructor_id" aria-label="Instructor id">
+                <option value="">—</option>
+                <% instructors.forEach((iid) => { %>
+                  <option value="<%= iid %>" <%= String(a.instructor_id) === String(iid) ? "selected" : "" %>><%= iid %></option>
+                <% }) %>
+              </select>
+              <button class="btn secondary" type="submit">OK</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include("../partials/admin-footer") %>

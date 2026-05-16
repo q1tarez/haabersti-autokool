@@ -1,0 +1,36 @@
+<%- include("../partials/admin-header", { title }) %>
+
+<header class="admin-page-header">
+  <h1><%= adminT("securityTitle") %></h1>
+</header>
+
+<% if (success === "enabled") { %><p class="admin-alert admin-alert--ok">2FA включена.</p><% } %>
+<% if (success === "disabled") { %><p class="admin-alert admin-alert--ok">2FA отключена.</p><% } %>
+<% if (error) { %><p class="admin-alert admin-alert--error">Ошибка. Проверьте пароль и код.</p><% } %>
+
+<div class="card admin-security-card">
+  <% if (enabled) { %>
+    <p>Двухфакторная аутентификация <strong>включена</strong>.</p>
+    <form method="POST" action="/admin/security/disable" class="admin-form-stack">
+      <label>Пароль</label>
+      <input type="password" name="password" required autocomplete="current-password" />
+      <label>Код из приложения</label>
+      <input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required />
+      <button class="btn danger" type="submit"><%= adminT("securityDisable") %></button>
+    </form>
+  <% } else if (setup) { %>
+    <p>Отсканируйте QR в Google Authenticator / Authy или введите секрет вручную:</p>
+    <p><code class="admin-totp-secret"><%= setup.secret %></code></p>
+    <p><a href="<%= setup.url %>" class="btn secondary">otpauth:// ссылка</a></p>
+    <form method="POST" action="/admin/security/enable" class="admin-form-stack">
+      <input type="hidden" name="secret" value="<%= setup.secret %>" />
+      <label>Код для подтверждения</label>
+      <input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required />
+      <button class="btn" type="submit"><%= adminT("securityEnable") %></button>
+    </form>
+  <% } else { %>
+    <p>2FA не настроена.</p>
+    <a class="btn" href="/admin/security?setup=1"><%= adminT("securityEnable") %></a>
+  <% } %>
+</div>
+<%- include("../partials/admin-footer") %>

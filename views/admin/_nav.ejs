@@ -1,22 +1,34 @@
 <%
   const path = typeof adminPath !== "undefined" ? adminPath : "";
+  const director = typeof isDirector !== "undefined" ? isDirector : true;
+  const at = typeof adminT === "function" ? adminT : (k) => k;
   function isNavActive(prefix) {
     if (prefix === "/dashboard") return path === "/dashboard";
     return path === prefix || path.startsWith(prefix + "/");
   }
 %>
-<aside class="admin-sidebar card" id="adminSidebar" aria-label="Навигация админ-панели">
-  <p class="admin-sidebar-title">Разделы</p>
+<aside class="admin-sidebar card" id="adminSidebar" aria-label="Admin navigation">
+  <p class="admin-sidebar-title"><%= at("navDashboard") %></p>
   <nav class="admin-nav">
-    <a href="/admin/dashboard" class="<%= isNavActive('/dashboard') ? 'is-active' : '' %>">Дашборд</a>
-    <a href="/admin/courses" class="<%= isNavActive('/courses') ? 'is-active' : '' %>">Курсы</a>
-    <a href="/admin/instructors" class="<%= isNavActive('/instructors') ? 'is-active' : '' %>">Инструкторы</a>
-    <a href="/admin/training-offers" class="<%= isNavActive('/training-offers') ? 'is-active' : '' %>">Тренинги / группы</a>
-    <a href="/admin/students" class="<%= isNavActive('/students') ? 'is-active' : '' %>">Ученики</a>
-    <a href="/admin/contacts" class="<%= isNavActive('/contacts') ? 'is-active' : '' %>">Обращения</a>
-    <a href="/admin/audit-log" class="<%= isNavActive('/audit-log') ? 'is-active' : '' %>">Журнал</a>
+    <a href="/admin/dashboard" class="<%= isNavActive('/dashboard') ? 'is-active' : '' %>"><%= at("navDashboard") %></a>
+    <% if (director) { %>
+      <a href="/admin/courses" class="<%= isNavActive('/courses') ? 'is-active' : '' %>"><%= at("navCourses") %></a>
+      <a href="/admin/instructors" class="<%= isNavActive('/instructors') ? 'is-active' : '' %>"><%= at("navInstructors") %></a>
+      <a href="/admin/training-offers" class="<%= isNavActive('/training-offers') ? 'is-active' : '' %>"><%= at("navTraining") %></a>
+    <% } %>
+    <a href="/admin/students" class="<%= isNavActive('/students') ? 'is-active' : '' %>"><%= at("navStudents") %></a>
+    <% if (director) { %>
+      <a href="/admin/contacts" class="<%= isNavActive('/contacts') ? 'is-active' : '' %>"><%= at("navContacts") %></a>
+      <a href="/admin/audit-log" class="<%= isNavActive('/audit-log') ? 'is-active' : '' %>"><%= at("navAudit") %></a>
+      <a href="/admin/team" class="<%= isNavActive('/team') ? 'is-active' : '' %>"><%= at("navTeam") %></a>
+    <% } %>
+    <a href="/admin/security" class="<%= isNavActive('/security') ? 'is-active' : '' %>"><%= at("navSecurity") %></a>
   </nav>
+  <div class="admin-lang-switch">
+    <a href="?adminLang=et" class="<%= adminLang === 'et' ? 'is-active' : '' %>"><%= at("langEt") %></a>
+    <a href="?adminLang=ru" class="<%= adminLang === 'ru' ? 'is-active' : '' %>"><%= at("langRu") %></a>
+  </div>
   <form class="admin-logout" method="POST" action="/admin/logout">
-    <button class="btn danger" type="submit"><%= t("signOut") %></button>
+    <button class="btn danger" type="submit"><%= at("navLogout") %></button>
   </form>
 </aside>

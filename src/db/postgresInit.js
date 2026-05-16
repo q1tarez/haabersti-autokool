@@ -100,6 +100,11 @@ async function runPostgresMigrations(db) {
   await runAsync(
     `ALTER TABLE course_registrations ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'unpaid'`
   ).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'director'`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS instructor_id TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS totp_secret TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE course_registrations ADD COLUMN IF NOT EXISTS instructor_id TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS email TEXT`).catch(() => null);
 
   const adminCredentials = [
     { username: "talehh_gusseinov", password: "hab_autokool2026" },

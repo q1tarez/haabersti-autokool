@@ -1,27 +1,56 @@
 <%- include("../partials/admin-header", { title }) %>
 
 <header class="admin-page-header">
-  <h1><%= t("dashboardHello") %>, <%= username %>!</h1>
-  <p class="section-lead">Курсы, ученики, обращения, статусы и быстрые действия.</p>
+  <h1><%= adminT("dashboardHello") %>, <%= username %>!</h1>
+  <p class="section-lead"><%= adminT("dashboardLead") %></p>
 </header>
 
 <div class="stats admin-stats">
-  <article>
-    <p class="number"><%= stats.coursesCount %></p>
-    <p>Активных курсов</p>
-  </article>
+  <% if (isDirector) { %>
+    <article>
+      <p class="number"><%= stats.coursesCount %></p>
+      <p><%= adminT("statCourses") %></p>
+    </article>
+  <% } %>
   <article>
     <p class="number"><%= stats.studentsCount %></p>
-    <p>Всего записей учеников</p>
+    <p><%= adminT("statStudents") %></p>
   </article>
-  <article>
-    <p class="number"><%= stats.contactsCount %></p>
-    <p>Всего обращений</p>
-  </article>
+  <% if (isDirector) { %>
+    <article>
+      <p class="number"><%= stats.contactsCount %></p>
+      <p><%= adminT("statContacts") %></p>
+    </article>
+  <% } %>
   <article>
     <p class="number"><%= stats.newLeadsCount %></p>
-    <p>Новых заявок</p>
+    <p><%= adminT("statNewLeads") %></p>
   </article>
 </div>
+
+<% const staleStudents = reminders.students || []; const staleContacts = reminders.contacts || []; %>
+<% if (staleStudents.length || staleContacts.length) { %>
+  <section class="card admin-reminders">
+    <h2><%= adminT("remindersTitle") %></h2>
+    <% if (staleStudents.length) { %>
+      <h3><%= adminT("remindersStudents") %> (<%= staleStudents.length %>)</h3>
+      <ul>
+        <% staleStudents.slice(0, 10).forEach((s) => { %>
+          <li><a href="/admin/students?search=<%= encodeURIComponent(s.full_name) %>">#<%= s.id %> <%= s.full_name %> — <%= s.course_name %></a></li>
+        <% }) %>
+      </ul>
+    <% } %>
+    <% if (isDirector && staleContacts.length) { %>
+      <h3><%= adminT("remindersContacts") %> (<%= staleContacts.length %>)</h3>
+      <ul>
+        <% staleContacts.slice(0, 10).forEach((c) => { %>
+          <li><a href="/admin/contacts">#<%= c.id %> <%= c.name %></a></li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+<% } else { %>
+  <p class="admin-reminders-ok"><%= adminT("remindersNone") %></p>
+<% } %>
 
 <%- include("../partials/admin-footer") %>

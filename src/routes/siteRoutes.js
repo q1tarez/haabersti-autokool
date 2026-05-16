@@ -4,6 +4,8 @@ const { courseRequiresInstructor, getInstructorsForLang, getInstructorById } = r
 const { courseRequiresTrainingOffer, mergeTrainingOfferRow } = require("../data/trainingOffers");
 const { sendBankTransferInstructionsMail } = require("../mail/bankTransferMail");
 const { notifyNewContact, notifyNewRegistration } = require("../mail/notifySchool");
+const { sendRegistrationReceivedMail } = require("../mail/registrationReceivedMail");
+const { getReviewsForLang } = require("../data/reviews");
 const { supportedLanguages, t } = require("../i18n");
 const { contactSchema, registrationSchema, validate } = require("../validation/schemas");
 
@@ -111,6 +113,8 @@ router.get("/", async (req, res, next) => {
       metaTitle: "Haabersti Autokool — Autokool Tallinnas",
       metaDescription: metaDescriptions[req.lang] || metaDescriptions.et,
       courses,
+      reviews: getReviewsForLang(req.lang),
+      instagramUrl: String(process.env.INSTAGRAM_URL || "").trim(),
     });
   } catch (error) {
     next(error);
@@ -198,7 +202,7 @@ router.get("/contacts", (req, res) => {
 
 router.post("/contacts", async (req, res, next) => {
   try {
-    const { fullName, phone, message } = req.body;
+    const { fullName, phone, message, email } = req.body;
     if (!fullName || !phone) {
       res.status(400).render("pages/contacts", {
         title: "Kontakt",
@@ -208,11 +212,12 @@ router.post("/contacts", async (req, res, next) => {
       return;
     }
 
+    const emailTrim = String(email || "").trim();
     await runAsync(
-      "INSERT INTO contacts (full_name, phone, message) VALUES (?, ?, ?)",
-      [fullName, phone, message || ""]
+      "INSERT INTO contacts (full_name, phone, message, email) VALUES (?, ?, ?, ?)",
+      [fullName, phone, message || "", emailTrim || null]
     );
-    notifyNewContact({ fullName, phone, message: message || "" }).catch(() => null);
+    notifyNewContact({ fullName, phone, message: message || "", email: emailTrim }).catch(() => null);
     res.render("pages/contacts", {
       title: "Kontakt",
       error: null,
@@ -396,12 +401,35 @@ router.post("/register", async (req, res, next) => {
     }
     const registrationNote = noteParts.join("; ");
 
+    const instructorIdForDb =
+      courseRequiresInstructor(courseId) && instructorId ? String(instructorId).trim() : null;
+
     await runAsync(
       `INSERT INTO course_registrations
-        (full_name, isikukood, phone, email, course_id, course_name, start_date, comment)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [fullName, isikukood, phone, email, chosenCourse.id, chosenCourse.name, "", registrationNote]
+        (full_name, isikukood, phone, email, course_id, course_name, start_date, comment, instructor_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        fullName,
+        isikukood,
+        phone,
+        email,
+        chosenCourse.id,
+        chosenCourse.name,
+        "",
+        registrationNote,
+        instructorIdForDb,
+      ]
     );
+
+    const mailLang = supportedLanguages.includes(String(studyLang || "").trim())
+      ? String(studyLang).trim()
+      : req.lang;
+    sendRegistrationReceivedMail({
+      to: email,
+      lang: mailLang,
+      fullName,
+      courseName: chosenCourse.name,
+    }).catch(() => null);
 
     notifyNewRegistration({
       fullName,

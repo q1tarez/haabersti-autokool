@@ -170,6 +170,34 @@
     <p class="home-areas-note"><%= t("homeAreasNote") %></p>
   </section>
 
+  <% if (typeof reviews !== 'undefined' && reviews && reviews.length) { %>
+  <section class="home-section home-reviews">
+    <div class="home-section-head">
+      <h2><%= t("homeReviewsTitle") %></h2>
+      <p class="section-lead"><%= t("homeReviewsLead") %></p>
+    </div>
+    <div class="home-reviews-grid">
+      <% reviews.forEach((r) => { %>
+        <blockquote class="home-review card">
+          <p class="home-review-text">“<%= r.text %>”</p>
+          <footer>
+            <strong><%= r.name %></strong>
+            <span class="home-review-stars" aria-label="<%= r.rating %>/5"><%= "★".repeat(r.rating) %></span>
+          </footer>
+        </blockquote>
+      <% }) %>
+    </div>
+  </section>
+  <% } %>
+
+  <% if (typeof instagramUrl !== 'undefined' && instagramUrl) { %>
+  <section class="home-section home-instagram card">
+    <h2><%= t("homeInstagramTitle") %></h2>
+    <p class="section-lead"><%= t("homeInstagramLead") || "" %></p>
+    <a class="btn secondary" href="<%= instagramUrl %>" target="_blank" rel="noopener noreferrer"><%= t("homeInstagramCta") %></a>
+  </section>
+  <% } %>
+
   <section class="home-cta card">
     <h2><%= t("homeCtaTitle") %></h2>
     <p><%= t("homeCtaText") %></p>
