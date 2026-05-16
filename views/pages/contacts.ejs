@@ -85,9 +85,6 @@
       </p>
 
       <form class="contact-form" method="POST" action="/contacts" novalidate>
-        <% if (typeof csrfToken !== 'undefined') { %>
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-        <% } %>
 
         <div class="cf-group">
           <label class="cf-label" for="fullName"><%= t("name") %> <span class="cf-required">*</span></label>

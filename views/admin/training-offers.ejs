@@ -15,12 +15,6 @@
     <div class="card">
       <h2><%= editingId ? "Изменить предложение" : "Добавить предложение" %></h2>
       <form class="form instructor-admin-form" method="POST" action="<%= editingId ? `/admin/training-offers/${encodeURIComponent(editingId)}/update` : '/admin/training-offers' %>">
-    <% if (typeof csrfToken !== 'undefined') { %><input type="hidden" name="_csrf" value="<%= csrfToken %>" /><% } %>
-        <% if (!editingId) { %>
-          <label>ID (латиница, для URL)</label>
-          <input type="text" name="manual_id" placeholder="например winter-manual-laitse" pattern="[a-z0-9\-]*" />
-          <p class="form-hint">Если пусто — сгенерируется из курса и ключа варианта.</p>
-        <% } %>
 
         <label>Тип курса *</label>
         <select name="course_id" required>
@@ -143,17 +137,3 @@
                 <td class="admin-actions">
                   <a class="btn secondary small" href="/admin/training-offers/<%= encodeURIComponent(o.id) %>/edit">Изменить</a>
                   <form method="POST" action="/admin/training-offers/<%= encodeURIComponent(o.id) %>/delete" onsubmit="return confirm('Удалить запись?');">
-    <% if (typeof csrfToken !== 'undefined') { %><input type="hidden" name="_csrf" value="<%= csrfToken %>" /><% } %>
-                    <button type="submit" class="btn danger small">Удалить</button>
-                  </form>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</section>
-
-<%- include("../partials/footer") %>

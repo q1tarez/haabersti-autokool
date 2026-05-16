@@ -13,12 +13,6 @@
     <div class="card">
       <h2><%= editingId ? "Изменить инструктора" : "Добавить инструктора" %></h2>
       <form class="form instructor-admin-form" method="POST" action="<%= editingId ? `/admin/instructors/${encodeURIComponent(editingId)}/update` : '/admin/instructors' %>">
-    <% if (typeof csrfToken !== 'undefined') { %><input type="hidden" name="_csrf" value="<%= csrfToken %>" /><% } %>
-        <% if (!editingId) { %>
-          <label>ID (латиница, только в URL/данных)</label>
-          <input type="text" name="manual_id" placeholder="например ivan-smirnov" pattern="[a-z0-9\-]+" />
-          <p class="form-hint">Если не заполнено — код создаётся из имени. Только маленькие латинские буквы, цифры и дефис.</p>
-        <% } %>
 
         <label>Отображаемое имя *</label>
         <input type="text" name="name" required value="<%= editingInstructor ? editingInstructor.name : '' %>" />
@@ -201,17 +195,3 @@
                 <td class="table-actions">
                   <a class="btn secondary" href="/admin/instructors/<%= encodeURIComponent(instr.id) %>/edit">Изменить</a>
                   <form method="POST" action="/admin/instructors/<%= encodeURIComponent(instr.id) %>/delete" onsubmit="return confirm('Удалить инструктора «<%= instr.name %>»?');">
-    <% if (typeof csrfToken !== 'undefined') { %><input type="hidden" name="_csrf" value="<%= csrfToken %>" /><% } %>
-                    <button class="btn danger" type="submit">Удалить</button>
-                  </form>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</section>
-
-<%- include("../partials/footer") %>

@@ -9,11 +9,6 @@
     <div class="card">
       <h2><%= editingCourse ? "Редактировать курс" : "Добавить новый курс" %></h2>
       <form class="form" method="POST" action="<%= editingCourse ? `/admin/courses/${editingCourse.id}/update` : '/admin/courses' %>">
-    <% if (typeof csrfToken !== 'undefined') { %><input type="hidden" name="_csrf" value="<%= csrfToken %>" /><% } %>
-        <% if (!editingCourse) { %>
-          <label>ID курса (латиница, уникальный)</label>
-          <input name="id" type="text" placeholder="например: b-premium" />
-        <% } %>
 
         <label>Название (EST)</label>
         <input name="name_et" type="text" value="<%= editingCourse?.name_et || '' %>" required />
@@ -76,17 +71,3 @@
                 <td class="table-actions">
                   <a class="btn secondary" href="/admin/courses/<%= course.id %>/edit">Изменить</a>
                   <form method="POST" action="/admin/courses/<%= course.id %>/delete" onsubmit="return confirm('Удалить курс?');">
-    <% if (typeof csrfToken !== 'undefined') { %><input type="hidden" name="_csrf" value="<%= csrfToken %>" /><% } %>
-                    <button class="btn danger" type="submit">Удалить</button>
-                  </form>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</section>
-
-<%- include("../partials/footer") %>

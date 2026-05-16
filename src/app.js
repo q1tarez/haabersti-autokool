@@ -3,7 +3,6 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const csurf = require("csurf");
 require("dotenv").config();
 
 const { initDatabase } = require("./db/database");
@@ -57,17 +56,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "../public")));
 app.use(cookieParser(appSecret));
 
-// CSRF protection (cookie-based — works on Vercel serverless, no session needed)
-const csrfProtection = csurf({ cookie: { httpOnly: true, sameSite: "lax" } });
-
+// Language middleware — cookie-based (works on Vercel serverless)
 app.use((req, res, next) => {
-  // Language: prefer query param, then cookie, then default
   const queryLang = req.query.lang;
   if (queryLang && supportedLanguages.includes(queryLang)) {
-    // Persist language choice in a plain cookie (works on Vercel serverless)
     res.cookie("lang", queryLang, {
-      maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
-      httpOnly: false, // readable by JS if needed
+      maxAge: 365 * 24 * 60 * 60 * 1000,
+      httpOnly: false,
       sameSite: "lax",
       path: "/",
     });
@@ -84,7 +79,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Attach rate limiters and CSRF to routes
+// Attach rate limiters to routes
 app.use("/admin/login", loginLimiter);
 app.use("/contacts", formLimiter);
 app.use("/register", formLimiter);
@@ -98,10 +93,6 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  if (err.code === "EBADCSRFTOKEN") {
-    res.status(403).send("Invalid or missing CSRF token. Please reload the page and try again.");
-    return;
-  }
   // eslint-disable-next-line no-console
   console.error("[APP ERROR]", err.message, err.stack);
   const isDev = process.env.NODE_ENV !== "production";
@@ -128,4 +119,3 @@ if (require.main === module) {
 
 module.exports = app;
 module.exports.initPromise = initPromise;
-module.exports.csrfProtection = csrfProtection;
