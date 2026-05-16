@@ -173,7 +173,16 @@ h1 {
   margin-top: 18px;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 14px;
+  align-items: center;
+}
+
+.hero-actions .btn {
+  margin: 0;
+}
+
+.home-pricing-inner .hero-actions {
+  gap: 14px;
 }
 
 .hero-card {
@@ -2307,44 +2316,121 @@ body.admin-page--login {
 
 .admin-table--contacts {
   table-layout: fixed;
+  width: 100%;
+  min-width: 960px;
+}
+
+.admin-table-card.table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table--contacts th,
+.admin-table--contacts td {
+  vertical-align: top;
+  padding: 12px 10px;
+  overflow: hidden;
 }
 
 .admin-table--contacts .admin-col-date {
-  width: 148px;
-  white-space: nowrap;
+  width: 132px;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .admin-table--contacts .admin-col-name {
-  width: 14%;
+  width: 11%;
+  min-width: 88px;
 }
 
 .admin-table--contacts .admin-col-phone {
-  width: 118px;
-  white-space: nowrap;
+  width: 120px;
 }
 
 .admin-table--contacts .admin-col-phone a {
   color: var(--primary);
   text-decoration: none;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .admin-table--contacts .admin-col-phone a:hover {
   text-decoration: underline;
 }
 
+.admin-table--contacts .admin-col-email {
+  width: 16%;
+  min-width: 120px;
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+
 .admin-table--contacts .admin-col-message {
-  width: auto;
+  width: 26%;
+  min-width: 140px;
+  white-space: normal;
   word-break: break-word;
   line-height: 1.45;
+  overflow: visible;
 }
 
 .admin-table--contacts .admin-col-status {
-  width: 152px;
+  width: 148px;
+  min-width: 148px;
+  overflow: visible;
 }
 
 .admin-table--contacts .admin-col-actions {
-  width: 108px;
+  width: 200px;
+  min-width: 200px;
+  overflow: visible;
+  white-space: normal;
+}
+
+.admin-table--contacts .admin-col-name,
+.admin-table--contacts .admin-col-email {
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-contact-status-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.admin-contact-status-form select {
+  width: 100%;
+  min-height: 38px;
+}
+
+.admin-contact-status-form .btn {
+  width: 100%;
+}
+
+.admin-contact-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.admin-contact-actions .admin-reply-details {
+  margin-bottom: 0;
+}
+
+.admin-contact-actions .btn {
+  width: 100%;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.admin-contact-delete-form {
+  margin: 0;
 }
 
 .admin-table-empty {
@@ -3504,12 +3590,41 @@ body.admin-page--login {
 .admin-reply-form {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  min-width: 220px;
+  gap: 10px;
+  min-width: 240px;
+  max-width: 280px;
   padding: 0.75rem 0;
 }
+
+.admin-reply-form label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: -4px;
+}
+
+.admin-reply-form input,
+.admin-reply-form select,
+.admin-reply-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+}
+
 .admin-reply-form textarea {
   min-height: 4rem;
+  resize: vertical;
+}
+
+.admin-reply-form .reply-preview-btn {
+  margin-top: 4px;
+}
+
+.admin-reply-form .btn[type="submit"] {
+  margin-top: 8px;
 }
 .admin-alert {
   padding: 0.65rem 1rem;
@@ -3533,6 +3648,94 @@ body.admin-page--login {
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+}
+
+.admin-form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 100%;
+}
+
+.admin-form-field label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.admin-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font: inherit;
+  color: var(--text);
+  background: #fff;
+  line-height: 1.4;
+}
+
+.admin-input:focus {
+  outline: 2px solid var(--primary-soft);
+  border-color: var(--primary);
+}
+
+textarea.admin-input {
+  resize: vertical;
+  min-height: 4.5rem;
+}
+
+.admin-form-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .admin-form-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-form-row--meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: flex-end;
+}
+
+.admin-form-field--narrow {
+  flex: 0 0 auto;
+  min-width: 7rem;
+}
+
+.admin-form-field--narrow .admin-input {
+  width: 5.5rem;
+  max-width: 100%;
+}
+
+.admin-form-field--submit {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.admin-form-field--submit .btn {
+  min-width: 8rem;
+}
+
+.admin-table--reviews .admin-cell-truncate {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-form-card h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
 }
 
 .btn-accent {

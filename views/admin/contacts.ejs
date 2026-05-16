@@ -38,7 +38,7 @@
           <td class="admin-col-email"><%= item.email || "—" %></td>
           <td class="admin-col-message"><%= item.message || "—" %></td>
           <td class="admin-col-status">
-            <form method="POST" action="/admin/contacts/<%= item.id %>/status" class="inline-form admin-student-form">
+            <form method="POST" action="/admin/contacts/<%= item.id %>/status" class="admin-contact-status-form">
               <select name="status" aria-label="Статус">
                 <option value="new" <%= st === "new" ? "selected" : "" %>>Новая</option>
                 <option value="in_progress" <%= st === "in_progress" ? "selected" : "" %>>В работе</option>
@@ -47,7 +47,8 @@
               <button class="btn secondary" type="submit">OK</button>
             </form>
           </td>
-          <td class="table-actions admin-col-actions">
+          <td class="admin-col-actions">
+            <div class="admin-contact-actions">
             <details class="admin-reply-details">
               <summary class="btn secondary"><%= adminT("replyContact") %></summary>
               <form method="POST" action="/admin/contacts/<%= item.id %>/reply" class="admin-reply-form">
@@ -69,10 +70,11 @@
               </form>
             </details>
             <% if (isDirector) { %>
-              <form method="POST" action="/admin/contacts/<%= item.id %>/delete" class="inline-form" onsubmit="return confirm('Удалить?');">
+              <form method="POST" action="/admin/contacts/<%= item.id %>/delete" class="admin-contact-delete-form" onsubmit="return confirm('Удалить?');">
                 <button class="btn danger" type="submit">Удалить</button>
               </form>
             <% } %>
+            </div>
           </td>
         </tr>
       <% }) %>
