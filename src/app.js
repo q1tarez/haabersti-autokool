@@ -13,6 +13,9 @@ const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Trust Vercel's reverse proxy (required for rate limiting and X-Forwarded-For)
+app.set("trust proxy", 1);
 const initPromise = initDatabase();
 const appSecret = process.env.SESSION_SECRET || "change-this-secret";
 
@@ -39,6 +42,7 @@ const loginLimiter = rateLimit({
   message: "Too many login attempts. Please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 // General rate limiter for public forms
@@ -47,6 +51,7 @@ const formLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 app.set("view engine", "ejs");
