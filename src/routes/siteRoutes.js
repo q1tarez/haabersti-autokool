@@ -5,6 +5,7 @@ const { courseRequiresTrainingOffer, mergeTrainingOfferRow } = require("../data/
 const { sendBankTransferInstructionsMail } = require("../mail/bankTransferMail");
 const { notifyNewContact, notifyNewRegistration } = require("../mail/notifySchool");
 const { sendRegistrationReceivedMail } = require("../mail/registrationReceivedMail");
+const { isMontonioConfigured, createMontonioPaymentUrl } = require("../lib/montonio");
 const { getTestimonialsForLang } = require("../lib/testimonials");
 const { courseForWhom } = require("../data/courseMeta");
 const { supportedLanguages, t } = require("../i18n");
@@ -33,7 +34,12 @@ function applyUiLangFromBody(req, res) {
 // Validation is now handled by Zod schemas in src/validation/schemas.js
 
 const REG_COMMENT_STUDY_LANG_KEYS = { et: "filterLangEt", ru: "filterLangRu", en: "filterLangEn" };
-const REG_COMMENT_PAYMENT_KEYS = { cash: "paymentCash", card: "paymentCard", bank: "paymentBank" };
+const REG_COMMENT_PAYMENT_KEYS = {
+  cash: "paymentCash",
+  card: "paymentCard",
+  bank: "paymentBank",
+  online: "paymentOnline",
+};
 
 function registerViewLocals(req, overrides = {}) {
   return {
@@ -46,6 +52,7 @@ function registerViewLocals(req, overrides = {}) {
     success: null,
     successBankInfo: null,
     hideStickyCta: true,
+    onlinePaymentEnabled: isMontonioConfigured(),
     ...overrides,
   };
 }
@@ -361,6 +368,7 @@ router.post("/register", async (req, res, next) => {
 
     const payRaw = String(paymentMethod || "").trim();
     const allowedPay = ["cash", "bank"];
+    if (isMontonioConfigured()) allowedPay.push("online");
     const payNorm = allowedPay.includes(payRaw) ? payRaw : "";
 
     if (!payNorm) {
@@ -409,7 +417,7 @@ router.post("/register", async (req, res, next) => {
     const instructorIdForDb =
       courseRequiresInstructor(courseId) && instructorId ? String(instructorId).trim() : null;
 
-    await runAsync(
+    const insertResult = await runAsync(
       `INSERT INTO course_registrations
         (full_name, isikukood, phone, email, course_id, course_name, start_date, comment, instructor_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -425,6 +433,7 @@ router.post("/register", async (req, res, next) => {
         instructorIdForDb,
       ]
     );
+    const registrationId = insertResult?.lastID;
 
     const mailLang = supportedLanguages.includes(String(studyLang || "").trim())
       ? String(studyLang).trim()
@@ -470,9 +479,25 @@ router.post("/register", async (req, res, next) => {
       }
     }
 
+    if (payNorm === "online" && registrationId) {
+      const pay = await createMontonioPaymentUrl({
+        id: registrationId,
+        full_name: fullName,
+        email,
+        course_name: chosenCourse.name,
+        price: chosenCourse.price,
+        lang: mailLang,
+      });
+      if (pay.ok && pay.paymentUrl) {
+        res.redirect(303, pay.paymentUrl);
+        return;
+      }
+    }
+
     const thanksQs = new URLSearchParams();
     if (successBankInfo) thanksQs.set("bank", "1");
     if (payNorm === "bank") thanksQs.set("pay", "bank");
+    if (payNorm === "online") thanksQs.set("pay", "online_failed");
     res.redirect(303, `/register/thanks${thanksQs.toString() ? `?${thanksQs}` : ""}`);
   } catch (error) {
     next(error);
@@ -484,9 +509,29 @@ router.get("/register/thanks", (req, res) => {
     title: req.t("thanksTitle"),
     hideStickyCta: true,
     bankNote: req.query.bank === "1",
+    onlinePayFailed: req.query.pay === "online_failed",
     currentPath: "/register/steps",
     metaDescription: req.t("thanksLead"),
   });
+});
+
+router.get("/payment/return", async (req, res, next) => {
+  try {
+    const ref = String(req.query.ref || "").trim();
+    let paid = false;
+    const match = /^reg-(\d+)$/.exec(ref);
+    if (match) {
+      const row = await getAsync("SELECT payment_status FROM course_registrations WHERE id = ?", [match[1]]);
+      paid = row?.payment_status === "paid";
+    }
+    res.render("pages/payment-return", {
+      title: paid ? req.t("paymentReturnPaidTitle") : req.t("paymentReturnPendingTitle"),
+      paid,
+      hideStickyCta: true,
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.get("/prices", async (req, res, next) => {

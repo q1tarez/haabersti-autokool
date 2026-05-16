@@ -1,0 +1,17 @@
+<%- include("../partials/header", { title }) %>
+
+<section class="card payment-return">
+  <% if (paid) { %>
+    <h1><%= t("paymentReturnPaidTitle") %></h1>
+    <p class="section-lead"><%= t("paymentReturnPaidText") %></p>
+  <% } else { %>
+    <h1><%= t("paymentReturnPendingTitle") %></h1>
+    <p class="section-lead"><%= t("paymentReturnPendingText") %></p>
+  <% } %>
+  <div class="hero-actions" style="margin-top:1.5rem">
+    <a class="btn" href="/"><%= t("backHome") %></a>
+    <a class="btn secondary" href="/contacts"><%= t("navContacts") %></a>
+  </div>
+</section>
+
+<%- include("../partials/footer") %>

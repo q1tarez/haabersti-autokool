@@ -1,6 +1,13 @@
 <!DOCTYPE html>
-<html lang="<%= typeof adminLang !== 'undefined' ? adminLang : lang %>">
+<html lang="<%= typeof adminLang !== 'undefined' ? adminLang : lang %>" data-theme="<%= typeof theme !== 'undefined' ? theme : 'light' %>">
   <head>
+    <script>
+      (function () {
+        var m = document.cookie.match(/(?:^|; )theme=([^;]+)/);
+        var t = m ? decodeURIComponent(m[1]) : "";
+        if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
@@ -9,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/css/style.css?v=20260516-2" />
+    <link rel="stylesheet" href="/css/style.css?v=20260516-3" />
   </head>
   <body class="admin-page<%= typeof adminLogin !== 'undefined' && adminLogin ? ' admin-page--login' : '' %>">
     <a class="skip-link" href="#main-content">Перейти к содержимому</a>
@@ -24,6 +31,17 @@
         <% if (typeof adminUsername !== 'undefined' && adminUsername) { %>
           <span class="admin-user"><%= adminUsername %></span>
         <% } %>
+        <button
+          type="button"
+          class="theme-toggle"
+          data-theme-toggle
+          aria-pressed="<%= theme === 'dark' ? 'true' : 'false' %>"
+          data-label-dark="Тёмная тема"
+          data-label-light="Светлая тема"
+          title="Тема"
+        >
+          <span aria-hidden="true"><%= theme === 'dark' ? '☀' : '☾' %></span>
+        </button>
         <a class="btn secondary admin-site-link" href="/">На сайт</a>
         <% if (typeof adminLogin === 'undefined' || !adminLogin) { %>
           <button

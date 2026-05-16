@@ -46,10 +46,17 @@
         <input type="radio" name="regPaymentMethod" value="cash" required />
         <span><%= t("paymentCash") %></span>
       </label>
-      <label class="registration-payment-option">
-        <input type="radio" name="regPaymentMethod" value="card" disabled />
-        <span><%= t("paymentCard") %> — <%= t("paymentTemporarilyUnavailable") %></span>
-      </label>
+      <% if (typeof onlinePaymentEnabled !== 'undefined' && onlinePaymentEnabled) { %>
+        <label class="registration-payment-option">
+          <input type="radio" name="regPaymentMethod" value="online" />
+          <span><%= t("paymentOnline") %></span>
+        </label>
+      <% } else { %>
+        <label class="registration-payment-option">
+          <input type="radio" name="regPaymentMethod" value="card" disabled />
+          <span><%= t("paymentCard") %> — <%= t("paymentTemporarilyUnavailable") %></span>
+        </label>
+      <% } %>
       <label class="registration-payment-option">
         <input type="radio" name="regPaymentMethod" value="bank" />
         <span><%= t("paymentBank") %></span>

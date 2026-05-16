@@ -1,0 +1,53 @@
+<%- include("../partials/admin-header", { title }) %>
+
+<header class="admin-page-header">
+  <h1><%= adminT("monitoringTitle") %></h1>
+  <p class="section-lead"><%= adminT("monitoringLead") %></p>
+  <p class="admin-meta"><small><%= adminT("monitoringChecked") %>: <%= status.checkedAt %> · uptime <%= status.uptimeSec %>s · <%= status.nodeEnv %></small></p>
+</header>
+
+<div class="monitoring-grid">
+  <% const items = [
+    { key: "db", label: adminT("monitoringDb"), ok: status.db.ok, detail: status.db.ok ? status.db.ms + " ms" : (status.db.error || "error") },
+    { key: "smtp", label: "SMTP", ok: status.smtp.ok, detail: status.smtp.label },
+    { key: "sessionSecret", label: "SESSION_SECRET", ok: status.sessionSecret.ok },
+    { key: "publicSiteUrl", label: "PUBLIC_SITE_URL", ok: status.publicSiteUrl.ok },
+    { key: "telegram", label: "Telegram", ok: status.telegram.ok },
+    { key: "montonio", label: "Montonio", ok: status.montonio.ok, detail: status.montonio.sandbox ? "sandbox" : "" },
+    { key: "cron", label: "CRON_SECRET", ok: status.cron.ok },
+    { key: "blob", label: "Vercel Blob", ok: status.blob.ok },
+    { key: "ga", label: "Google Analytics", ok: status.ga.ok },
+    { key: "bank", label: adminT("monitoringBank"), ok: status.bank.ok },
+  ]; %>
+  <% items.forEach((item) => { %>
+    <div class="card monitoring-card monitoring-card--<%= item.ok ? 'ok' : 'warn' %>">
+      <p class="monitoring-card__label"><%= item.label %></p>
+      <p class="monitoring-card__status"><%= item.ok ? "✓ OK" : "—" %></p>
+      <% if (item.detail) { %><p class="monitoring-card__detail"><%= item.detail %></p><% } %>
+    </div>
+  <% }) %>
+</div>
+
+<div class="card" style="margin-top:1rem">
+  <h2>API /api/health</h2>
+  <pre class="monitoring-pre" id="healthJson"><%= healthJson %></pre>
+  <button type="button" class="btn secondary" id="refreshHealth"><%= adminT("monitoringRefresh") %></button>
+</div>
+
+<script>
+(function () {
+  var btn = document.getElementById("refreshHealth");
+  var pre = document.getElementById("healthJson");
+  if (!btn || !pre) return;
+  btn.addEventListener("click", function () {
+    btn.disabled = true;
+    fetch("/api/health", { credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { pre.textContent = JSON.stringify(d, null, 2); })
+      .catch(function () { pre.textContent = "Error"; })
+      .finally(function () { btn.disabled = false; });
+  });
+})();
+</script>
+
+<%- include("../partials/admin-footer") %>

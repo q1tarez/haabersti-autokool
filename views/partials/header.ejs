@@ -1,6 +1,13 @@
 <!DOCTYPE html>
-<html lang="<%= lang %>">
+<html lang="<%= lang %>" data-theme="<%= typeof theme !== 'undefined' ? theme : 'light' %>">
   <head>
+    <script>
+      (function () {
+        var m = document.cookie.match(/(?:^|; )theme=([^;]+)/);
+        var t = m ? decodeURIComponent(m[1]) : "";
+        if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= typeof metaTitle !== 'undefined' ? metaTitle : (title + ' | Haabersti Autokool') %></title>
@@ -33,7 +40,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-    <link rel="stylesheet" href="/css/style.css?v=20260516-2" />
+    <link rel="stylesheet" href="/css/style.css?v=20260516-3" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#1d4ed8" />
   </head>
@@ -71,6 +78,18 @@
           <a href="/register/steps" <%= typeof currentPath !== 'undefined' && currentPath === '/register/steps' ? 'aria-current="page"' : '' %>><%= t("navRegister") %></a>
           <a href="/contacts" <%= typeof currentPath !== 'undefined' && currentPath === '/contacts' ? 'aria-current="page"' : '' %>><%= t("navContacts") %></a>
         </nav>
+
+        <button
+          type="button"
+          class="theme-toggle"
+          data-theme-toggle
+          aria-pressed="<%= theme === 'dark' ? 'true' : 'false' %>"
+          data-label-dark="<%= t('themeToDark') %>"
+          data-label-light="<%= t('themeToLight') %>"
+          title="<%= t('themeToggle') %>"
+        >
+          <span aria-hidden="true"><%= theme === 'dark' ? '☀' : '☾' %></span>
+        </button>
 
         <div class="lang-switch">
           <a href="?lang=et" class="<%= lang === 'et' ? 'active' : '' %>" hreflang="et">EST</a>

@@ -63,6 +63,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "../public")));
 app.use(cookieParser());
 
+function resolveTheme(cookieValue) {
+  if (cookieValue === "dark" || cookieValue === "light") return cookieValue;
+  return "light";
+}
+
+app.use((req, res, next) => {
+  const theme = resolveTheme(req.cookies && req.cookies.theme);
+  res.locals.theme = theme;
+  next();
+});
+
 // Language middleware — cookie-based (works on Vercel serverless)
 app.use((req, res, next) => {
   const queryLang = req.query.lang;

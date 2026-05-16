@@ -3,6 +3,15 @@
 <header class="admin-page-header">
   <h1>Записавшиеся ученики</h1>
   <p class="section-lead">Просмотр регистраций, поиск и смена статуса заявки.</p>
+  <% if (typeof reminderFlash !== 'undefined' && reminderFlash === 'sent') { %>
+    <p class="admin-flash admin-flash--ok">Письмо с напоминанием об оплате отправлено.</p>
+  <% } else if (reminderFlash === 'failed') { %>
+    <p class="admin-flash admin-flash--warn">Не удалось отправить письмо.</p>
+  <% } else if (reminderFlash === 'no_smtp') { %>
+    <p class="admin-flash admin-flash--warn">SMTP не настроен — письмо недоступно.</p>
+  <% } else if (reminderFlash === 'no_email') { %>
+    <p class="admin-flash admin-flash--warn">У ученика нет email.</p>
+  <% } %>
 </header>
 
 <form class="card filter-bar" method="GET" action="/admin/students">
@@ -68,6 +77,12 @@
               </select>
               <button class="btn secondary" type="submit">OK</button>
             </form>
+            <% if (pay === "unpaid" && item.email && smtpConfigured) { %>
+              <form method="POST" action="/admin/students/<%= item.id %>/payment-reminder" class="inline-form admin-reminder-form" onsubmit="return confirm('Отправить напоминание об оплате на <%= item.email %>?');">
+                <input type="hidden" name="mailLang" value="ru" />
+                <button class="btn secondary btn--compact" type="submit" title="Email с реквизитами">Напомнить</button>
+              </form>
+            <% } %>
           </td>
           <td class="admin-col-status">
             <span class="status-pill status-pill--<%= st %>"><%= st %></span>

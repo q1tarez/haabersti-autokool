@@ -19,6 +19,9 @@ const { getStaleReminders } = require("../lib/reminders");
 const { sendContactReplyMail } = require("../mail/contactReplyMail");
 const { uploadImageFromDisk } = require("../lib/blobUpload");
 const { logAudit } = require("../lib/auditLog");
+const { sendPaymentReminderMail } = require("../mail/paymentReminderMail");
+const { getSystemStatus } = require("../lib/systemStatus");
+const { hasSmtpConfig } = require("../mail/transport");
 const { mergeInstructorImported } = require("../data/drivingInstructors");
 const { refreshInstructorsFromDatabase } = require("../data/instructorSync");
 const { formBodyToDrivingInstructor, stripIdForPayload, LOCATION_SLUGS } = require("../data/instructorAdminForm");
@@ -477,6 +480,8 @@ router.get("/students", requireAdmin, async (req, res, next) => {
       dateFrom: q.dateFrom,
       dateTo: q.dateTo,
       courseOptions,
+      reminderFlash: req.query.reminder || "",
+      smtpConfigured: hasSmtpConfig(),
     });
   } catch (error) {
     next(error);
@@ -548,6 +553,70 @@ router.post("/students/:id/payment", requireAdmin, async (req, res, next) => {
     await runAsync("UPDATE course_registrations SET payment_status = ? WHERE id = ?", [pay, req.params.id]);
     await logAudit(req, { action: "update_payment", entityType: "student", entityId: req.params.id, details: { payment_status: pay } });
     res.redirect(303, "/admin/students");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/students/:id/payment-reminder", requireAdmin, async (req, res, next) => {
+  try {
+    const row = await getStudentRow(req.params.id);
+    if (!row || !canAccessStudent(req.admin, row)) {
+      res.status(404).send("Not found");
+      return;
+    }
+    if (!row.email) {
+      res.redirect(303, "/admin/students?reminder=no_email");
+      return;
+    }
+    if (!hasSmtpConfig()) {
+      res.redirect(303, "/admin/students?reminder=no_smtp");
+      return;
+    }
+    const mailLang = ["et", "ru", "en"].includes(String(req.body.mailLang || ""))
+      ? String(req.body.mailLang).trim()
+      : res.locals.adminLang || "ru";
+    const courseRow = row.course_id
+      ? await getAsync("SELECT price FROM courses WHERE id = ?", [row.course_id])
+      : null;
+    const amount = courseRow?.price || "";
+    const result = await sendPaymentReminderMail({
+      to: row.email,
+      lang: mailLang,
+      fullName: row.full_name,
+      courseName: row.course_name,
+      amount,
+      registrationId: row.id,
+      price: amount,
+    });
+    await logAudit(req, {
+      action: "payment_reminder",
+      entityType: "student",
+      entityId: req.params.id,
+      details: { email: row.email, sent: Boolean(result?.ok) },
+    });
+    res.redirect(303, `/admin/students?reminder=${result?.ok ? "sent" : "failed"}`);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/monitoring", requireAdmin, requireDirector, async (req, res, next) => {
+  try {
+    const status = await getSystemStatus();
+    let healthJson = "{}";
+    try {
+      const base = `${req.protocol}://${req.get("host")}`;
+      const hres = await fetch(`${base}/api/health`);
+      healthJson = JSON.stringify(await hres.json(), null, 2);
+    } catch {
+      healthJson = '{"ok":false}';
+    }
+    res.render("admin/monitoring", {
+      title: res.locals.adminT("monitoringTitle"),
+      status,
+      healthJson,
+    });
   } catch (error) {
     next(error);
   }

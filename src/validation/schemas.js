@@ -65,7 +65,7 @@ const registrationSchema = z.object({
     .refine((val) => val.replace(/\D/g, "").length >= 7, "Phone must have at least 7 digits"),
   email: z.string().email("Invalid email address").max(200, "Email too long"),
   courseId: z.string().min(1, "Course is required"),
-  paymentMethod: z.enum(["cash", "bank"], { errorMap: () => ({ message: "Invalid payment method" }) }),
+  paymentMethod: z.enum(["cash", "bank", "online"], { errorMap: () => ({ message: "Invalid payment method" }) }),
   studyLang: z.enum(["et", "ru", "en"]).optional(),
   lessonTime: z.string().max(100).optional(),
   comment: z.string().max(1000, "Comment too long").optional(),

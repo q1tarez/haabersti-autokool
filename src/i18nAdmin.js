@@ -38,6 +38,13 @@ const adminTranslations = {
     login2faSubmit: "Kinnita",
     instagramTitle: "Instagram",
     reviewsOnSite: "Tagasiside saidil",
+    navMonitoring: "Monitooring",
+    monitoringTitle: "Süsteemi monitooring",
+    monitoringLead: "Teenuste olek ja /api/health.",
+    monitoringChecked: "Kontrollitud",
+    monitoringDb: "Andmebaas",
+    monitoringBank: "Pangaandmed",
+    monitoringRefresh: "Värskenda health",
   },
   ru: {
     navDashboard: "Панель",
@@ -78,6 +85,13 @@ const adminTranslations = {
     login2faSubmit: "Подтвердить",
     instagramTitle: "Instagram",
     reviewsOnSite: "Отзывы на сайте",
+    navMonitoring: "Мониторинг",
+    monitoringTitle: "Мониторинг системы",
+    monitoringLead: "Статус сервисов и ответ /api/health.",
+    monitoringChecked: "Проверено",
+    monitoringDb: "База данных",
+    monitoringBank: "Банковские реквизиты",
+    monitoringRefresh: "Обновить health",
   },
 };
 
