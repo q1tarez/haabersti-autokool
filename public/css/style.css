@@ -1927,6 +1927,13 @@ select:focus {
   background: rgba(37, 99, 235, 0.06);
 }
 
+.registration-payment-option--disabled,
+.registration-payment-option:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.65;
+  background: #f1f5f9;
+}
+
 .registration-terms-label {
   margin-top: 8px;
 }
@@ -4070,4 +4077,18 @@ textarea.admin-input {
 .btn--compact {
   padding: 0.25rem 0.55rem;
   font-size: 0.8rem;
+}
+
+.thanks-notice {
+  margin: 0.75rem 0;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.thanks-notice--ok {
+  background: #ecfdf5;
+  color: #065f46;
 }

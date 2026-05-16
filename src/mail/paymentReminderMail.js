@@ -1,7 +1,8 @@
 const { sendMail } = require("./transport");
 const { getBankDetails } = require("./bankTransferMail");
 const { PHONE_DISPLAY, EMAIL } = require("../data/siteContact");
-const { isMontonioConfigured, createMontonioPaymentUrl } = require("../lib/montonio");
+const { createMontonioPaymentUrl } = require("../lib/montonio");
+const { isOnlinePaymentEnabled } = require("../lib/onlinePayment");
 
 const COPY = {
   et: {
@@ -43,7 +44,7 @@ async function sendPaymentReminderMail({ to, lang, fullName, courseName, amount,
   const lines = [L.greeting(fullName), "", L.body(courseName)];
 
   let payUrl = null;
-  if (isMontonioConfigured() && registrationId) {
+  if (isOnlinePaymentEnabled() && registrationId) {
     const pay = await createMontonioPaymentUrl({
       id: registrationId,
       full_name: fullName,

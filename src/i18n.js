@@ -84,6 +84,11 @@ const translations = {
     thanksStep1: "Kontrollime andmeid ja votame 1–2 toopaeva jooksul uhendust.",
     thanksStep2: "Saadame e-kirja kinnituse ja vajadusel maksejuhised.",
     thanksStep3: "WhatsAppis voib kiiremini: kirjuta meile kohe.",
+    thanksEmailSent: "Kinnitus saadeti teie e-posti aadressile (vaadake ka rämpsposti).",
+    thanksEmailPending:
+      "Automaatset kinnituskirja ei saadetud — võtame ühendust telefoni või WhatsAppi kaudu.",
+    thanksOnlineFailed:
+      "Veebimakse ei avanenud (Montonio või summa). Kui seadistatud, saatsime pangaandmed e-postiga.",
     thanksCtaRegister: "Tagasi avalehele",
     thanksCtaContact: "Kontakt",
     homePricingTitle: "B-kategooria hind",
@@ -376,6 +381,11 @@ const translations = {
     thanksStep1: "Проверим данные и свяжемся в течение 1–2 рабочих дней.",
     thanksStep2: "Пришлём подтверждение на email и при необходимости реквизиты оплаты.",
     thanksStep3: "В WhatsApp ответим быстрее — напишите нам.",
+    thanksEmailSent: "Подтверждение отправлено на ваш email (проверьте также папку «Спам»).",
+    thanksEmailPending:
+      "Автоматическое письмо не ушло — свяжемся с вами по телефону или WhatsApp.",
+    thanksOnlineFailed:
+      "Онлайн-оплата не открылась (Montonio или сумма). Если почта настроена — реквизиты могли уйти отдельным письмом.",
     thanksCtaRegister: "На главную",
     thanksCtaContact: "Контакты",
     homePricingTitle: "Стоимость категории B",
@@ -515,7 +525,7 @@ const translations = {
     paymentCash: "Наличные",
     paymentCard: "Карта",
     paymentBank: "Банковский перевод",
-    paymentOnline: "Онлайн-оплата (банк)",
+    paymentOnline: "Оплата банком",
     paymentTemporarilyUnavailable: "временно недоступно",
     registerOpenFlow: "Зарегистрироваться",
     paymentRequired: "Выберите способ оплаты.",
@@ -668,6 +678,11 @@ const translations = {
     thanksStep1: "We review your details and contact you within 1–2 business days.",
     thanksStep2: "You will get a confirmation email and bank details if needed.",
     thanksStep3: "WhatsApp is fastest — message us anytime.",
+    thanksEmailSent: "A confirmation was sent to your email (check spam too).",
+    thanksEmailPending:
+      "No automatic confirmation email was sent — we will contact you by phone or WhatsApp.",
+    thanksOnlineFailed:
+      "Online payment did not open (Montonio or amount). Bank details may have been emailed if configured.",
     thanksCtaRegister: "Back to home",
     thanksCtaContact: "Contact",
     homePricingTitle: "Category B price",

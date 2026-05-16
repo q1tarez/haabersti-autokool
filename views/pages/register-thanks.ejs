@@ -4,8 +4,16 @@
   <div class="thanks-icon" aria-hidden="true"><%- include("../partials/icons", { icon: 'check' }) %></div>
   <h1><%= t("thanksTitle") %></h1>
   <p class="section-lead"><%= t("thanksLead") %></p>
+  <% if (typeof confirmEmailSent !== 'undefined' && confirmEmailSent) { %>
+    <p class="thanks-notice thanks-notice--ok"><%= t("thanksEmailSent") %></p>
+  <% } else if (typeof confirmEmailPending !== 'undefined' && confirmEmailPending) { %>
+    <p class="thanks-notice"><%= t("thanksEmailPending") %></p>
+  <% } %>
+  <% if (typeof bankNote !== 'undefined' && bankNote) { %>
+    <p class="thanks-notice thanks-notice--ok"><%= t("registerBankEmailSent") %></p>
+  <% } %>
   <% if (typeof onlinePayFailed !== 'undefined' && onlinePayFailed) { %>
-    <p class="form-error"><%= lang === 'ru' ? 'Онлайн-оплата временно недоступна — мы свяжемся с вами для оплаты.' : lang === 'en' ? 'Online payment is temporarily unavailable — we will contact you about payment.' : 'Veebimakse pole praegu saadaval — võtame makse osas ühendust.' %></p>
+    <p class="form-error"><%= t("thanksOnlineFailed") %></p>
   <% } %>
   <ol class="thanks-steps">
     <li><%= t("thanksStep1") %></li>

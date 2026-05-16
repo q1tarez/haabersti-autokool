@@ -5,7 +5,8 @@ const { courseRequiresTrainingOffer, mergeTrainingOfferRow } = require("../data/
 const { sendBankTransferInstructionsMail } = require("../mail/bankTransferMail");
 const { notifyNewContact, notifyNewRegistration } = require("../mail/notifySchool");
 const { sendRegistrationReceivedMail } = require("../mail/registrationReceivedMail");
-const { isMontonioConfigured, createMontonioPaymentUrl } = require("../lib/montonio");
+const { createMontonioPaymentUrl } = require("../lib/montonio");
+const { isOnlinePaymentEnabled } = require("../lib/onlinePayment");
 const { getTestimonialsForLang } = require("../lib/testimonials");
 const { courseForWhom } = require("../data/courseMeta");
 const { supportedLanguages, t } = require("../i18n");
@@ -52,7 +53,7 @@ function registerViewLocals(req, overrides = {}) {
     success: null,
     successBankInfo: null,
     hideStickyCta: true,
-    onlinePaymentEnabled: isMontonioConfigured(),
+    onlinePaymentEnabled: isOnlinePaymentEnabled(),
     ...overrides,
   };
 }
@@ -368,7 +369,7 @@ router.post("/register", async (req, res, next) => {
 
     const payRaw = String(paymentMethod || "").trim();
     const allowedPay = ["cash", "bank"];
-    if (isMontonioConfigured()) allowedPay.push("online");
+    if (isOnlinePaymentEnabled()) allowedPay.push("online");
     const payNorm = allowedPay.includes(payRaw) ? payRaw : "";
 
     if (!payNorm) {
@@ -438,12 +439,21 @@ router.post("/register", async (req, res, next) => {
     const mailLang = supportedLanguages.includes(String(studyLang || "").trim())
       ? String(studyLang).trim()
       : req.lang;
-    sendRegistrationReceivedMail({
-      to: email,
-      lang: mailLang,
-      fullName,
-      courseName: chosenCourse.name,
-    }).catch(() => null);
+
+    let confirmEmailStatus = "pending";
+    try {
+      const confirmResult = await sendRegistrationReceivedMail({
+        to: email,
+        lang: mailLang,
+        fullName,
+        courseName: chosenCourse.name,
+      });
+      confirmEmailStatus = confirmResult.mode === "smtp" ? "sent" : "pending";
+    } catch (mailErr) {
+      // eslint-disable-next-line no-console
+      console.error("[registration-confirm-mail]", mailErr.message);
+      confirmEmailStatus = "failed";
+    }
 
     notifyNewRegistration({
       fullName,
@@ -492,12 +502,33 @@ router.post("/register", async (req, res, next) => {
         res.redirect(303, pay.paymentUrl);
         return;
       }
+      // eslint-disable-next-line no-console
+      console.error("[montonio]", pay.reason || "unknown", pay.detail || "");
+      if (!successBankInfo) {
+        try {
+          const bankFallback = await sendBankTransferInstructionsMail({
+            to: email,
+            lang: mailLang,
+            fullName,
+            courseName: chosenCourse.name,
+            amount: chosenCourse.price,
+            courseId: chosenCourse.id,
+          });
+          if (bankFallback.mode === "smtp") {
+            successBankInfo = req.t("registerBankEmailSent");
+          }
+        } catch (bankErr) {
+          // eslint-disable-next-line no-console
+          console.error("[montonio-fallback-bank-mail]", bankErr.message);
+        }
+      }
     }
 
     const thanksQs = new URLSearchParams();
     if (successBankInfo) thanksQs.set("bank", "1");
     if (payNorm === "bank") thanksQs.set("pay", "bank");
     if (payNorm === "online") thanksQs.set("pay", "online_failed");
+    thanksQs.set("email", confirmEmailStatus);
     res.redirect(303, `/register/thanks${thanksQs.toString() ? `?${thanksQs}` : ""}`);
   } catch (error) {
     next(error);
@@ -505,11 +536,14 @@ router.post("/register", async (req, res, next) => {
 });
 
 router.get("/register/thanks", (req, res) => {
+  const emailStatus = String(req.query.email || "");
   res.render("pages/register-thanks", {
     title: req.t("thanksTitle"),
     hideStickyCta: true,
     bankNote: req.query.bank === "1",
     onlinePayFailed: req.query.pay === "online_failed",
+    confirmEmailSent: emailStatus === "sent",
+    confirmEmailPending: emailStatus === "pending" || emailStatus === "failed",
     currentPath: "/register/steps",
     metaDescription: req.t("thanksLead"),
   });
