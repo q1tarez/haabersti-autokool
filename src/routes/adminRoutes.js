@@ -70,7 +70,11 @@ router.post("/login", async (req, res, next) => {
     res.cookie("admin_auth", `${admin.id}:${admin.username}`, {
       httpOnly: true,
       sameSite: "lax",
-      secure: true,
+      // secure only in production (HTTPS); in dev (HTTP) it must be false
+      secure: process.env.NODE_ENV === "production",
+      // signed: true — cookie is signed with SESSION_SECRET via cookieParser
+      // This prevents cookie forgery; auth.js reads from req.signedCookies
+      signed: true,
       maxAge: oneWeekMs,
       path: "/",
     });
@@ -81,7 +85,7 @@ router.post("/login", async (req, res, next) => {
 });
 
 router.post("/logout", (req, res) => {
-  res.clearCookie("admin_auth", { path: "/" });
+  res.clearCookie("admin_auth", { path: "/", signed: true });
   res.redirect(303, "/admin/login");
 });
 

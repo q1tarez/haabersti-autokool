@@ -18,7 +18,7 @@ function requireAdmin(req, res, next) {
   const adminUsername = parts[1];
 
   if (!adminId || !adminUsername) {
-    res.clearCookie("admin_auth", { path: "/" });
+    res.clearCookie("admin_auth", { path: "/", signed: true });
     res.redirect("/admin/login");
     return;
   }

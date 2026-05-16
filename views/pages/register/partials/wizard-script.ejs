@@ -886,7 +886,20 @@
     });
 
     form.querySelectorAll('input[name="studyLang"]').forEach((r) =>
-      r.addEventListener("change", () => persistWizardSnapshot())
+      r.addEventListener("change", () => {
+        persistWizardSnapshot();
+        // Switch the site UI language to match the chosen study language
+        // This reloads the page with ?lang=XX so all labels update immediately
+        const chosenLang = r.value;
+        const supported = ["et", "ru", "en"];
+        if (supported.includes(chosenLang)) {
+          const url = new URL(window.location.href);
+          url.searchParams.set("lang", chosenLang);
+          // Preserve the current step so user lands back on step 1
+          // We store snapshot first, then navigate
+          window.location.href = url.toString();
+        }
+      })
     );
 
     form.querySelectorAll('input[name="wizardCategory"]').forEach((r) =>
