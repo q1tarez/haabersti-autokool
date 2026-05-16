@@ -17,7 +17,6 @@ const PORT = process.env.PORT || 3000;
 // Trust Vercel's reverse proxy (required for rate limiting and X-Forwarded-For)
 app.set("trust proxy", 1);
 const initPromise = initDatabase();
-const appSecret = process.env.SESSION_SECRET || "change-this-secret";
 
 // Security headers via Helmet
 app.use(
@@ -59,7 +58,7 @@ app.set("views", path.join(__dirname, "../views"));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "../public")));
-app.use(cookieParser(appSecret));
+app.use(cookieParser());
 
 // Language middleware — cookie-based (works on Vercel serverless)
 app.use((req, res, next) => {
