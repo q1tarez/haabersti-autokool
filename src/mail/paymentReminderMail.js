@@ -9,7 +9,7 @@ const COPY = {
     subject: "Meeldetuletus: kursuse tasumine — Haabersti Autokool",
     greeting: (n) => `Tere, ${n}!`,
     body: (course) =>
-      `Meenutame, et kursuse «${course}» eest tasumine on veel tegemata. Allpool on makseinfo.`,
+      `Meeldetuletus: kursuse «${course}» eest tasumine on veel tegemata. Makseinfo leiate allpool.`,
     payOnline: "Maksa pangalingiga veebis",
     bankTitle: "Pangaülekanne",
     footer: "Küsimuste korral võtke meiega ühendust.",

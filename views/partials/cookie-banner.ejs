@@ -1,28 +1,69 @@
 <% if (typeof gaId !== 'undefined' && gaId) { %>
-<div class="cookie-banner" id="cookieBanner" hidden>
+<div class="cookie-banner" id="cookieBanner" data-ga-id="<%= gaId %>" hidden>
   <p>
-    <%= lang === 'ru' ? 'Мы используем cookies для аналитики. Продолжая, вы соглашаетесь.' : lang === 'en' ? 'We use cookies for analytics. By continuing you agree.' : 'Kasutame küpsiseid analüütikaks. Jätkates nõustute.' %>
+    <%= lang === 'ru' ? 'Мы используем Google Analytics для анализа посещаемости. Аналитика включается только с вашего согласия.' : lang === 'en' ? 'We use Google Analytics to understand site usage. Analytics runs only with your consent.' : 'Kasutame Google Analyticsit veebilehe kasutamise analüüsimiseks. Analüütika käivitub ainult sinu nõusolekul.' %>
   </p>
-  <button type="button" class="btn" id="cookieAccept"><%= lang === 'ru' ? 'Понятно' : lang === 'en' ? 'OK' : 'Selge' %></button>
+  <div class="cookie-banner-actions">
+    <button type="button" class="btn" id="cookieAccept"><%= lang === 'ru' ? 'Разрешить аналитику' : lang === 'en' ? 'Allow analytics' : 'Luba analüütika' %></button>
+    <button type="button" class="btn secondary" id="cookieReject"><%= lang === 'ru' ? 'Отклонить' : lang === 'en' ? 'Reject' : 'Keeldu' %></button>
+  </div>
 </div>
-<script async src="https://www.googletagmanager.com/gtag/js?id=<%= gaId %>"></script>
 <script>
   (function () {
-    var key = "haabersti_cookie_ok";
+    var key = "haabersti_cookie_consent";
     var banner = document.getElementById("cookieBanner");
-    if (!localStorage.getItem(key) && banner) banner.hidden = false;
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    window.gtag = gtag;
-    gtag("js", new Date());
-    gtag("config", "<%= gaId %>", { anonymize_ip: true });
-    var btn = document.getElementById("cookieAccept");
-    if (btn) {
-      btn.addEventListener("click", function () {
-        localStorage.setItem(key, "1");
-        if (banner) banner.hidden = true;
-      });
+    if (!banner) return;
+
+    var gaId = banner.dataset.gaId;
+
+    function loadAnalytics() {
+      if (window.gtag) return;
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () {
+        window.dataLayer.push(arguments);
+      };
+      window.gtag("js", new Date());
+      window.gtag("config", gaId, { anonymize_ip: true });
+
+      var script = document.createElement("script");
+      script.async = true;
+      script.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(gaId);
+      document.head.appendChild(script);
     }
+
+    var consent = null;
+    try {
+      consent = localStorage.getItem(key);
+    } catch (error) {
+      console.error("Could not read analytics consent preference:", error);
+    }
+
+    if (consent === "accepted") {
+      loadAnalytics();
+    } else if (consent === "rejected") {
+      banner.hidden = true;
+    } else {
+      banner.hidden = false;
+    }
+
+    document.getElementById("cookieAccept").addEventListener("click", function () {
+      try {
+        localStorage.setItem(key, "accepted");
+      } catch (error) {
+        console.error("Could not save analytics consent preference:", error);
+      }
+      banner.hidden = true;
+      loadAnalytics();
+    });
+
+    document.getElementById("cookieReject").addEventListener("click", function () {
+      try {
+        localStorage.setItem(key, "rejected");
+      } catch (error) {
+        console.error("Could not save analytics consent preference:", error);
+      }
+      banner.hidden = true;
+    });
   })();
 </script>
 <% } %>

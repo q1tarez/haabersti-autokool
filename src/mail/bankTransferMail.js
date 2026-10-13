@@ -30,34 +30,34 @@ const DRIVING_COURSE_IDS = new Set(["driving-lessons-26", "extra-driving"]);
 
 const COPY = {
   et: {
-    subject: "Pangaumberkande andmed — Haabersti Autokool",
-    preheader: "Makse juhised ja rekvizidid",
-    headline: "Pangaumberkande andmed",
+    subject: "Pangaülekande andmed — Haabersti Autokool",
+    preheader: "Maksejuhised ja pangaandmed",
+    headline: "Pangaülekande andmed",
     greeting: (name) => `Tere, ${name}!`,
     intro: (course) =>
-      `Valisite kursile «${course}» tasumise pangaumberkandega. All on meie rekvizidid. Makse selgituse väljale kirjutage oma nimi ja kursus.`,
+      `Valisite kursuse «${course}» eest tasumiseks pangaülekande. Allpool on maksmiseks vajalikud andmed. Palun märkige makse selgitusse oma nimi ja kursuse nimetus.`,
     labelBeneficiary: "Saaja",
     labelIban: "IBAN",
     labelAmount: "Summa",
     labelPurpose: "Makse selgitus",
     notice:
-      "Kui summa või saaja ei vasta kokkuleppele, helistage või kirjutage enne tasumist. Lõplik hind võib kinnituda telefoni teel.",
-    cardTitle: "Rekvizidid",
+      "Kui summa või saaja erineb kokkulepitust, võtke enne maksmist meiega ühendust. Lõpliku hinna kinnitame vajaduse korral telefoni teel.",
+    cardTitle: "Pangaandmed",
     footerBrand: "Haabersti Autokool",
     footerCity: "Tallinn, Eesti",
     footerContact: "Kontakt",
     memoTitle: "Õpilase meelespea",
     memoLines: [
-      "⏰ Teavita puudumisest vähemalt 24 tundi ette",
-      "❗️ Hilinemine üle 15 minuti – tund loetakse toimunuks",
-      "💸 Etteteatamata puudumise korral raha ei tagastata",
-      "🔧 Õpetaja või tehnilise põhjuse tõttu ära jäänud tund -> lepitakse kokku uus aeg",
-      "🚫 Tundi ei tohi tulla joobes ega joobetunnustega",
-      "🪪 Kaasa võtta isikut tõendav dokument",
-      "💶 Lisatunnid: 55 EUR / 90 min",
+      "⏰ Palume puudumisest teatada vähemalt 24 tundi ette.",
+      "❗️ Kui hilinete üle 15 minuti, loetakse tund toimunuks.",
+      "💸 Etteteatamata puudumise korral tasu ei tagastata.",
+      "🔧 Kui tund jääb ära instruktori või tehnilise rikke tõttu, lepime kokku uue aja.",
+      "🚫 Palume tundi mitte tulla joobes ega joobetunnustega.",
+      "🪪 Võtke kaasa isikut tõendav dokument.",
+      "💶 Lisatunni hind: 55 € / 90 min",
     ],
     disclaimer:
-      "See kiri saadetakse automaatselt pärast registreerumist. Kui te ei nõustunud selle kirja saamisega, võtke meiega ühendust.",
+      "See kiri saadeti automaatselt pärast registreerumist. Kui arvate, et saite selle ekslikult, võtke meiega ühendust.",
   },
   ru: {
     subject: "Реквизиты для банковского перевода — Haabersti Autokool",

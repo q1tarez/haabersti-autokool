@@ -71,7 +71,7 @@ async function getLocalizedCoursesFromDb(lang, onlyActive = true) {
   }));
 }
 
-/** Сопоставление курсов БД с «мастером Sky»: категория (B/BE/Moto) и секция списка */
+/** Сопоставление курсов БД: категория (B/BE/Moto) и секция списка */
 const WIZARD_COURSE_META = {
   "b-category": { wizardCats: ["b", "be"], wizardSection: "start" },
   "winter-training": { wizardCats: ["b", "be"], wizardSection: "quick" },
@@ -163,7 +163,7 @@ function siteBaseUrl(req) {
 router.get("/instructors", (req, res) => {
   const titles = { et: "Instruktorid", ru: "Инструкторы", en: "Instructors" };
   const desc = {
-    et: "Haabersti Autokool instruktorid — kogenud opetajad Tallinnas.",
+    et: "Haabersti Autokooli kogenud sõiduõpetajad Tallinnas.",
     ru: "Инструкторы Haabersti Autokool — опытные педагоги в Таллине.",
     en: "Haabersti Autokool instructors — experienced teachers in Tallinn.",
   };

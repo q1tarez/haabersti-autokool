@@ -31,7 +31,12 @@ app.use(
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         scriptSrc: ["'self'", "'unsafe-inline'", "https://www.googletagmanager.com"],
         imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'", "https://api.telegram.org", "https://www.google-analytics.com"],
+        connectSrc: [
+          "'self'",
+          "https://api.telegram.org",
+          "https://www.google-analytics.com",
+          "https://region1.google-analytics.com",
+        ],
       },
     },
   })

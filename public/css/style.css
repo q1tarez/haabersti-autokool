@@ -3316,6 +3316,22 @@ body.admin-page--login {
   color: var(--muted);
 }
 
+.cookie-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 520px) {
+  .cookie-banner-actions {
+    width: 100%;
+  }
+
+  .cookie-banner-actions .btn {
+    flex: 1;
+  }
+}
+
 .audit-details {
   font-size: 12px;
   word-break: break-word;

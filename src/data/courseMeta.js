@@ -4,8 +4,8 @@ const FOR_WHOM = {
     "b-category": "Algajatele, kes soovivad B-kategooria juhiluba.",
     "winter-training": "Neile, kes soovivad kindlust talvel sõites.",
     "first-aid": "Kõigile, kellel on vaja esmaabikursust.",
-    "night-driving": "Öisesõidu kogemuse soovijatele.",
-    "slippery-driving": "Libedaga sõidu praktika (RS).",
+    "night-driving": "Neile, kes soovivad omandada öise sõidu kogemust.",
+    "slippery-driving": "Libeda tee sõidu praktika (RS).",
   },
   ru: {
     "b-category": "Новичкам, которые получают права категории B.",

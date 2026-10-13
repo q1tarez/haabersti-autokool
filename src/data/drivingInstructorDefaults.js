@@ -62,7 +62,7 @@ module.exports = [
         "<li>Варианты оплаты уроков вождения можно уточнить при записи.</li>" +
         "</ol>",
       et:
-        "<p><strong>Kogu praktika sõiduõppe maksumus 767 €.</strong></p>" +
+        "<p><strong>Praktilise sõiduõppe kogumaksumus on 767 €.</strong></p>" +
         "<p>Summa sisaldab:</p>" +
         "<ul>" +
         "<li>Registreerimistasu — <strong>52 €</strong></li>" +
@@ -70,7 +70,7 @@ module.exports = [
         "</ul>" +
         "<p><strong>Maksmise kord:</strong></p>" +
         "<ol>" +
-        "<li>Registreerimistasu ühekordselt õppeperiodi eest.</li>" +
+        "<li>Registreerimistasu tasutakse ühe korraga kogu õppeperioodi eest.</li>" +
         "<li>Sõidutundide järkjärgne maksmine kokkuleppel.</li>" +
         "</ol>",
       en:
@@ -148,7 +148,7 @@ module.exports = [
         "<li>26 уроков МКПП (26,90 € / 45 мин) — <strong>690 €</strong></li>" +
         "</ul>",
       et:
-        "<p><strong>Praktika kursuse hinnavahemik umbes 742 €.</strong></p>" +
+        "<p><strong>Praktilise sõiduõppe paketi hind on ligikaudu 742 €.</strong></p>" +
         "<ul><li>Registreerimistasu — <strong>52 €</strong></li><li>26 MKPP sõidutundi — <strong>690 €</strong></li></ul>",
       en:
         "<p><strong>Practical package around 742 €.</strong></p>" +

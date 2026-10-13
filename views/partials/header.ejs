@@ -46,7 +46,7 @@
   </head>
   <body>
     <!-- Skip to main content (accessibility) -->
-    <a class="skip-link" href="#main-content"><%= lang === 'ru' ? 'Перейти к основному содержимому' : lang === 'en' ? 'Skip to main content' : 'Mine põhisisule' %></a>
+    <a class="skip-link" href="#main-content"><%= lang === 'ru' ? 'Перейти к основному содержимому' : lang === 'en' ? 'Skip to main content' : 'Liigu põhisisu juurde' %></a>
 
     <header class="site-header">
       <div class="container nav-wrap">
@@ -69,7 +69,7 @@
           <span class="hamburger-bar"></span>
         </button>
 
-        <nav class="nav" id="mainNav" aria-label="Main navigation">
+        <nav class="nav" id="mainNav" aria-label="<%= lang === 'ru' ? 'Основная навигация' : lang === 'en' ? 'Main navigation' : 'Peamenüü' %>">
           <a href="/" <%= typeof currentPath !== 'undefined' && currentPath === '/' ? 'aria-current="page"' : '' %>><%= t("navHome") %></a>
           <a href="/courses" <%= typeof currentPath !== 'undefined' && currentPath === '/courses' ? 'aria-current="page"' : '' %>><%= t("navCourses") %></a>
           <a href="/prices" <%= typeof currentPath !== 'undefined' && currentPath === '/prices' ? 'aria-current="page"' : '' %>><%= t("navPrices") %></a>

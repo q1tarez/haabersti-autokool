@@ -5,7 +5,7 @@ const COPY = {
     subject: "Registreerimine vastu võetud — Haabersti Autokool",
     greeting: (name) => `Tere, ${name}!`,
     body: (course) =>
-      `Oleme teie registreerimise kursile «${course}» kätte saanud. Võtame peagi ühendust või saadame täpsema info e-posti teel.`,
+      `Oleme saanud teie registreerimisavalduse kursusele «${course}». Võtame teiega peagi ühendust või saadame täpsema info e-postiga.`,
     footer: "Haabersti Autokool · Tallinn",
   },
   ru: {

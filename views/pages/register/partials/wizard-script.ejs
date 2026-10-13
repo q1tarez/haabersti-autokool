@@ -41,31 +41,13 @@
       return typeof id === "string" && /^[a-z0-9-]+$/.test(id) ? id : "";
     }
 
-    function safeIdPart(id) {
-      return typeof id === "string" && /^[a-z0-9-]+$/.test(id) ? id : "";
-    }
-
     function persistWizardSnapshot() {
       if (wizardHydrating) return;
       try {
         const courseRadio = pickedRadio();
         const payload = {
           step: current,
-          studyLang: form.querySelector('input[name="studyLang"]:checked')?.value || "",
-          wizardCategory: form.querySelector('input[name="wizardCategory"]:checked')?.value || "",
-          courseId: courseRadio?.value || "",
-          trainingOfferId: form.querySelector('input[name="trainingOfferId"]:checked')?.value || "",
-          instructorId: form.querySelector('input[name="instructorId"]:checked')?.value || "",
-          paymentMethod:
-            registrationPaymentDialog?.querySelector('input[name="regPaymentMethod"]:checked')?.value ||
-            document.getElementById("hid_paymentMethod")?.value ||
-            "",
-          comment: document.getElementById("regComment")?.value || "",
-          firstName: document.getElementById("regFirstName")?.value || "",
-          lastName: document.getElementById("regLastName")?.value || "",
-          isikukood: document.getElementById("regIsikukood")?.value || "",
-          phone: document.getElementById("regPhone")?.value || "",
-          email: document.getElementById("regEmail")?.value || "",
+          courseId: safeCourseId(courseRadio?.value || ""),
         };
         sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(payload));
       } catch (_) {
@@ -77,10 +59,16 @@
       try {
         const raw = sessionStorage.getItem(WIZARD_STORAGE_KEY);
         if (raw) {
-          const o = JSON.parse(raw);
-          if (typeof o !== "object" || !o) return null;
+          sessionStorage.removeItem(WIZARD_STORAGE_KEY);
+          const stored = JSON.parse(raw);
+          if (typeof stored !== "object" || !stored || Array.isArray(stored)) return null;
+          const o = {
+            step: stored.step,
+            courseId: safeCourseId(stored.courseId),
+          };
+          sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(o));
           const st = Number.parseInt(String(o.step), 10);
-          const hasCourse = typeof o.courseId === "string" && /^[a-z0-9-]+$/.test(o.courseId);
+          const hasCourse = Boolean(o.courseId);
           if (Number.isFinite(st) && st > 2 && !hasCourse) {
             sessionStorage.removeItem(WIZARD_STORAGE_KEY);
             return null;
@@ -113,28 +101,15 @@
           current = stepNum;
         }
 
-        if (snap.studyLang) {
-          const el = form.querySelector(`input[name="studyLang"][value="${snap.studyLang}"]`);
-          if (el) el.checked = true;
-        }
-
         const cidPre = safeCourseId(snap.courseId);
         if (cidPre) {
           const courseRadioPre = form.querySelector(`input[name="courseId"][value="${cidPre}"]`);
           const cardPre = courseRadioPre?.closest(".sky-course-card");
           const catsPre = (cardPre?.dataset.wizardCats || "").split(/\s+/).filter(Boolean);
-          const wantedCat = typeof snap.wizardCategory === "string" ? snap.wizardCategory : "";
           if (catsPre.length) {
-            const pick =
-              wantedCat && catsPre.includes(wantedCat)
-                ? wantedCat
-                : catsPre[0];
-            const catEl = form.querySelector(`input[name="wizardCategory"][value="${pick}"]`);
+            const catEl = form.querySelector(`input[name="wizardCategory"][value="${catsPre[0]}"]`);
             if (catEl) catEl.checked = true;
           }
-        } else if (snap.wizardCategory) {
-          const el = form.querySelector(`input[name="wizardCategory"][value="${snap.wizardCategory}"]`);
-          if (el) el.checked = true;
         }
 
         applyWizardCategoryFilter();
@@ -146,7 +121,7 @@
             radio.checked = true;
             const card = radio.closest(".sky-course-card");
             const cats = (card?.dataset.wizardCats || "").split(/\s+/).filter(Boolean);
-            if (cats.length && !snap.wizardCategory) {
+            if (cats.length) {
               const match = form.querySelector(`input[name="wizardCategory"][value="${cats[0]}"]`);
               if (match) match.checked = true;
               applyWizardCategoryFilter();
@@ -158,51 +133,6 @@
 
         syncDrivingInstructorUi();
         refreshTrainingOfferCards();
-
-        const tid = safeIdPart(snap.trainingOfferId);
-        if (tid) {
-          const tr = document.getElementById(`training-radio-${tid}`);
-          if (tr) {
-            tr.disabled = false;
-            tr.checked = true;
-            tr.dispatchEvent(new Event("change", { bubbles: true }));
-          }
-        }
-
-        const iid = safeIdPart(snap.instructorId);
-        if (iid) {
-          const ir = document.getElementById(`inst-radio-${iid}`);
-          if (ir && !ir.disabled) {
-            ir.checked = true;
-            ir.dispatchEvent(new Event("change", { bubbles: true }));
-          }
-        }
-
-        const payV = String(snap.paymentMethod || "").trim();
-        if (/^(cash|bank|online)$/.test(payV)) {
-          const pmr = registrationPaymentDialog?.querySelector(`input[name="regPaymentMethod"][value="${payV}"]`);
-          if (pmr && !pmr.disabled) pmr.checked = true;
-          const hid = document.getElementById("hid_paymentMethod");
-          if (hid) hid.value = payV;
-        }
-        const cm = document.getElementById("regComment");
-        if (cm && snap.comment != null) cm.value = snap.comment;
-
-        const rfn = document.getElementById("regFirstName");
-        if (rfn && snap.firstName != null) rfn.value = snap.firstName;
-        const rln = document.getElementById("regLastName");
-        if (rln && snap.lastName != null) rln.value = snap.lastName;
-        const ik = document.getElementById("regIsikukood");
-        if (ik && snap.isikukood != null) ik.value = snap.isikukood;
-        const ph = document.getElementById("regPhone");
-        if (ph && snap.phone != null) ph.value = snap.phone;
-        const em = document.getElementById("regEmail");
-        if (em && snap.email != null) em.value = snap.email;
-        const hfn = document.getElementById("fullName");
-        if (hfn) {
-          const combined = [snap.firstName, snap.lastName].filter(Boolean).join(" ").trim();
-          if (combined) hfn.value = combined;
-        }
       } finally {
         wizardHydrating = false;
       }
