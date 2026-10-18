@@ -6120,3 +6120,147 @@ body:not(.admin-page) .site-footer .footer-link {
     flex: 1 1 auto;
   }
 }
+
+.account-notifications {
+  margin: 18px 0 0;
+}
+
+.account-notifications h2,
+.admin-lesson-card h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.account-notifications > ul,
+.account-lesson-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.account-notifications li,
+.account-lesson-list li {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.account-notifications li.is-unread {
+  border-color: rgba(49, 94, 232, 0.38);
+  background: rgba(49, 94, 232, 0.05);
+}
+
+.account-notifications li p,
+.account-notifications li small,
+.account-lesson-list li p {
+  margin: 0;
+}
+
+.account-notifications li small {
+  color: var(--muted);
+}
+
+.account-notifications form {
+  margin: 0;
+}
+
+.account-notifications .btn {
+  min-height: 38px;
+}
+
+.account-email-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.account-lesson-list li > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.account-progress {
+  height: 10px;
+  margin: 12px 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.account-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 0.2s ease;
+}
+
+.admin-lesson-create {
+  margin-bottom: 18px;
+}
+
+.admin-lesson-create h2 {
+  margin-top: 0;
+}
+
+.admin-lesson-create .form,
+.admin-lesson-form {
+  width: 100%;
+  max-width: none;
+}
+
+.admin-lesson-submit {
+  display: flex;
+  align-items: end;
+}
+
+.admin-lesson-submit .btn {
+  width: 100%;
+}
+
+.admin-lesson-list {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-lesson-card {
+  min-width: 0;
+  padding: clamp(16px, 2vw, 22px);
+}
+
+.admin-lesson-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.admin-lesson-heading p,
+.admin-lesson-empty {
+  margin: 5px 0 0;
+  color: var(--muted);
+}
+
+.admin-lesson-form .admin-editor-grid {
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+[data-theme="dark"] .account-notifications li,
+[data-theme="dark"] .account-lesson-list li {
+  border-color: var(--admin-line);
+}
+
+@media (max-width: 700px) {
+  .admin-lesson-heading {
+    flex-direction: column;
+  }
+}

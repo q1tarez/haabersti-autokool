@@ -1,4 +1,4 @@
-const bcrypt = require("bcrypt");
+const { initializeAdmins } = require("./adminBootstrap");
 
 /**
  * @param {{ runAsync: Function, getAsync: Function }} db
@@ -39,6 +39,7 @@ async function runPostgresMigrations(db) {
       comment TEXT,
       status TEXT NOT NULL DEFAULT 'new',
       payment_status TEXT NOT NULL DEFAULT 'unpaid',
+      privacy_accepted_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
@@ -55,6 +56,31 @@ async function runPostgresMigrations(db) {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+  await runAsync(`
+    CREATE TABLE IF NOT EXISTS student_lessons (
+      id SERIAL PRIMARY KEY,
+      registration_id INTEGER NOT NULL REFERENCES course_registrations(id) ON DELETE CASCADE,
+      starts_at TEXT NOT NULL,
+      duration_minutes INTEGER NOT NULL DEFAULT 45,
+      instructor_id TEXT,
+      status TEXT NOT NULL DEFAULT 'planned',
+      internal_note TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await runAsync(`
+    CREATE TABLE IF NOT EXISTS student_notifications (
+      id SERIAL PRIMARY KEY,
+      email TEXT NOT NULL,
+      message TEXT NOT NULL,
+      lesson_id INTEGER,
+      read_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await runAsync(`CREATE INDEX IF NOT EXISTS student_lessons_registration_idx ON student_lessons (registration_id)`);
+  await runAsync(`CREATE INDEX IF NOT EXISTS student_notifications_email_idx ON student_notifications (email)`);
   await runAsync(`ALTER TABLE student_accounts ADD COLUMN IF NOT EXISTS username TEXT`);
   await runAsync(
     `UPDATE student_accounts SET username = 'student' || id::TEXT
@@ -122,6 +148,7 @@ async function runPostgresMigrations(db) {
   await runAsync(
     `ALTER TABLE course_registrations ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'unpaid'`
   ).catch(() => null);
+  await runAsync(`ALTER TABLE course_registrations ADD COLUMN IF NOT EXISTS privacy_accepted_at TIMESTAMPTZ`).catch(() => null);
   await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'director'`).catch(() => null);
   await runAsync(`UPDATE admins SET role = 'director' WHERE role IS NULL OR TRIM(role) = ''`).catch(() => null);
   await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS instructor_id TEXT`).catch(() => null);
@@ -170,20 +197,7 @@ async function runPostgresMigrations(db) {
     }
   }
 
-  const adminCredentials = [
-    { username: "talehh_gusseinov", password: "hab_autokool2026" },
-    { username: "admin", password: "Bserg_5xg3D11" },
-  ];
-
-  for (const creds of adminCredentials) {
-    const existing = await getAsync("SELECT id FROM admins WHERE username = ?", [creds.username]);
-    const hash = await bcrypt.hash(creds.password, 10);
-    if (existing) {
-      await runAsync("UPDATE admins SET password_hash = ? WHERE username = ?", [hash, creds.username]);
-    } else {
-      await runAsync("INSERT INTO admins (username, password_hash) VALUES (?, ?)", [creds.username, hash]);
-    }
-  }
+  await initializeAdmins({ getAsync, runAsync });
 
   const coursesCount = await getAsync("SELECT COUNT(*) AS count FROM courses");
   if (!coursesCount || Number(coursesCount.count) === 0) {

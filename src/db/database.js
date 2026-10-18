@@ -1,6 +1,6 @@
 const path = require("path");
-const bcrypt = require("bcrypt");
 const { runPostgresMigrations } = require("./postgresInit");
+const { initializeAdmins } = require("./adminBootstrap");
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -26,6 +26,8 @@ const memory = {
   contacts: [],
   courseRegistrations: [],
   studentAccounts: [],
+  studentLessons: [],
+  studentNotifications: [],
   courses: [],
   instructors: [],
   trainingOffers: [],
@@ -125,6 +127,57 @@ function runAsync(sql, params = []) {
       memory.studentAccounts.push(account);
       return Promise.resolve({ lastID: account.id });
     }
+    if (query.startsWith("INSERT INTO STUDENT_LESSONS")) {
+      const lesson = {
+        id: memory.studentLessons.length + 1,
+        registration_id: Number(params[0]),
+        starts_at: params[1],
+        duration_minutes: Number(params[2]),
+        instructor_id: params[3] || null,
+        status: params[4],
+        internal_note: params[5] || "",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      memory.studentLessons.push(lesson);
+      return Promise.resolve({ lastID: lesson.id, changes: 1 });
+    }
+    if (query.startsWith("UPDATE STUDENT_LESSONS")) {
+      const lesson = memory.studentLessons.find((row) => String(row.id) === String(params[6]));
+      if (lesson) {
+        lesson.starts_at = params[0];
+        lesson.duration_minutes = Number(params[1]);
+        lesson.instructor_id = params[2] || null;
+        lesson.status = params[3];
+        lesson.internal_note = params[4] || "";
+        lesson.updated_at = params[5];
+      }
+      return Promise.resolve({ changes: lesson ? 1 : 0 });
+    }
+    if (query.startsWith("DELETE FROM STUDENT_LESSONS")) {
+      const before = memory.studentLessons.length;
+      memory.studentLessons = memory.studentLessons.filter((row) => String(row.id) !== String(params[0]));
+      return Promise.resolve({ changes: before === memory.studentLessons.length ? 0 : 1 });
+    }
+    if (query.startsWith("INSERT INTO STUDENT_NOTIFICATIONS")) {
+      const notification = {
+        id: memory.studentNotifications.length + 1,
+        email: String(params[0]).trim().toLowerCase(),
+        message: params[1],
+        lesson_id: params[2] || null,
+        read_at: null,
+        created_at: new Date().toISOString(),
+      };
+      memory.studentNotifications.push(notification);
+      return Promise.resolve({ lastID: notification.id, changes: 1 });
+    }
+    if (query.startsWith("UPDATE STUDENT_NOTIFICATIONS SET READ_AT")) {
+      const notification = memory.studentNotifications.find(
+        (row) => String(row.id) === String(params[1]) && row.email === String(params[2]).toLowerCase()
+      );
+      if (notification) notification.read_at = params[0];
+      return Promise.resolve({ changes: notification ? 1 : 0 });
+    }
     if (query.startsWith("UPDATE STUDENT_ACCOUNTS SET USERNAME = ?")) {
       const account = memory.studentAccounts.find((row) => row.id === Number(params[4]));
       if (account) {
@@ -189,6 +242,7 @@ function runAsync(sql, params = []) {
         comment: params[7],
         status: "new",
         payment_status: "unpaid",
+        privacy_accepted_at: params[9],
         instructor_id: null,
         created_at: new Date().toISOString(),
       });
@@ -369,6 +423,9 @@ function getAsync(sql, params = []) {
     if (query.startsWith("SELECT * FROM COURSE_REGISTRATIONS WHERE ID = ?")) {
       return Promise.resolve(memory.courseRegistrations.find((row) => String(row.id) === String(params[0])));
     }
+    if (query.startsWith("SELECT * FROM STUDENT_LESSONS WHERE ID = ?")) {
+      return Promise.resolve(memory.studentLessons.find((row) => String(row.id) === String(params[0])));
+    }
     if (query.includes("COUNT(*) AS COUNT FROM COURSES WHERE IS_ACTIVE = 1")) {
       return Promise.resolve({ count: memory.courses.filter((c) => c.is_active).length });
     }
@@ -451,6 +508,45 @@ function allAsync(sql, params = []) {
       }
       return Promise.resolve(rows.sort((a, b) => (a.created_at < b.created_at ? 1 : -1)));
     }
+    if (query.includes("FROM STUDENT_ACCOUNTS")) {
+      let rows = memory.studentAccounts.map(({ id, email, username, verified_at, created_at }) => ({
+        id,
+        email,
+        username,
+        verified_at,
+        created_at,
+      }));
+      if (query.includes("LOWER(USERNAME) LIKE ?")) {
+        const search = String(params[0] || "").replace(/%/g, "").toLowerCase();
+        rows = rows.filter((row) =>
+          `${row.username || ""} ${row.email || ""}`.toLowerCase().includes(search)
+        );
+      }
+      if (query.includes("VERIFIED_AT IS NULL")) {
+        rows = rows.filter((row) => !row.verified_at);
+      } else if (query.includes("VERIFIED_AT IS NOT NULL")) {
+        rows = rows.filter((row) => Boolean(row.verified_at));
+      }
+      return Promise.resolve(rows.sort((a, b) => (a.created_at < b.created_at ? 1 : -1)));
+    }
+    if (query.includes("FROM STUDENT_LESSONS")) {
+      let rows = [...memory.studentLessons];
+      if (query.includes("REGISTRATION_ID IN (")) {
+        const ids = params.map(Number);
+        rows = rows.filter((row) => ids.includes(Number(row.registration_id)));
+      } else if (query.includes("REGISTRATION_ID = ?")) {
+        rows = rows.filter((row) => String(row.registration_id) === String(params[0]));
+      }
+      return Promise.resolve(rows.sort((a, b) => String(a.starts_at).localeCompare(String(b.starts_at))));
+    }
+    if (query.includes("FROM STUDENT_NOTIFICATIONS")) {
+      const email = String(params[0] || "").toLowerCase();
+      return Promise.resolve(
+        memory.studentNotifications
+          .filter((row) => row.email === email)
+          .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+      );
+    }
     if (query.includes("SELECT * FROM CONTACTS")) {
       return Promise.resolve([...memory.contacts].sort((a, b) => (a.created_at < b.created_at ? 1 : -1)));
     }
@@ -515,24 +611,18 @@ async function initDatabase() {
   }
 
   if (useMemoryDb) {
-    const adminCredentials = [
-      { username: "talehh_gusseinov", password: "hab_autokool2026" },
-      { username: "admin", password: "Bserg_5xg3D11" },
-    ];
-
-    for (const creds of adminCredentials) {
-      const hash = await bcrypt.hash(creds.password, 10);
-      const existing = memory.admins.find((a) => a.username === creds.username);
-      if (existing) {
-        existing.password_hash = hash;
-      } else {
-        memory.admins.push({
-          id: memory.admins.length + 1,
-          username: creds.username,
-          password_hash: hash,
-          created_at: new Date().toISOString(),
-        });
-      }
+    const username = String(process.env.ADMIN_USERNAME || "").trim();
+    const password = String(process.env.ADMIN_PASSWORD || "");
+    const validPassword = password.length >= 12 && Buffer.byteLength(password, "utf8") <= 72;
+    if (username && validPassword && !memory.admins.some((a) => a.username === username)) {
+      const passwordHash = await require("bcrypt").hash(password, 12);
+      memory.admins.push({
+        id: memory.admins.length + 1,
+        username,
+        password_hash: passwordHash,
+        role: "director",
+        created_at: new Date().toISOString(),
+      });
     }
     if (memory.courses.length === 0) {
       memory.courses.push(
@@ -700,6 +790,7 @@ async function initDatabase() {
       comment TEXT,
       status TEXT DEFAULT 'new',
       payment_status TEXT DEFAULT 'unpaid',
+      privacy_accepted_at TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -716,6 +807,33 @@ async function initDatabase() {
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  await runAsync(`
+    CREATE TABLE IF NOT EXISTS student_lessons (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      registration_id INTEGER NOT NULL REFERENCES course_registrations(id) ON DELETE CASCADE,
+      starts_at TEXT NOT NULL,
+      duration_minutes INTEGER NOT NULL DEFAULT 45,
+      instructor_id TEXT,
+      status TEXT NOT NULL DEFAULT 'planned',
+      internal_note TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await runAsync(`
+    CREATE TABLE IF NOT EXISTS student_notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL,
+      message TEXT NOT NULL,
+      lesson_id INTEGER,
+      read_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await runAsync(`CREATE INDEX IF NOT EXISTS student_lessons_registration_idx ON student_lessons (registration_id)`);
+  await runAsync(`CREATE INDEX IF NOT EXISTS student_notifications_email_idx ON student_notifications (email)`);
 
   await runAsync(`ALTER TABLE student_accounts ADD COLUMN username TEXT`).catch(() => null);
   await runAsync(
@@ -769,6 +887,7 @@ async function initDatabase() {
   await runAsync(`
     ALTER TABLE course_registrations ADD COLUMN payment_status TEXT DEFAULT 'unpaid'
   `).catch(() => null);
+  await runAsync(`ALTER TABLE course_registrations ADD COLUMN privacy_accepted_at TEXT`).catch(() => null);
 
   await runAsync(`ALTER TABLE admins ADD COLUMN role TEXT DEFAULT 'director'`).catch(() => null);
   await runAsync(`UPDATE admins SET role = 'director' WHERE role IS NULL OR role = ''`).catch(() => null);
@@ -803,20 +922,7 @@ async function initDatabase() {
     )
   `);
 
-  const adminCredentials = [
-    { username: "talehh_gusseinov", password: "hab_autokool2026" },
-    { username: "admin", password: "Bserg_5xg3D11" },
-  ];
-
-  for (const creds of adminCredentials) {
-    const existing = await getAsync("SELECT id FROM admins WHERE username = ?", [creds.username]);
-    const hash = await bcrypt.hash(creds.password, 10);
-    if (existing) {
-      await runAsync("UPDATE admins SET password_hash = ? WHERE username = ?", [hash, creds.username]);
-    } else {
-      await runAsync("INSERT INTO admins (username, password_hash) VALUES (?, ?)", [creds.username, hash]);
-    }
-  }
+  await initializeAdmins({ getAsync, runAsync });
 
   const coursesCount = await getAsync("SELECT COUNT(*) AS count FROM courses");
   if (!coursesCount || coursesCount.count === 0) {

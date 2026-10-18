@@ -9,15 +9,7 @@ const router = express.Router();
 router.get("/health", async (_req, res) => {
   const status = await getSystemStatus();
   const ok = status.db.ok;
-  res.status(ok ? 200 : 503).json({
-    ok,
-    db: status.db.ok,
-    dbMs: status.db.ms,
-    uptimeSec: status.uptimeSec,
-    env: status.nodeEnv,
-    smtp: status.smtp.ok,
-    montonio: status.montonio.ok,
-  });
+  res.status(ok ? 200 : 503).json({ ok });
 });
 
 router.get("/cron/reminders", async (req, res) => {

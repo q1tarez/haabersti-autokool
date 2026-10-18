@@ -1,8 +1,11 @@
-<p class="admin-upload-hint">Загрузка фото (локально / сервер с записью в public):</p>
+<p class="admin-upload-hint"><%= typeof uploadHint !== "undefined" && uploadHint ? uploadHint : "Загрузить изображение с устройства:" %></p>
 <input type="file" accept="image/*" class="admin-image-file" data-target="<%= targetInputId %>" />
 <script>
   (function () {
     document.querySelectorAll(".admin-image-file").forEach(function (input) {
+      if (input.dataset.uploadBound) return;
+      input.dataset.uploadBound = "true";
+
       input.addEventListener("change", async function () {
         var file = input.files && input.files[0];
         var targetId = input.getAttribute("data-target");
@@ -12,10 +15,21 @@
         fd.append("image", file);
         try {
           var res = await fetch("/admin/upload-image", { method: "POST", body: fd, credentials: "same-origin" });
-          var data = await res.json();
-          if (data.ok && data.path) target.value = data.path;
-          else alert(data.error || "Upload failed");
-        } catch (e) {
+          var data = await res.json().catch(function () { return {}; });
+          if (!res.ok || !data.ok || !data.path) {
+            alert(data.error || "Не удалось загрузить изображение");
+            return;
+          }
+
+          <% if (typeof appendToList !== "undefined" && appendToList) { %>
+          target.value = target.value.trim()
+            ? target.value.trimEnd() + "\n" + data.path
+            : data.path;
+          <% } else { %>
+          target.value = data.path;
+          <% } %>
+          input.value = "";
+        } catch (error) {
           alert("Upload error");
         }
       });

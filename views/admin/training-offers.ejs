@@ -52,7 +52,11 @@
         <section class="admin-editor-section">
         <h3 class="inst-admin-sub">Параметры карточки</h3>
         <label>Картинка (путь от /images/…)</label>
-        <input type="text" name="image" value="<%= editingOffer ? editingOffer.image : '' %>" placeholder="/images/training/winter-placeholder.svg" />
+        <input id="trainingOfferImage" type="text" name="image" value="<%= editingOffer ? editingOffer.image : '' %>" placeholder="/images/training/winter-placeholder.svg" />
+        <%- include("../partials/admin-image-upload", {
+          targetInputId: "trainingOfferImage",
+          uploadHint: "Загрузить изображение карточки с устройства:"
+        }) %>
 
         <div class="form-grid-two">
           <div>

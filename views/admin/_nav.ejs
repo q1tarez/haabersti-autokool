@@ -18,6 +18,8 @@
     <% } %>
     <a href="/admin/students" class="<%= isNavActive('/students') ? 'is-active' : '' %>"><%= at("navStudents") %></a>
     <% if (director) { %>
+      <a href="/admin/student-accounts" class="<%= isNavActive('/student-accounts') ? 'is-active' : '' %>"><%= adminLang === "et" ? "Õpilaste kontod" : "Аккаунты учеников" %></a>
+      <a href="/admin/lessons" class="<%= isNavActive('/lessons') ? 'is-active' : '' %>"><%= adminLang === "et" ? "Sõidutunnid" : "Расписание уроков" %></a>
       <a href="/admin/contacts" class="<%= isNavActive('/contacts') ? 'is-active' : '' %>"><%= at("navContacts") %></a>
       <a href="/admin/reviews" class="<%= isNavActive('/reviews') ? 'is-active' : '' %>">Отзывы</a>
       <a href="/admin/monitoring" class="<%= isNavActive('/monitoring') ? 'is-active' : '' %>"><%= at("navMonitoring") %></a>

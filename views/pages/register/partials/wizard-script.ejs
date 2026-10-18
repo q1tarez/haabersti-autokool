@@ -743,6 +743,9 @@
         return;
       }
       copyRegistrationToForm();
+      const privacyAccepted = document.getElementById("regAgreeTerms")?.checked === true;
+      const privacyAcceptedField = document.getElementById("hid_privacyAccepted");
+      if (privacyAcceptedField) privacyAcceptedField.value = String(privacyAccepted);
       form.submit();
     });
 

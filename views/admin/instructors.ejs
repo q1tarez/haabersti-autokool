@@ -30,7 +30,12 @@
         <%- include("../partials/admin-image-upload", { targetInputId: "instructorPhoto" }) %>
 
         <label>Фото учебного авто (по одному пути или URL на строку)</label>
-        <textarea name="car_photos" rows="4" placeholder="/images/instructors/cars/oppeauto.png"><%= editingInstructor && editingInstructor.carPhotos && editingInstructor.carPhotos.length ? editingInstructor.carPhotos.join('\n') : '' %></textarea>
+        <textarea id="instructorCarPhotos" name="car_photos" rows="4" placeholder="/images/instructors/cars/oppeauto.png"><%= editingInstructor && editingInstructor.carPhotos && editingInstructor.carPhotos.length ? editingInstructor.carPhotos.join('\n') : '' %></textarea>
+        <%- include("../partials/admin-image-upload", {
+          targetInputId: "instructorCarPhotos",
+          appendToList: true,
+          uploadHint: "Загрузить фото авто: ссылка добавится новой строкой."
+        }) %>
         <p class="form-hint">Только пути с сайта (/images/…) или полные https-ссылки. Пустые строки игнорируются.</p>
 
         <label class="check-label">

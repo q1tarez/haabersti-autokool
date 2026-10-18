@@ -104,6 +104,7 @@
             name="fullName"
             type="text"
             autocomplete="name"
+            value="<%= typeof formData !== 'undefined' ? formData.fullName || '' : '' %>"
             placeholder="<%= lang === 'ru' ? 'Иван Петров' : lang === 'en' ? 'John Smith' : 'Jaan Tamm' %>"
             required
           />
@@ -111,7 +112,7 @@
 
         <div class="cf-group">
           <label class="cf-label" for="email"><%= t("contactEmail") %></label>
-          <input class="cf-input" id="email" name="email" type="email" autocomplete="email" placeholder="name@example.com" />
+          <input class="cf-input" id="email" name="email" type="email" autocomplete="email" value="<%= typeof formData !== 'undefined' ? formData.email || '' : '' %>" placeholder="name@example.com" />
         </div>
 
         <div class="cf-group">
@@ -122,6 +123,7 @@
             name="phone"
             type="tel"
             autocomplete="tel"
+            value="<%= typeof formData !== 'undefined' ? formData.phone || '' : '' %>"
             placeholder="+372 5123 4567"
             required
           />

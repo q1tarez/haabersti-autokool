@@ -214,9 +214,21 @@ const ACCOUNT_COPY = {
     pendingPayment: "Ожидает оплаты",
     unknown: "Не указан",
     schedule: "Расписание занятий",
-    scheduleLater: "Точные даты и время уроков пока не ведутся в личном кабинете. Указанное при записи время — пожелание, а не подтверждённое расписание. Свяжитесь с инструктором или автошколой.",
     attendance: "Посещаемость и прогресс",
-    attendanceLater: "Информация о посещаемости появится здесь после запуска учёта уроков.",
+    lessonPlanned: "Запланирован",
+    lessonAttended: "Посещено",
+    lessonMissed: "Пропуск",
+    lessonCancelled: "Отменено",
+    lessonDuration: "Длительность",
+    minutes: "мин.",
+    lessonInstructor: "Инструктор",
+    lessonsEmpty: "Уроки пока не запланированы.",
+    progressSummary: "Посещено уроков",
+    progressEmpty: "Посещаемость появится после того, как инструктор отметит проведённый урок.",
+    notifications: "Уведомления",
+    notificationsEmpty: "Новых уведомлений нет.",
+    markRead: "Отметить прочитанным",
+    emailNotificationNote: "Если в автошколе настроена почта, копия изменений расписания также отправляется на email.",
     logout: "Выйти",
   },
   en: {
@@ -268,9 +280,21 @@ const ACCOUNT_COPY = {
     pendingPayment: "Payment pending",
     unknown: "Not specified",
     schedule: "Lesson schedule",
-    scheduleLater: "Exact lesson dates and times are not managed in the account yet. The time selected during registration is a preference, not a confirmed schedule. Please contact your instructor or the school.",
     attendance: "Attendance and progress",
-    attendanceLater: "Attendance information will appear here when lesson tracking is available.",
+    lessonPlanned: "Scheduled",
+    lessonAttended: "Attended",
+    lessonMissed: "Missed",
+    lessonCancelled: "Cancelled",
+    lessonDuration: "Duration",
+    minutes: "min.",
+    lessonInstructor: "Instructor",
+    lessonsEmpty: "No lessons have been scheduled yet.",
+    progressSummary: "Lessons attended",
+    progressEmpty: "Attendance progress will appear after your instructor marks a lesson as completed.",
+    notifications: "Notifications",
+    notificationsEmpty: "You have no new notifications.",
+    markRead: "Mark as read",
+    emailNotificationNote: "If the school has email configured, schedule updates are also sent to your email.",
     logout: "Sign out",
   },
   et: {
@@ -322,9 +346,21 @@ const ACCOUNT_COPY = {
     pendingPayment: "Makse ootel",
     unknown: "Määramata",
     schedule: "Tundide ajakava",
-    scheduleLater: "Tundide täpseid kuupäevi ja kellaaegu kontol veel ei hallata. Registreerimisel valitud aeg on soov, mitte kinnitatud tunniplaan. Palun võta ühendust õpetaja või kooliga.",
     attendance: "Osalemine ja edenemine",
-    attendanceLater: "Osalemise teave lisatakse siia, kui tundide arvestus käivitub.",
+    lessonPlanned: "Planeeritud",
+    lessonAttended: "Osaletud",
+    lessonMissed: "Puudutud",
+    lessonCancelled: "Tühistatud",
+    lessonDuration: "Kestus",
+    minutes: "min",
+    lessonInstructor: "Õpetaja",
+    lessonsEmpty: "Tunde pole veel planeeritud.",
+    progressSummary: "Osaletud tunnid",
+    progressEmpty: "Osalemise edenemine ilmub pärast seda, kui õpetaja märgib tunni toimunuks.",
+    notifications: "Teavitused",
+    notificationsEmpty: "Uusi teavitusi pole.",
+    markRead: "Märgi loetuks",
+    emailNotificationNote: "Kui autokooli e-post on seadistatud, saadetakse tunniplaani muudatused ka sinu e-postile.",
     logout: "Logi välja",
   },
 };
@@ -585,6 +621,29 @@ router.post("/account/logout", (_req, res) => {
   res.redirect(303, "/account/login");
 });
 
+router.post("/account/notifications/:id/read", async (req, res, next) => {
+  try {
+    const session = readStudentSession(req);
+    if (!session) {
+      res.redirect(303, "/account/login");
+      return;
+    }
+    const account = await getAsync("SELECT * FROM student_accounts WHERE id = ?", [session.id]);
+    if (!account || !account.verified_at) {
+      res.clearCookie("student_auth", { path: "/" });
+      res.redirect(303, "/account/login");
+      return;
+    }
+    await runAsync(
+      "UPDATE student_notifications SET read_at = ? WHERE id = ? AND email = ?",
+      [new Date().toISOString(), req.params.id, account.email.toLowerCase()]
+    );
+    res.redirect(303, "/account/dashboard");
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get("/account/dashboard", async (req, res, next) => {
   try {
     const session = readStudentSession(req);
@@ -605,7 +664,24 @@ router.get("/account/dashboard", async (req, res, next) => {
        ORDER BY created_at DESC`,
       [account.email]
     );
+    const lessons = rows.length
+      ? await allAsync(
+          `SELECT * FROM student_lessons
+           WHERE registration_id IN (${rows.map(() => "?").join(", ")})
+           ORDER BY starts_at ASC`,
+          rows.map((row) => row.id)
+        )
+      : [];
     const instructors = getInstructorsForLang(req.lang);
+    const scheduledLessons = lessons.map((lesson) => ({
+      ...lesson,
+      instructorName:
+        instructors.find((instructor) => instructor.id === lesson.instructor_id)?.name || "",
+    }));
+    const notifications = await allAsync(
+      "SELECT * FROM student_notifications WHERE email = ? ORDER BY created_at DESC",
+      [account.email.toLowerCase()]
+    );
     const courses = rows.map((row) => ({
       ...row,
       instructorName: instructors.find((instructor) => instructor.id === row.instructor_id)?.name || "",
@@ -614,6 +690,10 @@ router.get("/account/dashboard", async (req, res, next) => {
           row.comment || ""
         )?.[1]?.trim() || "",
     }));
+    const completedLessons = scheduledLessons.filter(
+        (lesson) => lesson.status === "attended" || lesson.status === "missed"
+    );
+    const attendedLessons = completedLessons.filter((lesson) => lesson.status === "attended").length;
     res.render("pages/account-dashboard", {
       title: accountCopy(req.lang).courses,
       currentPath: "/account",
@@ -622,6 +702,14 @@ router.get("/account/dashboard", async (req, res, next) => {
       email: account.email,
       username: account.username,
       courses,
+      lessons: scheduledLessons,
+      notifications,
+      smtpConfigured: hasSmtpConfig(),
+      attendedLessons,
+      completedLessons: completedLessons.length,
+      progressPercent: completedLessons.length
+        ? Math.round((attendedLessons / completedLessons.length) * 100)
+        : 0,
     });
   } catch (error) {
     next(error);
@@ -683,16 +771,23 @@ router.get("/contacts", (req, res) => {
 
 router.post("/contacts", async (req, res, next) => {
   try {
-    const { fullName, phone, message, email } = req.body;
-    if (!fullName || !phone) {
+    const validation = validate(contactSchema, {
+      fullName: typeof req.body.fullName === "string" ? req.body.fullName.trim() : req.body.fullName,
+      phone: typeof req.body.phone === "string" ? req.body.phone.trim() : req.body.phone,
+      message: typeof req.body.message === "string" ? req.body.message.trim() : req.body.message,
+      email: typeof req.body.email === "string" ? req.body.email.trim() : req.body.email,
+    });
+    if (!validation.success) {
       res.status(400).render("pages/contacts", {
         title: "Kontakt",
-        error: req.t("contactRequired"),
+        error: validation.errors[0],
         success: null,
+        formData: req.body,
       });
       return;
     }
 
+    const { fullName, phone, message, email } = validation.data;
     const emailTrim = String(email || "").trim();
     await runAsync(
       "INSERT INTO contacts (full_name, phone, message, email) VALUES (?, ?, ?, ?)",
@@ -800,6 +895,19 @@ router.post("/register", async (req, res, next) => {
       return;
     }
 
+    if (req.body.privacyAccepted !== "true") {
+      res.status(400).render(
+        "pages/register",
+        registerViewLocals(req, {
+          courses,
+          trainingOffers,
+          selectedCourseId: courseId || "",
+          error: req.t("registerRequired"),
+        })
+      );
+      return;
+    }
+
     let trainingOfferRowForNote = null;
     if (courseRequiresTrainingOffer(courseId)) {
       const tid = String(trainingOfferId || "").trim();
@@ -888,8 +996,8 @@ router.post("/register", async (req, res, next) => {
 
     const insertResult = await runAsync(
       `INSERT INTO course_registrations
-        (full_name, isikukood, phone, email, course_id, course_name, start_date, comment, instructor_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (full_name, isikukood, phone, email, course_id, course_name, start_date, comment, instructor_id, privacy_accepted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         fullName,
         isikukood,
@@ -900,6 +1008,7 @@ router.post("/register", async (req, res, next) => {
         "",
         registrationNote,
         instructorIdForDb,
+        new Date().toISOString(),
       ]
     );
     const registrationId = insertResult?.lastID;

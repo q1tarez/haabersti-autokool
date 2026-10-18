@@ -9,11 +9,16 @@ async function loadAdminRecord(session) {
     [session.id]
   );
   if (!row) return null;
+  const role = String(row.role || "").trim();
+  const instructorId = row.instructor_id ? String(row.instructor_id) : null;
+  if (!["director", "instructor"].includes(role) || (role === "instructor" && !instructorId)) {
+    return null;
+  }
   return {
     id: String(row.id),
     username: row.username,
-    role: String(row.role || "director").trim() || "director",
-    instructorId: row.instructor_id ? String(row.instructor_id) : null,
+    role,
+    instructorId,
     hasTotp: Boolean(String(row.totp_secret || "").trim()),
   };
 }

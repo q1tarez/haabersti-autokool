@@ -36,6 +36,7 @@ const contactSchema = z.object({
     .regex(/^[+\d\s()\-]{7,25}$/, "Invalid phone number format")
     .refine((val) => val.replace(/\D/g, "").length >= 7, "Phone must have at least 7 digits"),
   message: z.string().max(2000, "Message too long").optional(),
+  email: z.string().email("Invalid email address").max(200, "Email too long").or(z.literal("")).optional(),
 });
 
 /**

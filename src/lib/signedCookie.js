@@ -3,7 +3,16 @@ const crypto = require("crypto");
 const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function getSecret() {
-  return String(process.env.SESSION_SECRET || "dev-insecure-change-me").trim();
+  const configuredSecret = String(process.env.SESSION_SECRET || "").trim();
+  if (
+    process.env.NODE_ENV === "production" &&
+    (configuredSecret.length < 32 ||
+      configuredSecret === "change-me-to-a-long-random-string" ||
+      configuredSecret === "dev-insecure-change-me")
+  ) {
+    throw new Error("Set a unique SESSION_SECRET of at least 32 characters in production");
+  }
+  return configuredSecret || "dev-insecure-change-me";
 }
 
 function signAdminSession(adminId, username) {
@@ -50,17 +59,7 @@ function signStudentSession(studentId) {
 }
 
 function getStudentSecret() {
-  const secret = getSecret();
-  const configuredSecret = String(process.env.SESSION_SECRET || "").trim();
-  if (
-    process.env.NODE_ENV === "production" &&
-    (configuredSecret.length < 32 ||
-      configuredSecret === "change-me-to-a-long-random-string" ||
-      secret === "dev-insecure-change-me")
-  ) {
-    throw new Error("Set a unique SESSION_SECRET of at least 32 characters to use student accounts in production");
-  }
-  return secret;
+  return getSecret();
 }
 
 function verifyStudentSession(token) {

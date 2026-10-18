@@ -44,14 +44,66 @@
   <p class="card account-empty"><%= copy.noCourses %></p>
 <% } %>
 
+<section class="card account-notifications">
+  <h2><%= copy.notifications %></h2>
+  <% if (notifications.length) { %>
+    <ul>
+      <% notifications.forEach(function (notification) { %>
+        <li class="<%= notification.read_at ? 'is-read' : 'is-unread' %>">
+          <p><%= notification.message %></p>
+          <small><%= notification.created_at %></small>
+          <% if (!notification.read_at) { %>
+            <form method="post" action="/account/notifications/<%= notification.id %>/read">
+              <button type="submit" class="btn secondary"><%= copy.markRead %></button>
+            </form>
+          <% } %>
+        </li>
+      <% }); %>
+    </ul>
+  <% } else { %>
+    <p><%= copy.notificationsEmpty %></p>
+  <% } %>
+  <% if (smtpConfigured) { %>
+    <p class="account-email-note"><%= copy.emailNotificationNote %></p>
+  <% } %>
+</section>
+
 <section class="account-followup">
   <article class="card">
     <h2><%= copy.schedule %></h2>
-    <p><%= copy.scheduleLater %></p>
+    <% if (lessons.length) { %>
+      <ul class="account-lesson-list">
+        <% lessons.forEach(function (lesson) { %>
+          <li>
+            <div>
+              <strong><%= lesson.starts_at.replace("T", " ") %></strong>
+              <span><%= copy.lessonDuration %>: <%= lesson.duration_minutes %> <%= copy.minutes %></span>
+            </div>
+            <div>
+              <span><%= lesson.instructorName || copy.unknown %></span>
+              <span class="status-pill status-pill--<%= lesson.status === 'attended' ? 'closed' : lesson.status === 'planned' ? 'new' : 'contacted' %>">
+                <%= lesson.status === "attended" ? copy.lessonAttended : lesson.status === "missed" ? copy.lessonMissed : lesson.status === "cancelled" ? copy.lessonCancelled : copy.lessonPlanned %>
+              </span>
+            </div>
+            <% if (lesson.internal_note) { %>
+              <p><%= lesson.internal_note %></p>
+            <% } %>
+          </li>
+        <% }); %>
+      </ul>
+    <% } else { %>
+      <p><%= copy.lessonsEmpty %></p>
+    <% } %>
   </article>
   <article class="card">
     <h2><%= copy.attendance %></h2>
-    <p><%= copy.attendanceLater %></p>
+    <p><%= copy.progressSummary %>: <strong><%= attendedLessons %> / <%= completedLessons %></strong></p>
+    <div class="account-progress" role="progressbar" aria-valuenow="<%= progressPercent %>" aria-valuemin="0" aria-valuemax="100">
+      <span style="width: <%= progressPercent %>%"></span>
+    </div>
+    <% if (!completedLessons) { %>
+      <p><%= copy.progressEmpty %></p>
+    <% } %>
   </article>
 </section>
 

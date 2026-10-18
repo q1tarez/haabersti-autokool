@@ -21,7 +21,7 @@ const { uploadImageFromDisk } = require("../lib/blobUpload");
 const { logAudit } = require("../lib/auditLog");
 const { sendPaymentReminderMail } = require("../mail/paymentReminderMail");
 const { getSystemStatus } = require("../lib/systemStatus");
-const { hasSmtpConfig } = require("../mail/transport");
+const { hasSmtpConfig, sendMail } = require("../mail/transport");
 const { mergeInstructorImported } = require("../data/drivingInstructors");
 const { refreshInstructorsFromDatabase } = require("../data/instructorSync");
 const { formBodyToDrivingInstructor, stripIdForPayload, LOCATION_SLUGS } = require("../data/instructorAdminForm");
@@ -462,6 +462,268 @@ function buildStudentsQuery(query, admin) {
 async function getStudentRow(id) {
   return getAsync("SELECT * FROM course_registrations WHERE id = ?", [id]);
 }
+
+function buildStudentAccountsQuery(query) {
+  const search = String(query.search || "").trim();
+  const verification = ["verified", "pending"].includes(String(query.verification || ""))
+    ? String(query.verification)
+    : "";
+  const params = [];
+  let where = "WHERE 1=1";
+
+  if (search) {
+    where += " AND (LOWER(username) LIKE ? OR LOWER(email) LIKE ?)";
+    params.push(`%${search.toLowerCase()}%`, `%${search.toLowerCase()}%`);
+  }
+  if (verification === "verified") where += " AND verified_at IS NOT NULL";
+  if (verification === "pending") where += " AND verified_at IS NULL";
+
+  return { where, params, search, verification };
+}
+
+const LESSON_STATUSES = ["planned", "attended", "missed", "cancelled"];
+
+function parseLessonInput(body) {
+  const registrationId = Number(body.registration_id);
+  const startsAt = String(body.starts_at || "").trim();
+  const duration = Number(body.duration_minutes);
+  const status = String(body.status || "planned");
+  const dateMatch = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(startsAt);
+  if (
+    !Number.isInteger(registrationId) ||
+    registrationId < 1 ||
+    !dateMatch ||
+    Number(dateMatch[2]) < 1 ||
+    Number(dateMatch[2]) > 12 ||
+    Number(dateMatch[3]) < 1 ||
+    Number(dateMatch[3]) > 31 ||
+    Number(dateMatch[4]) > 23 ||
+    Number(dateMatch[5]) > 59 ||
+    new Date(`${startsAt}:00Z`).toISOString().slice(0, 16) !== startsAt ||
+    !Number.isInteger(duration) ||
+    duration < 15 ||
+    duration > 480 ||
+    !LESSON_STATUSES.includes(status)
+  ) {
+    return null;
+  }
+  return {
+    registrationId,
+    startsAt,
+    duration,
+    instructorId: String(body.instructor_id || "").trim() || null,
+    status,
+    internalNote: String(body.internal_note || "").trim().slice(0, 1000),
+  };
+}
+
+async function notifyStudentAboutLesson(registration, lesson, message) {
+  const email = String(registration.email || "").trim().toLowerCase();
+  if (!email) return true;
+
+  await runAsync(
+    `INSERT INTO student_notifications (email, message, lesson_id) VALUES (?, ?, ?)`,
+    [email, message, lesson.id]
+  );
+
+  if (!hasSmtpConfig()) return true;
+  try {
+    await sendMail({
+      to: email,
+      subject: "Обновление расписания — Haabersti Autokool",
+      text: message,
+    });
+    return true;
+  } catch (error) {
+    console.error("[lesson_notification_email]", error);
+    return false;
+  }
+}
+
+router.get("/lessons", requireAdmin, requireDirector, async (req, res, next) => {
+  try {
+    const [lessons, registrations, instructorRows] = await Promise.all([
+      allAsync("SELECT * FROM student_lessons ORDER BY starts_at ASC"),
+      allAsync("SELECT * FROM course_registrations ORDER BY created_at DESC"),
+      allAsync("SELECT id, sort_order, payload FROM instructors ORDER BY sort_order ASC, id ASC"),
+    ]);
+    const registrationById = new Map(registrations.map((row) => [String(row.id), row]));
+    const instructorOptions = summarizeInstructorsRows(instructorRows);
+    const instructorById = new Map(instructorOptions.map((row) => [String(row.id), row]));
+    const lessonRows = lessons.map((lesson) => ({
+      ...lesson,
+      student: registrationById.get(String(lesson.registration_id)) || null,
+      instructorName: instructorById.get(String(lesson.instructor_id))?.name || "",
+    }));
+
+    res.render("admin/lessons", {
+      title: res.locals.adminLang === "et" ? "Sõidutunnid" : "Расписание уроков",
+      lessons: lessonRows,
+      registrations,
+      instructorOptions,
+      notice: String(req.query.notice || ""),
+      smtpConfigured: hasSmtpConfig(),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/lessons", requireAdmin, requireDirector, async (req, res, next) => {
+  try {
+    const input = parseLessonInput(req.body);
+    if (!input) {
+      res.status(400).send("Некорректные дата, продолжительность или ученик.");
+      return;
+    }
+    const registration = await getAsync("SELECT * FROM course_registrations WHERE id = ?", [
+      input.registrationId,
+    ]);
+    if (!registration) {
+      res.status(404).send("Регистрация ученика не найдена.");
+      return;
+    }
+    if (
+      input.instructorId &&
+      !(await getAsync("SELECT id FROM instructors WHERE id = ?", [input.instructorId]))
+    ) {
+      res.status(400).send("Инструктор не найден.");
+      return;
+    }
+    const result = await runAsync(
+      `INSERT INTO student_lessons
+       (registration_id, starts_at, duration_minutes, instructor_id, status, internal_note)
+       VALUES (?, ?, ?, ?, ?, ?)
+       RETURNING id`,
+      [
+        input.registrationId,
+        input.startsAt,
+        input.duration,
+        input.instructorId,
+        input.status,
+        input.internalNote,
+      ]
+    );
+    const lesson = { id: result.lastID };
+    const message = `Запланировано занятие: ${registration.course_name}, ${input.startsAt.replace("T", " ")} (${input.duration} мин.).`;
+    const emailSent = await notifyStudentAboutLesson(registration, lesson, message);
+    await logAudit(req, {
+      action: "create_lesson",
+      entityType: "lesson",
+      entityId: result.lastID,
+      details: { registrationId: input.registrationId, startsAt: input.startsAt },
+    });
+    res.redirect(303, `/admin/lessons?notice=${emailSent ? "created" : "email_failed"}`);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/lessons/:id/update", requireAdmin, requireDirector, async (req, res, next) => {
+  try {
+    const input = parseLessonInput(req.body);
+    if (!input) {
+      res.status(400).send("Некорректные дата, продолжительность или ученик.");
+      return;
+    }
+    const lesson = await getAsync("SELECT * FROM student_lessons WHERE id = ?", [req.params.id]);
+    if (!lesson) {
+      res.status(404).send("Занятие не найдено.");
+      return;
+    }
+    if (Number(lesson.registration_id) !== input.registrationId) {
+      res.status(400).send("Нельзя переназначить занятие другой регистрации.");
+      return;
+    }
+    const registration = await getAsync("SELECT * FROM course_registrations WHERE id = ?", [
+      input.registrationId,
+    ]);
+    if (!registration) {
+      res.status(404).send("Регистрация ученика не найдена.");
+      return;
+    }
+    if (
+      input.instructorId &&
+      !(await getAsync("SELECT id FROM instructors WHERE id = ?", [input.instructorId]))
+    ) {
+      res.status(400).send("Инструктор не найден.");
+      return;
+    }
+    await runAsync(
+      `UPDATE student_lessons
+       SET starts_at = ?, duration_minutes = ?, instructor_id = ?, status = ?, internal_note = ?, updated_at = ?
+       WHERE id = ?`,
+      [
+        input.startsAt,
+        input.duration,
+        input.instructorId,
+        input.status,
+        input.internalNote,
+        new Date().toISOString(),
+        req.params.id,
+      ]
+    );
+    const message = `Расписание изменено: ${registration.course_name}, ${input.startsAt.replace("T", " ")} (${input.duration} мин.). Статус: ${input.status}.`;
+    const emailSent = await notifyStudentAboutLesson(registration, lesson, message);
+    await logAudit(req, {
+      action: "update_lesson",
+      entityType: "lesson",
+      entityId: req.params.id,
+      details: { startsAt: input.startsAt, status: input.status },
+    });
+    res.redirect(303, `/admin/lessons?notice=${emailSent ? "updated" : "email_failed"}`);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/student-accounts", requireAdmin, requireDirector, async (req, res, next) => {
+  try {
+    const q = buildStudentAccountsQuery(req.query);
+    const accounts = await allAsync(
+      `SELECT id, email, username, verified_at, created_at
+       FROM student_accounts ${q.where} ORDER BY created_at DESC`,
+      q.params
+    );
+    res.render("admin/student-accounts", {
+      title: res.locals.adminLang === "et" ? "Õpilaste kontod" : "Аккаунты учеников",
+      accounts,
+      search: q.search,
+      verification: q.verification,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/student-accounts/export.csv", requireAdmin, requireDirector, async (req, res, next) => {
+  try {
+    const q = buildStudentAccountsQuery(req.query);
+    const accounts = await allAsync(
+      `SELECT id, email, username, verified_at, created_at
+       FROM student_accounts ${q.where} ORDER BY created_at DESC`,
+      q.params
+    );
+    const escape = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const header = "id,username,email,verification_status,created_at\n";
+    const rows = accounts.map((account) =>
+      [
+        account.id,
+        account.username,
+        account.email,
+        account.verified_at ? "verified" : "pending",
+        account.created_at,
+      ]
+        .map(escape)
+        .join(",")
+    );
+    res.type("text/csv; charset=utf-8");
+    res.attachment("student-accounts.csv");
+    res.send(`\uFEFF${header}${rows.join("\n")}`);
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.get("/students", requireAdmin, async (req, res, next) => {
   try {

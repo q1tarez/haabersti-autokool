@@ -1,0 +1,111 @@
+<%- include("../partials/admin-header", { title }) %>
+
+<header class="admin-page-header">
+  <h1><%= title %></h1>
+  <p class="section-lead">Добавляйте уроки, назначайте инструктора и отмечайте посещаемость. Ученики увидят расписание в личном кабинете.</p>
+  <% if (notice === "created") { %>
+    <p class="admin-flash admin-flash--ok">Урок добавлен, уведомление появилось в кабинете ученика.</p>
+  <% } else if (notice === "updated") { %>
+    <p class="admin-flash admin-flash--ok">Урок обновлён, ученик получил уведомление в кабинете.</p>
+  <% } else if (notice === "email_failed") { %>
+    <p class="admin-flash admin-flash--warn">Изменение сохранено и уведомление добавлено в кабинет, но email отправить не удалось. Проверьте настройки SMTP.</p>
+  <% } %>
+</header>
+
+<section class="card admin-editor-card admin-lesson-create">
+  <h2>Добавить занятие</h2>
+  <form class="form admin-editor-grid admin-editor-grid--three" method="POST" action="/admin/lessons">
+    <label>Ученик и курс *
+      <select name="registration_id" required>
+        <option value="">— выберите ученика —</option>
+        <% registrations.forEach((student) => { %>
+          <option value="<%= student.id %>"><%= student.full_name %> — <%= student.course_name %> (<%= student.email %>)</option>
+        <% }) %>
+      </select>
+    </label>
+    <label>Дата и время (Таллин) *
+      <input type="datetime-local" name="starts_at" required />
+    </label>
+    <label>Длительность, мин *
+      <input type="number" name="duration_minutes" min="15" max="480" step="15" value="45" required />
+    </label>
+    <label>Инструктор
+      <select name="instructor_id">
+        <option value="">Не назначен</option>
+        <% instructorOptions.forEach((instructor) => { %>
+          <option value="<%= instructor.id %>"><%= instructor.name %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label>Заметка для ученика
+      <input type="text" name="internal_note" maxlength="1000" placeholder="Место встречи или информация к уроку" />
+    </label>
+    <div class="admin-lesson-submit">
+      <button class="btn" type="submit" <%= registrations.length ? "" : "disabled" %>>Добавить урок</button>
+    </div>
+  </form>
+  <% if (!registrations.length) { %>
+    <p class="admin-editor-hint">Сначала добавьте ученика через раздел «Ученики».</p>
+  <% } %>
+  <% if (smtpConfigured) { %>
+    <p class="admin-editor-hint">При изменении расписания уведомление появится в личном кабинете и будет отправлено по email.</p>
+  <% } else { %>
+    <p class="admin-editor-hint">Уведомление появится в личном кабинете. Отправка email включится после настройки SMTP.</p>
+  <% } %>
+</section>
+
+<section class="admin-lesson-list" aria-label="Занятия">
+  <% lessons.forEach((lesson) => { %>
+    <article class="card admin-lesson-card">
+      <div class="admin-lesson-heading">
+        <div>
+          <h2><%= lesson.student ? lesson.student.full_name : "Ученик не найден" %></h2>
+          <% if (lesson.student) { %>
+            <p><%= lesson.student.course_name %> · <%= lesson.student.email %></p>
+          <% } %>
+        </div>
+        <span class="status-pill status-pill--<%= lesson.status === 'attended' ? 'closed' : lesson.status === 'planned' ? 'new' : 'contacted' %>">
+          <%= lesson.status === "attended" ? "Посещено" : lesson.status === "missed" ? "Пропуск" : lesson.status === "cancelled" ? "Отменено" : "Запланировано" %>
+        </span>
+      </div>
+      <form class="form admin-lesson-form" method="POST" action="/admin/lessons/<%= lesson.id %>/update">
+        <input type="hidden" name="registration_id" value="<%= lesson.registration_id %>" />
+        <div class="admin-editor-grid admin-editor-grid--three">
+          <label>Дата и время (Таллин) *
+            <input type="datetime-local" name="starts_at" value="<%= lesson.starts_at %>" required />
+          </label>
+          <label>Длительность, мин *
+            <input type="number" name="duration_minutes" min="15" max="480" step="15" value="<%= lesson.duration_minutes %>" required />
+          </label>
+          <label>Инструктор
+            <select name="instructor_id">
+              <option value="">Не назначен</option>
+              <% instructorOptions.forEach((instructor) => { %>
+                <option value="<%= instructor.id %>" <%= String(lesson.instructor_id || "") === String(instructor.id) ? "selected" : "" %>><%= instructor.name %></option>
+              <% }) %>
+            </select>
+          </label>
+          <label>Посещаемость
+            <select name="status">
+              <option value="planned" <%= lesson.status === "planned" ? "selected" : "" %>>Запланировано</option>
+              <option value="attended" <%= lesson.status === "attended" ? "selected" : "" %>>Посещено</option>
+              <option value="missed" <%= lesson.status === "missed" ? "selected" : "" %>>Пропуск</option>
+              <option value="cancelled" <%= lesson.status === "cancelled" ? "selected" : "" %>>Отменено</option>
+            </select>
+          </label>
+          <label>Заметка для ученика
+            <input type="text" name="internal_note" maxlength="1000" value="<%= lesson.internal_note || '' %>" />
+          </label>
+          <div class="admin-lesson-submit">
+            <button class="btn secondary" type="submit">Сохранить изменения</button>
+          </div>
+        </div>
+      </form>
+    </article>
+  <% }) %>
+  <% if (!lessons.length) { %>
+    <p class="card admin-lesson-empty">Занятий пока нет. Добавьте первое занятие выше.</p>
+  <% } %>
+</section>
+
+<%- include("../partials/admin-footer") %>

@@ -1,0 +1,58 @@
+<%- include("../partials/admin-header", { title }) %>
+
+<header class="admin-page-header">
+  <h1><%= title %></h1>
+  <p class="section-lead">
+    Здесь отображаются аккаунты, созданные через личный кабинет. Это отдельный список от заявок на курсы в разделе «Ученики».
+  </p>
+</header>
+
+<form class="card filter-bar" method="GET" action="/admin/student-accounts">
+  <input type="search" name="search" placeholder="Поиск по имени пользователя или email" value="<%= search %>" />
+  <select name="verification" aria-label="Статус подтверждения email">
+    <option value="">Все аккаунты</option>
+    <option value="verified" <%= verification === "verified" ? "selected" : "" %>>Email подтверждён</option>
+    <option value="pending" <%= verification === "pending" ? "selected" : "" %>>Email не подтверждён</option>
+  </select>
+  <button class="btn" type="submit">Найти</button>
+  <a
+    class="btn secondary"
+    href="/admin/student-accounts/export.csv?search=<%= encodeURIComponent(search || '') %>&verification=<%= encodeURIComponent(verification || '') %>"
+  >Скачать CSV</a>
+</form>
+
+<div class="card table-wrap admin-table-card">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Имя пользователя</th>
+        <th>Email</th>
+        <th>Подтверждение</th>
+        <th>Дата создания</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% accounts.forEach((account) => { %>
+        <tr>
+          <td data-label="ID"><%= account.id %></td>
+          <td data-label="Имя пользователя"><strong><%= account.username || "—" %></strong></td>
+          <td data-label="Email"><%= account.email %></td>
+          <td data-label="Подтверждение">
+            <span class="status-pill status-pill--<%= account.verified_at ? 'closed' : 'new' %>">
+              <%= account.verified_at ? "Подтверждён" : "Ожидает подтверждения" %>
+            </span>
+          </td>
+          <td data-label="Дата создания"><%= account.created_at || "—" %></td>
+        </tr>
+      <% }) %>
+      <% if (!accounts.length) { %>
+        <tr>
+          <td colspan="5">Аккаунты не найдены. Проверьте фильтр или дождитесь регистрации ученика.</td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<%- include("../partials/admin-footer") %>
