@@ -1,0 +1,99 @@
+<%- include("../partials/admin-header", { title }) %>
+
+<header class="admin-page-header admin-page-header--row">
+  <div>
+    <h1><%= student.full_name %></h1>
+    <p class="section-lead"><%= student.course_name %> · #<%= student.id %></p>
+  </div>
+  <a class="btn secondary" href="/admin/students">К списку учеников</a>
+</header>
+
+<section class="admin-profile-grid">
+  <article class="card admin-profile-card">
+    <h2>Контактные данные</h2>
+    <dl class="admin-profile-details">
+      <div><dt>Телефон</dt><dd><a href="tel:<%= student.phone %>"><%= student.phone %></a></dd></div>
+      <div><dt>Email</dt><dd><a href="mailto:<%= student.email %>"><%= student.email %></a></dd></div>
+      <div><dt>Личный код</dt><dd><%= student.isikukood || "—" %></dd></div>
+      <div><dt>Дата заявки</dt><dd><%= formatEtDateTime(student.created_at) %></dd></div>
+      <div><dt>Курс</dt><dd><%= student.course_name %></dd></div>
+      <div><dt>Предпочтительное время</dt><dd><%= student.start_date || "Не указано" %></dd></div>
+    </dl>
+    <% if (student.comment) { %><h3>Комментарий к заявке</h3><p class="admin-profile-text"><%= student.comment %></p><% } %>
+  </article>
+
+  <article class="card admin-profile-card">
+    <h2>Заявка</h2>
+    <div class="admin-profile-actions">
+      <form method="POST" action="/admin/students/<%= student.id %>/status">
+        <input type="hidden" name="returnTo" value="profile" />
+        <label>Статус
+          <select name="status">
+            <option value="new" <%= student.status === "new" ? "selected" : "" %>>Новая</option>
+            <option value="contacted" <%= student.status === "contacted" ? "selected" : "" %>>Связались</option>
+            <option value="closed" <%= student.status === "closed" ? "selected" : "" %>>Закрыта</option>
+          </select>
+        </label>
+        <button class="btn secondary" type="submit">Сохранить статус</button>
+      </form>
+      <form method="POST" action="/admin/students/<%= student.id %>/payment">
+        <input type="hidden" name="returnTo" value="profile" />
+        <label>Оплата
+          <select name="payment_status">
+            <option value="unpaid" <%= student.payment_status !== "paid" ? "selected" : "" %>>Не оплачено</option>
+            <option value="paid" <%= student.payment_status === "paid" ? "selected" : "" %>>Оплачено</option>
+          </select>
+        </label>
+        <button class="btn secondary" type="submit">Сохранить оплату</button>
+      </form>
+      <form method="POST" action="/admin/students/<%= student.id %>/instructor">
+        <input type="hidden" name="returnTo" value="profile" />
+        <label>Инструктор
+          <select name="instructor_id">
+            <option value="">Не назначен</option>
+            <% instructors.forEach((instructor) => { %>
+              <option value="<%= instructor.id %>" <%= String(student.instructor_id || "") === String(instructor.id) ? "selected" : "" %>><%= instructor.name %></option>
+            <% }) %>
+          </select>
+        </label>
+        <button class="btn secondary" type="submit">Назначить</button>
+      </form>
+      <form method="POST" action="/admin/students/<%= student.id %>/note">
+        <input type="hidden" name="returnTo" value="profile" />
+        <label>Внутренняя заметка
+          <textarea name="internal_note" rows="4" maxlength="1000"><%= student.internal_note || "" %></textarea>
+        </label>
+        <button class="btn secondary" type="submit">Сохранить заметку</button>
+      </form>
+    </div>
+  </article>
+</section>
+
+<section class="card admin-profile-card admin-profile-lessons">
+  <div class="admin-page-header--row">
+    <h2>Уроки</h2>
+    <a class="btn secondary" href="/admin/lessons">Открыть расписание</a>
+  </div>
+  <% if (lessons.length) { %>
+    <div class="table-wrap">
+      <table class="admin-table">
+        <thead><tr><th>Дата и время</th><th>Длительность</th><th>Инструктор</th><th>Статус</th><th>Заметка ученику</th></tr></thead>
+        <tbody>
+          <% lessons.forEach((lesson) => { %>
+            <tr>
+              <td><a href="/admin/lessons#lesson-<%= lesson.id %>"><%= formatEtDateTime(lesson.starts_at) %></a></td>
+              <td><%= lesson.duration_minutes %> мин.</td>
+              <td><%= lesson.instructorName %></td>
+              <td><%= lesson.status %></td>
+              <td><%= lesson.internal_note || "—" %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } else { %>
+    <p class="admin-editor-hint">Занятий пока нет.</p>
+  <% } %>
+</section>
+
+<%- include("../partials/admin-footer") %>

@@ -9,12 +9,14 @@ async function initializeAdmins({ getAsync, runAsync }) {
   const validPassword = password.length >= 12 && Buffer.byteLength(password, "utf8") <= 72;
   await runAsync("CREATE TABLE IF NOT EXISTS security_migrations (id TEXT PRIMARY KEY, applied_at TEXT DEFAULT CURRENT_TIMESTAMP)");
 
-  // Bootstrap credentials only add a missing account; they never reset an existing password.
+  // Explicit environment credentials are the supported recovery and rotation mechanism.
   if (username && validPassword) {
     const existing = await getAsync("SELECT id FROM admins WHERE username = ?", [username]);
+    const hash = await bcrypt.hash(password, 12);
     if (!existing) {
-      const hash = await bcrypt.hash(password, 12);
       await runAsync("INSERT INTO admins (username, password_hash) VALUES (?, ?)", [username, hash]);
+    } else {
+      await runAsync("UPDATE admins SET password_hash = ? WHERE id = ?", [hash, existing.id]);
     }
   }
 

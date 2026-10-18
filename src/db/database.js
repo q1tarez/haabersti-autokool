@@ -614,15 +614,20 @@ async function initDatabase() {
     const username = String(process.env.ADMIN_USERNAME || "").trim();
     const password = String(process.env.ADMIN_PASSWORD || "");
     const validPassword = password.length >= 12 && Buffer.byteLength(password, "utf8") <= 72;
-    if (username && validPassword && !memory.admins.some((a) => a.username === username)) {
+    if (username && validPassword) {
       const passwordHash = await require("bcrypt").hash(password, 12);
-      memory.admins.push({
-        id: memory.admins.length + 1,
-        username,
-        password_hash: passwordHash,
-        role: "director",
-        created_at: new Date().toISOString(),
-      });
+      const existing = memory.admins.find((a) => a.username === username);
+      if (existing) {
+        existing.password_hash = passwordHash;
+      } else {
+        memory.admins.push({
+          id: memory.admins.length + 1,
+          username,
+          password_hash: passwordHash,
+          role: "director",
+          created_at: new Date().toISOString(),
+        });
+      }
     }
     if (memory.courses.length === 0) {
       memory.courses.push(

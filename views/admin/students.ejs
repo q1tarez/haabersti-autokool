@@ -55,7 +55,7 @@
         <% const st = item.status || "new"; %>
         <tr class="student-row student-row--<%= st %>">
           <td class="admin-col-date" data-label="Дата"><%= formatEtDateTime(item.created_at) %></td>
-          <td data-label="Ученик"><strong><%= item.full_name %></strong></td>
+          <td data-label="Ученик"><strong><a href="/admin/students/<%= item.id %>"><%= item.full_name %></a></strong></td>
           <td data-label="Контакты">
             IK: <%= item.isikukood || "-" %><br />
             <%= item.phone %><br />

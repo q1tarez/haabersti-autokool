@@ -40,6 +40,7 @@
   <div class="inst-dialog-sheet inst-dialog-sheet--form">
     <button type="button" class="inst-dialog-x" data-close-dialog aria-label="<%= t('modalCloseAria') %>">×</button>
     <h2 class="inst-dialog-title" id="registration-payment-title"><%= t("registrationPaymentTitle") %></h2>
+    <p class="section-lead"><%= lang === 'ru' ? 'Выбор способа оплаты — это пожелание в заявке. Школа отдельно подтвердит следующие шаги и реквизиты.' : lang === 'en' ? 'Your selection is a preference in the application. The school will confirm next steps and payment details separately.' : 'See on sinu eelistus registreerimisel. Kool kinnitab edasised sammud ja makseinfo eraldi.' %></p>
     <fieldset class="registration-payment-fieldset">
       <legend class="visually-hidden"><%= t("paymentMethod") %></legend>
       <label class="registration-payment-option">

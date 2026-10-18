@@ -12,6 +12,38 @@
   <% } %>
 </header>
 
+<section class="card admin-week-calendar" aria-labelledby="weekCalendarTitle">
+  <div class="admin-week-calendar-heading">
+    <div>
+      <h2 id="weekCalendarTitle"><%= adminLang === "et" ? "Nädala tunniplaan" : adminLang === "en" ? "Weekly schedule" : "Расписание на неделю" %></h2>
+      <p><%= weekStart %></p>
+    </div>
+    <nav class="admin-week-nav" aria-label="<%= adminLang === "et" ? "Kalendri nädal" : adminLang === "en" ? "Calendar week" : "Неделя календаря" %>">
+      <a class="btn secondary" href="/admin/lessons?week=<%= previousWeek %>">‹ <%= adminLang === "en" ? "Previous" : adminLang === "et" ? "Eelmine" : "Назад" %></a>
+      <a class="btn secondary" href="/admin/lessons"> <%= adminLang === "en" ? "This week" : adminLang === "et" ? "See nädal" : "Текущая неделя" %></a>
+      <a class="btn secondary" href="/admin/lessons?week=<%= nextWeek %>"><%= adminLang === "en" ? "Next" : adminLang === "et" ? "Järgmine" : "Вперёд" %> ›</a>
+    </nav>
+  </div>
+  <div class="admin-week-grid">
+    <% weekDays.forEach((day) => { %>
+      <section class="admin-week-day <%= day.date === weekStart ? 'admin-week-day--start' : '' %>">
+        <h3><%= day.label %></h3>
+        <% if (day.lessons.length) { %>
+          <% day.lessons.forEach((lesson) => { %>
+            <a class="admin-week-event" href="#lesson-<%= lesson.id %>">
+              <strong><%= String(lesson.starts_at).slice(11, 16) %> · <%= lesson.student?.full_name || "—" %></strong>
+              <span><%= lesson.student?.course_name || "" %></span>
+              <small><%= lesson.instructorName || (adminLang === "en" ? "No instructor" : adminLang === "et" ? "Õpetaja määramata" : "Инструктор не назначен") %></small>
+            </a>
+          <% }) %>
+        <% } else { %>
+          <p class="admin-week-empty"><%= adminLang === "en" ? "No lessons" : adminLang === "et" ? "Tunde pole" : "Нет занятий" %></p>
+        <% } %>
+      </section>
+    <% }) %>
+  </div>
+</section>
+
 <section class="card admin-editor-card admin-lesson-create">
   <h2>Добавить занятие</h2>
   <form class="form admin-editor-grid admin-editor-grid--three" method="POST" action="/admin/lessons">
@@ -56,7 +88,7 @@
 
 <section class="admin-lesson-list" aria-label="Занятия">
   <% lessons.forEach((lesson) => { %>
-    <article class="card admin-lesson-card">
+    <article class="card admin-lesson-card" id="lesson-<%= lesson.id %>">
       <div class="admin-lesson-heading">
         <div>
           <h2><%= lesson.student ? lesson.student.full_name : "Ученик не найден" %></h2>

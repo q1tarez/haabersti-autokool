@@ -463,6 +463,12 @@ async function getStudentRow(id) {
   return getAsync("SELECT * FROM course_registrations WHERE id = ?", [id]);
 }
 
+function studentFormRedirect(req, id) {
+  return req.body.returnTo === "profile"
+    ? `/admin/students/${encodeURIComponent(id)}`
+    : "/admin/students";
+}
+
 function buildStudentAccountsQuery(query) {
   const search = String(query.search || "").trim();
   const verification = ["verified", "pending"].includes(String(query.verification || ""))
@@ -517,6 +523,31 @@ function parseLessonInput(body) {
   };
 }
 
+function isoDate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function getWeekStart(value) {
+  let date;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) {
+    const [year, month, day] = value.split("-").map(Number);
+    date = new Date(Date.UTC(year, month - 1, day));
+    if (isoDate(date) !== value) date = null;
+  }
+  if (!date) {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Tallinn",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    date = new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day)));
+  }
+  date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
+  return date;
+}
+
 async function notifyStudentAboutLesson(registration, lesson, message) {
   const email = String(registration.email || "").trim().toLowerCase();
   if (!email) return true;
@@ -555,12 +586,38 @@ router.get("/lessons", requireAdmin, requireDirector, async (req, res, next) => 
       student: registrationById.get(String(lesson.registration_id)) || null,
       instructorName: instructorById.get(String(lesson.instructor_id))?.name || "",
     }));
+    const weekStartDate = getWeekStart(String(req.query.week || ""));
+    const weekStart = isoDate(weekStartDate);
+    const locale = res.locals.adminLang === "et" ? "et-EE" : res.locals.adminLang === "en" ? "en-GB" : "ru-RU";
+    const weekDays = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(weekStartDate);
+      date.setUTCDate(date.getUTCDate() + index);
+      const key = isoDate(date);
+      return {
+        date: key,
+        label: new Intl.DateTimeFormat(locale, {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+          timeZone: "UTC",
+        }).format(date),
+        lessons: lessonRows.filter((lesson) => String(lesson.starts_at || "").slice(0, 10) === key),
+      };
+    });
+    const previousWeek = new Date(weekStartDate);
+    previousWeek.setUTCDate(previousWeek.getUTCDate() - 7);
+    const nextWeek = new Date(weekStartDate);
+    nextWeek.setUTCDate(nextWeek.getUTCDate() + 7);
 
     res.render("admin/lessons", {
       title: res.locals.adminLang === "et" ? "Sõidutunnid" : "Расписание уроков",
       lessons: lessonRows,
       registrations,
       instructorOptions,
+      weekStart,
+      previousWeek: isoDate(previousWeek),
+      nextWeek: isoDate(nextWeek),
+      weekDays,
       notice: String(req.query.notice || ""),
       smtpConfigured: hasSmtpConfig(),
     });
@@ -790,6 +847,33 @@ router.get("/students/export.csv", requireAdmin, async (req, res, next) => {
   }
 });
 
+router.get("/students/:id", requireAdmin, async (req, res, next) => {
+  try {
+    const student = await getStudentRow(req.params.id);
+    if (!student || !canAccessStudent(req.admin, student)) {
+      res.status(404).send("Not found");
+      return;
+    }
+    const [lessons, instructorRows] = await Promise.all([
+      allAsync("SELECT * FROM student_lessons WHERE registration_id = ? ORDER BY starts_at ASC", [student.id]),
+      allAsync("SELECT id, sort_order, payload FROM instructors ORDER BY sort_order ASC, id ASC"),
+    ]);
+    const instructors = summarizeInstructorsRows(instructorRows);
+    const instructorById = new Map(instructors.map((instructor) => [String(instructor.id), instructor.name]));
+    res.render("admin/student-profile", {
+      title: student.full_name,
+      student,
+      lessons: lessons.map((lesson) => ({
+        ...lesson,
+        instructorName: instructorById.get(String(lesson.instructor_id)) || "—",
+      })),
+      instructors,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post("/students/:id/status", requireAdmin, async (req, res, next) => {
   try {
     const row = await getStudentRow(req.params.id);
@@ -801,7 +885,7 @@ router.post("/students/:id/status", requireAdmin, async (req, res, next) => {
     const st = allowedStatus.includes(String(req.body.status || "")) ? req.body.status : "new";
     await runAsync("UPDATE course_registrations SET status = ? WHERE id = ?", [st, req.params.id]);
     await logAudit(req, { action: "update_status", entityType: "student", entityId: req.params.id, details: { status: st } });
-    res.redirect(303, "/admin/students");
+    res.redirect(303, studentFormRedirect(req, req.params.id));
   } catch (error) {
     next(error);
   }
@@ -818,7 +902,7 @@ router.post("/students/:id/payment", requireAdmin, async (req, res, next) => {
     const pay = allowedPay.includes(String(req.body.payment_status || "")) ? req.body.payment_status : "unpaid";
     await runAsync("UPDATE course_registrations SET payment_status = ? WHERE id = ?", [pay, req.params.id]);
     await logAudit(req, { action: "update_payment", entityType: "student", entityId: req.params.id, details: { payment_status: pay } });
-    res.redirect(303, "/admin/students");
+    res.redirect(303, studentFormRedirect(req, req.params.id));
   } catch (error) {
     next(error);
   }
@@ -852,7 +936,7 @@ router.post("/students/:id/instructor", requireAdmin, async (req, res, next) => 
       entityId: req.params.id,
       details: { instructor_id: instructor ? instructor.id : null },
     });
-    res.redirect(303, "/admin/students");
+    res.redirect(303, studentFormRedirect(req, req.params.id));
   } catch (error) {
     next(error);
   }
@@ -1466,7 +1550,7 @@ router.post("/students/:id/note", requireAdmin, async (req, res, next) => {
       entityType: "student",
       entityId: req.params.id,
     });
-    res.redirect(303, "/admin/students");
+    res.redirect(303, studentFormRedirect(req, req.params.id));
   } catch (error) {
     next(error);
   }
