@@ -169,7 +169,7 @@ const ACCOUNT_COPY = {
     loginTitle: "Вход в личный кабинет",
     registerTitle: "Создать аккаунт ученика",
     loginLead: "Войдите, чтобы посмотреть свои курсы и данные об оплате.",
-    registerLead: "Используйте тот же email, который указали при записи на курс. После регистрации подтвердите адрес по ссылке из письма.",
+    registerLead: "Создайте аккаунт и подтвердите email по ссылке из письма. Курсы автоматически появятся в кабинете, если для записи на них указан тот же адрес.",
     email: "Email",
     password: "Пароль",
     confirmPassword: "Повторите пароль",
@@ -188,9 +188,8 @@ const ACCOUNT_COPY = {
     usernameExists: "Это имя пользователя уже занято. Выберите другое.",
     invalidPassword: "Пароль должен быть не короче 10 символов и не длиннее 72 байт.",
     passwordMismatch: "Пароли не совпадают.",
-    accountRequired: "Для этого email не найдена запись на курс. Используйте email из заявки или свяжитесь с автошколой.",
     emailNotConfigured: "Не настроена отправка почты для подтверждения аккаунта. Пожалуйста, свяжитесь с автошколой.",
-    verificationSent: "Если email указан в заявке на курс, на него отправлена ссылка для подтверждения. Если аккаунт уже создан, войдите.",
+    verificationSent: "На указанный адрес отправлена ссылка для подтверждения. Курсы появятся в кабинете, если при записи был указан этот же email.",
     loginFailed: "Неверный email или пароль.",
     accountExists: "Аккаунт уже создан. Войдите, используя email и пароль.",
     verifyTitle: "Подтвердить email",
@@ -209,7 +208,7 @@ const ACCOUNT_COPY = {
     instructor: "Инструктор",
     courseDate: "Дата начала курса",
     preferredTime: "Пожелание по времени уроков",
-    noCourses: "У вас пока нет курсов, связанных с этим email.",
+    noCourses: "К этому email пока не привязаны курсы. Вы можете записаться позже — для создания аккаунта курс не нужен.",
     paid: "Оплачено",
     unpaid: "Не оплачено",
     pendingPayment: "Ожидает оплаты",
@@ -224,7 +223,7 @@ const ACCOUNT_COPY = {
     loginTitle: "Student account sign in",
     registerTitle: "Create a student account",
     loginLead: "Sign in to view your courses and payment information.",
-    registerLead: "Use the same email address you used when registering for a course. Verify it using the link we email you.",
+    registerLead: "Create an account and verify your email using the link we send. Courses will appear automatically if you used the same email when registering.",
     email: "Email",
     password: "Password",
     confirmPassword: "Confirm password",
@@ -243,9 +242,8 @@ const ACCOUNT_COPY = {
     usernameExists: "That username is already taken. Please choose another.",
     invalidPassword: "Password must be at least 10 characters and no longer than 72 bytes.",
     passwordMismatch: "Passwords do not match.",
-    accountRequired: "No course registration was found for this email. Use the email from your registration or contact the school.",
     emailNotConfigured: "Account verification email is not configured. Please contact the school.",
-    verificationSent: "If this email is linked to a course registration, a verification link has been sent. If you already have an account, sign in.",
+    verificationSent: "A verification link has been sent to this address. Courses will appear in your account if you used the same email when registering.",
     loginFailed: "Invalid email or password.",
     accountExists: "An account already exists. Sign in using your email and password.",
     verifyTitle: "Verify your email",
@@ -264,7 +262,7 @@ const ACCOUNT_COPY = {
     instructor: "Instructor",
     courseDate: "Course start date",
     preferredTime: "Preferred lesson time",
-    noCourses: "There are no courses linked to this email yet.",
+    noCourses: "There are no courses linked to this email yet. You can register later; a course is not required to create an account.",
     paid: "Paid",
     unpaid: "Unpaid",
     pendingPayment: "Payment pending",
@@ -279,7 +277,7 @@ const ACCOUNT_COPY = {
     loginTitle: "Õpilase konto sisselogimine",
     registerTitle: "Loo õpilase konto",
     loginLead: "Logi sisse, et vaadata kursuseid ja makseteavet.",
-    registerLead: "Kasuta sama e-posti aadressi, mille märkisid kursusele registreerudes. Kinnita aadress e-kirjas oleva lingiga.",
+    registerLead: "Loo konto ja kinnita e-post lingiga, mille saadame. Kursused ilmuvad kontole automaatselt, kui kasutasid registreerumisel sama e-posti aadressi.",
     email: "E-post",
     password: "Parool",
     confirmPassword: "Korda parooli",
@@ -298,9 +296,8 @@ const ACCOUNT_COPY = {
     usernameExists: "See kasutajanimi on juba kasutusel. Vali teine.",
     invalidPassword: "Parool peab olema vähemalt 10 märki ja kuni 72 baiti pikk.",
     passwordMismatch: "Paroolid ei kattu.",
-    accountRequired: "Selle e-posti aadressiga kursuse registreeringut ei leitud. Kasuta registreerimisel antud aadressi või võta kooliga ühendust.",
     emailNotConfigured: "Konto kinnitamiseks mõeldud e-posti saatmine pole seadistatud. Võta kooliga ühendust.",
-    verificationSent: "Kui see e-post on kursuse registreeringuga seotud, saadeti sellele kinnituslink. Kui sul on konto juba olemas, logi sisse.",
+    verificationSent: "Sellele aadressile saadeti kinnituslink. Kursused ilmuvad kontole, kui kasutasid registreerumisel sama e-posti aadressi.",
     loginFailed: "Vale e-post või parool.",
     accountExists: "Konto on juba loodud. Logi sisse e-posti ja parooliga.",
     verifyTitle: "Kinnita e-post",
@@ -319,7 +316,7 @@ const ACCOUNT_COPY = {
     instructor: "Sõiduõpetaja",
     courseDate: "Kursuse alguskuupäev",
     preferredTime: "Eelistatud sõidutunni aeg",
-    noCourses: "Selle e-postiga seotud kursuseid veel ei ole.",
+    noCourses: "Selle e-posti aadressiga pole veel kursuseid seotud. Saad registreeruda hiljem — konto loomiseks pole kursust vaja.",
     paid: "Makstud",
     unpaid: "Maksmata",
     pendingPayment: "Makse ootel",
@@ -416,19 +413,6 @@ router.post("/account/register", async (req, res, next) => {
     if (!hasSmtpConfig()) {
       renderAccountAuth(req, res, "register", {
         error: accountCopy(req.lang).emailNotConfigured,
-        email,
-        username,
-      });
-      return;
-    }
-
-    const registrations = await allAsync(
-      "SELECT id FROM course_registrations WHERE LOWER(email) = ?",
-      [email]
-    );
-    if (registrations.length === 0) {
-      renderAccountAuth(req, res, "register", {
-        error: accountCopy(req.lang).accountRequired,
         email,
         username,
       });

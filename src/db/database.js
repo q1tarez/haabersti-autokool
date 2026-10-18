@@ -189,6 +189,7 @@ function runAsync(sql, params = []) {
         comment: params[7],
         status: "new",
         payment_status: "unpaid",
+        instructor_id: null,
         created_at: new Date().toISOString(),
       });
       return Promise.resolve({ lastID: memory.courseRegistrations.length });
@@ -232,6 +233,11 @@ function runAsync(sql, params = []) {
     if (query.startsWith("DELETE FROM COURSES")) {
       memory.courses = memory.courses.filter((c) => c.id !== params[0]);
       return Promise.resolve({ changes: 1 });
+    }
+    if (query.startsWith("UPDATE COURSE_REGISTRATIONS SET INSTRUCTOR_ID = ?")) {
+      const row = memory.courseRegistrations.find((s) => String(s.id) === String(params[1]));
+      if (row) row.instructor_id = params[0] || null;
+      return Promise.resolve({ changes: row ? 1 : 0 });
     }
     if (query.startsWith("UPDATE COURSE_REGISTRATIONS SET PAYMENT_STATUS = ?")) {
       const row = memory.courseRegistrations.find((s) => String(s.id) === String(params[1]));
@@ -335,6 +341,9 @@ function getAsync(sql, params = []) {
   }
   if (useMemoryDb) {
     const query = sql.trim().toUpperCase();
+    if (query.includes("FROM ADMINS WHERE ID = ?")) {
+      return Promise.resolve(memory.admins.find((admin) => String(admin.id) === String(params[0])));
+    }
     if (query.includes("FROM ADMINS WHERE USERNAME")) {
       const row = memory.admins.find((a) => a.username === params[0]);
       return Promise.resolve(row || undefined);
@@ -356,6 +365,9 @@ function getAsync(sql, params = []) {
     }
     if (query.startsWith("SELECT * FROM STUDENT_ACCOUNTS WHERE ID = ?")) {
       return Promise.resolve(memory.studentAccounts.find((row) => String(row.id) === String(params[0])));
+    }
+    if (query.startsWith("SELECT * FROM COURSE_REGISTRATIONS WHERE ID = ?")) {
+      return Promise.resolve(memory.courseRegistrations.find((row) => String(row.id) === String(params[0])));
     }
     if (query.includes("COUNT(*) AS COUNT FROM COURSES WHERE IS_ACTIVE = 1")) {
       return Promise.resolve({ count: memory.courses.filter((c) => c.is_active).length });

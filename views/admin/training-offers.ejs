@@ -11,36 +11,46 @@
   <p class="admin-notice"><%= notice %></p>
 <% } %>
 
-<div class="registration-layout admin-split-layout">
-    <div class="card">
+<div class="registration-layout admin-split-layout admin-management-layout">
+    <div class="card admin-editor-card">
       <h2><%= editingId ? "Изменить предложение" : "Добавить предложение" %></h2>
+      <p class="admin-editor-hint">Заполните параметры группы и карточки. Переводы раскрываются отдельно по языкам.</p>
       <form class="form instructor-admin-form" method="POST" action="<%= editingId ? `/admin/training-offers/${encodeURIComponent(editingId)}/update` : '/admin/training-offers' %>">
-        <% if (!editingId) { %>
+        <section class="admin-editor-section">
+          <h3>Основное</h3>
+          <% if (!editingId) { %>
           <label>ID (латиница, для URL)</label>
           <input type="text" name="manual_id" placeholder="например winter-manual-laitse" pattern="[a-z0-9\-]*" />
           <p class="form-hint">Если пусто — сгенерируется из курса и ключа варианта.</p>
-        <% } %>
+          <% } %>
 
-        <label>Тип курса *</label>
-        <select name="course_id" required>
-          <option value="">— выберите —</option>
-          <% trainingCourseOptions.forEach((opt) => { %>
-            <option value="<%= opt.id %>" <%= editingCourseId === opt.id ? "selected" : "" %>><%= opt.label %></option>
-          <% }) %>
-        </select>
+          <div class="admin-editor-grid admin-editor-grid--two">
+            <label>Тип курса *
+              <select name="course_id" required>
+                <option value="">— выберите —</option>
+                <% trainingCourseOptions.forEach((opt) => { %>
+                  <option value="<%= opt.id %>" <%= editingCourseId === opt.id ? "selected" : "" %>><%= opt.label %></option>
+                <% }) %>
+              </select>
+            </label>
+            <label>Ключ варианта
+              <input type="text" name="variant_key" value="<%= editingVariantKey || "" %>" placeholder="manual / automatic / simulator" />
+            </label>
+          </div>
 
-        <label>Ключ варианта (manual / automatic / simulator …)</label>
-        <input type="text" name="variant_key" value="<%= editingVariantKey || "" %>" placeholder="необязательно" />
+          <div class="admin-editor-grid admin-editor-grid--two">
+            <label>Порядок сортировки
+              <input type="number" name="sort_order" value="<%= typeof editingSortOrder === 'number' ? editingSortOrder : 0 %>" />
+            </label>
+            <label class="check-label">
+              <input type="checkbox" name="is_active" value="1" <%= editingActive !== false ? "checked" : "" %> />
+              <span>Активно на сайте</span>
+            </label>
+          </div>
+        </section>
 
-        <label>Порядок сортировки</label>
-        <input type="number" name="sort_order" value="<%= typeof editingSortOrder === 'number' ? editingSortOrder : 0 %>" />
-
-        <label class="check-label">
-          <input type="checkbox" name="is_active" value="1" <%= editingActive !== false ? "checked" : "" %> />
-          <span>Активно на сайте</span>
-        </label>
-
-        <h3 class="inst-admin-sub">Общие поля карточки</h3>
+        <section class="admin-editor-section">
+        <h3 class="inst-admin-sub">Параметры карточки</h3>
         <label>Картинка (путь от /images/…)</label>
         <input type="text" name="image" value="<%= editingOffer ? editingOffer.image : '' %>" placeholder="/images/training/winter-placeholder.svg" />
 
@@ -76,16 +86,21 @@
             <input type="number" name="seats" min="0" step="1" value="<%= editingOffer ? editingOffer.seats : '' %>" />
           </div>
           <div>
-            <label class="check-label" style="margin-top: 28px">
+            <label class="check-label">
               <input type="checkbox" name="transportIncluded" value="1" <%= editingOffer && editingOffer.transportIncluded ? "checked" : "" %> />
               <span>Транспорт включён (галочка на карточке)</span>
             </label>
           </div>
         </div>
 
+        </section>
+
+        <section class="admin-editor-section">
         <h3 class="inst-admin-sub">Тексты ET / RU / EN</h3>
         <% ["et", "ru", "en"].forEach(function (lng) { %>
-          <p class="lang-inline-label"><%= lng.toUpperCase() %></p>
+          <details class="admin-language-section" <%= lng === 'et' ? 'open' : '' %>>
+          <summary><%= lng.toUpperCase() %> <span>Перевод карточки</span></summary>
+          <div class="admin-language-fields">
           <label>Заголовок карточки <%= lng %></label>
           <input type="text" name="title_<%= lng %>" value="<%= editingOffer ? editingOffer['title_' + lng] : '' %>" />
 
@@ -106,9 +121,12 @@
 
           <label>HTML модалки «Доп. инфо» <%= lng %></label>
           <textarea name="modal_<%= lng %>" rows="4"><%= editingOffer ? editingOffer['modal_' + lng] : '' %></textarea>
+          </div>
+          </details>
         <% }); %>
+        </section>
 
-        <div class="hero-actions">
+        <div class="hero-actions admin-editor-actions">
           <button class="btn" type="submit"><%= editingId ? "Сохранить" : "Добавить" %></button>
           <% if (editingId) { %>
             <a class="btn secondary" href="/admin/training-offers">Отмена</a>
@@ -117,7 +135,7 @@
       </form>
     </div>
 
-    <div class="card">
+    <div class="card admin-list-card">
       <h2>Список</h2>
       <div class="table-wrap">
         <table class="admin-table">

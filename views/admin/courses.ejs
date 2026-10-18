@@ -5,45 +5,69 @@
   <p class="section-lead">Добавление, редактирование, скрытие и удаление курсов со всеми деталями.</p>
 </header>
 
-<div class="registration-layout admin-split-layout">
-    <div class="card">
+<div class="registration-layout admin-split-layout admin-management-layout">
+    <div class="card admin-editor-card">
       <h2><%= editingCourse ? "Редактировать курс" : "Добавить новый курс" %></h2>
+      <p class="admin-editor-hint">Сначала заполните основные данные, затем добавьте названия и описания на доступных языках.</p>
       <form class="form" method="POST" action="<%= editingCourse ? `/admin/courses/${editingCourse.id}/update` : '/admin/courses' %>">
-        <% if (!editingCourse) { %>
-          <label>ID курса (латиница, уникальный)</label>
-          <input name="id" type="text" placeholder="например: b-premium" />
-        <% } %>
+        <section class="admin-editor-section">
+          <h3>Основное</h3>
+          <% if (!editingCourse) { %>
+            <label>ID курса (латиница, уникальный)</label>
+            <input name="id" type="text" placeholder="например: b-premium" />
+          <% } %>
+          <div class="admin-editor-grid admin-editor-grid--three">
+            <label>Название (EST)
+              <input name="name_et" type="text" value="<%= editingCourse?.name_et || '' %>" required />
+            </label>
+            <label>Название (RU)
+              <input name="name_ru" type="text" value="<%= editingCourse?.name_ru || '' %>" required />
+            </label>
+            <label>Название (EN)
+              <input name="name_en" type="text" value="<%= editingCourse?.name_en || '' %>" required />
+            </label>
+          </div>
+        </section>
 
-        <label>Название (EST)</label>
-        <input name="name_et" type="text" value="<%= editingCourse?.name_et || '' %>" required />
-        <label>Название (RU)</label>
-        <input name="name_ru" type="text" value="<%= editingCourse?.name_ru || '' %>" required />
-        <label>Название (EN)</label>
-        <input name="name_en" type="text" value="<%= editingCourse?.name_en || '' %>" required />
+        <section class="admin-editor-section">
+          <h3>Описание на каждом языке</h3>
+          <div class="admin-editor-grid admin-editor-grid--three">
+            <label>Описание (EST)
+              <textarea name="description_et" rows="4"><%= editingCourse?.description_et || '' %></textarea>
+            </label>
+            <label>Описание (RU)
+              <textarea name="description_ru" rows="4"><%= editingCourse?.description_ru || '' %></textarea>
+            </label>
+            <label>Описание (EN)
+              <textarea name="description_en" rows="4"><%= editingCourse?.description_en || '' %></textarea>
+            </label>
+          </div>
+        </section>
 
-        <label>Описание (EST)</label>
-        <textarea name="description_et" rows="2"><%= editingCourse?.description_et || '' %></textarea>
-        <label>Описание (RU)</label>
-        <textarea name="description_ru" rows="2"><%= editingCourse?.description_ru || '' %></textarea>
-        <label>Описание (EN)</label>
-        <textarea name="description_en" rows="2"><%= editingCourse?.description_en || '' %></textarea>
+        <section class="admin-editor-section">
+          <h3>Стоимость и длительность</h3>
+          <label>Цена
+            <input name="price" type="text" value="<%= editingCourse?.price || '' %>" required placeholder="Например: 490 €" />
+          </label>
+          <div class="admin-editor-grid admin-editor-grid--three">
+            <label>Длительность (EST)
+              <input name="duration_et" type="text" value="<%= editingCourse?.duration_et || '' %>" />
+            </label>
+            <label>Длительность (RU)
+              <input name="duration_ru" type="text" value="<%= editingCourse?.duration_ru || '' %>" />
+            </label>
+            <label>Длительность (EN)
+              <input name="duration_en" type="text" value="<%= editingCourse?.duration_en || '' %>" />
+            </label>
+          </div>
+        </section>
 
-        <label>Цена</label>
-        <input name="price" type="text" value="<%= editingCourse?.price || '' %>" required />
-
-        <label>Длительность (EST)</label>
-        <input name="duration_et" type="text" value="<%= editingCourse?.duration_et || '' %>" />
-        <label>Длительность (RU)</label>
-        <input name="duration_ru" type="text" value="<%= editingCourse?.duration_ru || '' %>" />
-        <label>Длительность (EN)</label>
-        <input name="duration_en" type="text" value="<%= editingCourse?.duration_en || '' %>" />
-
-        <label class="check-label">
+        <label class="check-label admin-editor-active">
           <input type="checkbox" name="is_active" value="1" <%= !editingCourse || editingCourse.is_active ? "checked" : "" %> />
           <span>Показывать на сайте</span>
         </label>
 
-        <div class="hero-actions">
+        <div class="hero-actions admin-editor-actions">
           <button class="btn" type="submit"><%= editingCourse ? "Сохранить изменения" : "Добавить курс" %></button>
           <% if (editingCourse) { %>
             <a class="btn secondary" href="/admin/courses">Отмена</a>
@@ -52,7 +76,7 @@
       </form>
     </div>
 
-    <div class="card">
+    <div class="card admin-list-card">
       <h2>Список курсов</h2>
       <div class="table-wrap">
         <table class="admin-table">

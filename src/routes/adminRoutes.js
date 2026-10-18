@@ -466,11 +466,14 @@ async function getStudentRow(id) {
 router.get("/students", requireAdmin, async (req, res, next) => {
   try {
     const q = buildStudentsQuery(req.query, req.admin);
-    const students = await allAsync(
-      `SELECT * FROM course_registrations ${q.where} ORDER BY created_at DESC`,
-      q.params
-    );
-    const courseOptions = await allAsync("SELECT id, name_ru, name_et FROM courses ORDER BY name_ru");
+    const [students, courseOptions, instructorRows] = await Promise.all([
+      allAsync(
+        `SELECT * FROM course_registrations ${q.where} ORDER BY created_at DESC`,
+        q.params
+      ),
+      allAsync("SELECT id, name_ru, name_et FROM courses ORDER BY name_ru"),
+      allAsync("SELECT id, sort_order, payload FROM instructors ORDER BY sort_order ASC, id ASC"),
+    ]);
     res.render("admin/students", {
       title: "Админ - Ученики",
       students,
@@ -480,6 +483,7 @@ router.get("/students", requireAdmin, async (req, res, next) => {
       dateFrom: q.dateFrom,
       dateTo: q.dateTo,
       courseOptions,
+      instructorOptions: summarizeInstructorsRows(instructorRows),
       reminderFlash: req.query.reminder || "",
       smtpConfigured: hasSmtpConfig(),
     });
@@ -552,6 +556,40 @@ router.post("/students/:id/payment", requireAdmin, async (req, res, next) => {
     const pay = allowedPay.includes(String(req.body.payment_status || "")) ? req.body.payment_status : "unpaid";
     await runAsync("UPDATE course_registrations SET payment_status = ? WHERE id = ?", [pay, req.params.id]);
     await logAudit(req, { action: "update_payment", entityType: "student", entityId: req.params.id, details: { payment_status: pay } });
+    res.redirect(303, "/admin/students");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/students/:id/instructor", requireAdmin, async (req, res, next) => {
+  try {
+    const row = await getStudentRow(req.params.id);
+    if (!row || !canAccessStudent(req.admin, row)) {
+      res.status(404).send("Not found");
+      return;
+    }
+
+    const instructorId = String(req.body.instructor_id || "").trim();
+    let instructor = null;
+    if (instructorId) {
+      instructor = await getAsync("SELECT id FROM instructors WHERE id = ?", [instructorId]);
+      if (!instructor) {
+        res.status(400).send("Invalid instructor");
+        return;
+      }
+    }
+
+    await runAsync(
+      "UPDATE course_registrations SET instructor_id = ? WHERE id = ?",
+      [instructor ? instructor.id : null, req.params.id]
+    );
+    await logAudit(req, {
+      action: "assign_instructor",
+      entityType: "student",
+      entityId: req.params.id,
+      details: { instructor_id: instructor ? instructor.id : null },
+    });
     res.redirect(303, "/admin/students");
   } catch (error) {
     next(error);
