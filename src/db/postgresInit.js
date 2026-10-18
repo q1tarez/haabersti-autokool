@@ -44,6 +44,28 @@ async function runPostgresMigrations(db) {
   `);
 
   await runAsync(`
+    CREATE TABLE IF NOT EXISTS student_accounts (
+      id SERIAL PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      username TEXT,
+      password_hash TEXT NOT NULL,
+      verified_at TIMESTAMPTZ,
+      verification_token_hash TEXT,
+      verification_expires_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await runAsync(`ALTER TABLE student_accounts ADD COLUMN IF NOT EXISTS username TEXT`);
+  await runAsync(
+    `UPDATE student_accounts SET username = 'student' || id::TEXT
+     WHERE username IS NULL OR TRIM(username) = ''`
+  );
+  await runAsync(
+    `CREATE UNIQUE INDEX IF NOT EXISTS student_accounts_username_lower_idx
+     ON student_accounts (LOWER(username))`
+  );
+
+  await runAsync(`
     CREATE TABLE IF NOT EXISTS courses (
       id TEXT PRIMARY KEY,
       name_et TEXT NOT NULL,

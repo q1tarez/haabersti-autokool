@@ -14,18 +14,48 @@
       (function () {
         var btn = document.getElementById("adminNavToggle");
         var sidebar = document.getElementById("adminSidebar");
-        if (!btn || !sidebar) return;
+        var shell = document.getElementById("main-content");
+        var backdrop = document.getElementById("adminNavBackdrop");
+        if (!btn || !sidebar || !shell) return;
+
+        function setOpen(open, restoreFocus) {
+          sidebar.classList.toggle("admin-sidebar--open", open);
+          shell.classList.toggle("admin-shell--nav-open", open);
+          document.body.classList.toggle("admin-nav-open", open);
+          btn.setAttribute("aria-expanded", open ? "true" : "false");
+          btn.setAttribute("aria-label", open ? "Закрыть меню" : "Открыть меню");
+          if (open) {
+            var activeLink = sidebar.querySelector(".admin-nav a.is-active");
+            (activeLink || sidebar.querySelector(".admin-nav a"))?.focus();
+          } else if (restoreFocus) {
+            btn.focus();
+          }
+        }
 
         btn.addEventListener("click", function () {
-          var open = sidebar.classList.toggle("admin-sidebar--open");
-          btn.setAttribute("aria-expanded", open ? "true" : "false");
+          setOpen(!sidebar.classList.contains("admin-sidebar--open"), true);
+        });
+
+        backdrop?.addEventListener("click", function () {
+          setOpen(false, true);
         });
 
         document.addEventListener("click", function (e) {
           if (!sidebar.classList.contains("admin-sidebar--open")) return;
           if (sidebar.contains(e.target) || btn.contains(e.target)) return;
-          sidebar.classList.remove("admin-sidebar--open");
-          btn.setAttribute("aria-expanded", "false");
+          setOpen(false, false);
+        });
+
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && sidebar.classList.contains("admin-sidebar--open")) {
+            setOpen(false, true);
+          }
+        });
+
+        sidebar.querySelectorAll(".admin-nav a, .admin-logout button").forEach(function (item) {
+          item.addEventListener("click", function () {
+            if (window.matchMedia("(max-width: 960px)").matches) setOpen(false, false);
+          });
         });
       })();
     </script>

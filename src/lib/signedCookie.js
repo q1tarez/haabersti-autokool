@@ -42,6 +42,53 @@ function verifyAdminSession(token) {
   return { id: adminId, username, exp };
 }
 
+function signStudentSession(studentId) {
+  const exp = Date.now() + COOKIE_MAX_AGE_MS;
+  const payload = `student:${studentId}:${exp}`;
+  const sig = crypto.createHmac("sha256", getStudentSecret()).update(payload).digest("base64url");
+  return `${Buffer.from(payload, "utf8").toString("base64url")}.${sig}`;
+}
+
+function getStudentSecret() {
+  const secret = getSecret();
+  const configuredSecret = String(process.env.SESSION_SECRET || "").trim();
+  if (
+    process.env.NODE_ENV === "production" &&
+    (configuredSecret.length < 32 ||
+      configuredSecret === "change-me-to-a-long-random-string" ||
+      secret === "dev-insecure-change-me")
+  ) {
+    throw new Error("Set a unique SESSION_SECRET of at least 32 characters to use student accounts in production");
+  }
+  return secret;
+}
+
+function verifyStudentSession(token) {
+  if (!token || typeof token !== "string") return null;
+  const dot = token.lastIndexOf(".");
+  if (dot <= 0) return null;
+  const payloadB64 = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  let payload;
+  try {
+    payload = Buffer.from(payloadB64, "base64url").toString("utf8");
+  } catch {
+    return null;
+  }
+  const expected = crypto.createHmac("sha256", getStudentSecret()).update(payload).digest("base64url");
+  const sigBuf = Buffer.from(sig);
+  const expectedBuf = Buffer.from(expected);
+  if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+    return null;
+  }
+  const parts = payload.split(":");
+  if (parts.length !== 3 || parts[0] !== "student") return null;
+  const id = parts[1];
+  const exp = Number(parts[2]);
+  if (!id || !Number.isFinite(exp) || Date.now() > exp) return null;
+  return { id, exp };
+}
+
 const PENDING_2FA_MS = 10 * 60 * 1000;
 
 function signPending2fa(adminId) {
@@ -81,6 +128,8 @@ function verifyPending2fa(token) {
 module.exports = {
   signAdminSession,
   verifyAdminSession,
+  signStudentSession,
+  verifyStudentSession,
   signPending2fa,
   verifyPending2fa,
   COOKIE_MAX_AGE_MS,

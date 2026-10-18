@@ -1,0 +1,16 @@
+<%- include("../partials/header", { title, hideStickyCta: true, currentPath: '/account' }) %>
+
+<section class="card account-card">
+  <h1><%= copy.verifyTitle %></h1>
+  <% if (invalid) { %>
+    <p class="form-error" role="alert"><%= copy.verifyInvalid %></p>
+    <a class="btn" href="/account/register"><%= copy.signUp %></a>
+  <% } else { %>
+    <p class="section-lead"><%= copy.verifyLead %></p>
+    <form method="post" action="/account/verify/<%= token %>">
+      <button class="btn" type="submit"><%= copy.verifyAction %></button>
+    </form>
+  <% } %>
+</section>
+
+<%- include("../partials/footer") %>

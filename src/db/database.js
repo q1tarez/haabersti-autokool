@@ -25,6 +25,7 @@ const memory = {
   admins: [],
   contacts: [],
   courseRegistrations: [],
+  studentAccounts: [],
   courses: [],
   instructors: [],
   trainingOffers: [],
@@ -103,6 +104,66 @@ function runAsync(sql, params = []) {
     if (query.startsWith("INSERT INTO ADMINS")) {
       memory.admins.push({ id: memory.admins.length + 1, username: params[0], password_hash: params[1] });
       return Promise.resolve({ lastID: memory.admins.length });
+    }
+    if (query.startsWith("INSERT INTO STUDENT_ACCOUNTS")) {
+      const account = {
+        id: memory.studentAccounts.length + 1,
+        email: params[0],
+        username: params[1],
+        password_hash: params[2],
+        verified_at: null,
+        verification_token_hash: params[3],
+        verification_expires_at: params[4],
+        created_at: new Date().toISOString(),
+      };
+      if (memory.studentAccounts.some((row) => row.username.toLowerCase() === account.username.toLowerCase())) {
+        return Promise.reject(new Error("Student username already exists"));
+      }
+      if (memory.studentAccounts.some((row) => row.email.toLowerCase() === account.email.toLowerCase())) {
+        return Promise.reject(new Error("Student email already exists"));
+      }
+      memory.studentAccounts.push(account);
+      return Promise.resolve({ lastID: account.id });
+    }
+    if (query.startsWith("UPDATE STUDENT_ACCOUNTS SET USERNAME = ?")) {
+      const account = memory.studentAccounts.find((row) => row.id === Number(params[4]));
+      if (account) {
+        if (memory.studentAccounts.some((row) =>
+          row.id !== account.id && row.username.toLowerCase() === String(params[0]).toLowerCase()
+        )) {
+          return Promise.reject(new Error("Student username already exists"));
+        }
+        account.username = params[0];
+        account.password_hash = params[1];
+        account.verification_token_hash = params[2];
+        account.verification_expires_at = params[3];
+      }
+      return Promise.resolve({ changes: account ? 1 : 0 });
+    }
+    if (query.startsWith("UPDATE STUDENT_ACCOUNTS SET VERIFICATION_TOKEN_HASH = ?")) {
+      const account = memory.studentAccounts.find((row) => row.id === Number(params[2]));
+      if (account) {
+        account.verification_token_hash = params[0];
+        account.verification_expires_at = params[1];
+      }
+      return Promise.resolve({ changes: account ? 1 : 0 });
+    }
+    if (query.startsWith("UPDATE STUDENT_ACCOUNTS SET VERIFIED_AT")) {
+      const account = memory.studentAccounts.find((row) => row.verification_token_hash === params[2]);
+      if (account) {
+        account.verified_at = params[0];
+        account.verification_token_hash = null;
+        account.verification_expires_at = null;
+      }
+      return Promise.resolve({ changes: account ? 1 : 0 });
+    }
+    if (query.startsWith("UPDATE STUDENT_ACCOUNTS SET VERIFICATION_TOKEN_HASH = NULL")) {
+      const account = memory.studentAccounts.find((row) => row.verification_token_hash === params[0]);
+      if (account) {
+        account.verification_token_hash = null;
+        account.verification_expires_at = null;
+      }
+      return Promise.resolve({ changes: account ? 1 : 0 });
     }
     if (query.startsWith("INSERT INTO CONTACTS")) {
       memory.contacts.unshift({
@@ -278,6 +339,24 @@ function getAsync(sql, params = []) {
       const row = memory.admins.find((a) => a.username === params[0]);
       return Promise.resolve(row || undefined);
     }
+    if (query.startsWith("SELECT * FROM STUDENT_ACCOUNTS WHERE EMAIL = ?")) {
+      return Promise.resolve(memory.studentAccounts.find((row) => row.email === params[0]));
+    }
+    if (query.startsWith("SELECT ID FROM STUDENT_ACCOUNTS WHERE LOWER(USERNAME) = ?")) {
+      const row = memory.studentAccounts.find((account) => account.username.toLowerCase() === params[0]);
+      return Promise.resolve(row ? { id: row.id } : undefined);
+    }
+    if (query.startsWith("SELECT * FROM STUDENT_ACCOUNTS WHERE LOWER(EMAIL) = ? OR LOWER(USERNAME) = ?")) {
+      return Promise.resolve(memory.studentAccounts.find(
+        (account) => account.email === params[0] || account.username.toLowerCase() === params[1]
+      ));
+    }
+    if (query.startsWith("SELECT * FROM STUDENT_ACCOUNTS WHERE VERIFICATION_TOKEN_HASH = ?")) {
+      return Promise.resolve(memory.studentAccounts.find((row) => row.verification_token_hash === params[0]));
+    }
+    if (query.startsWith("SELECT * FROM STUDENT_ACCOUNTS WHERE ID = ?")) {
+      return Promise.resolve(memory.studentAccounts.find((row) => String(row.id) === String(params[0])));
+    }
     if (query.includes("COUNT(*) AS COUNT FROM COURSES WHERE IS_ACTIVE = 1")) {
       return Promise.resolve({ count: memory.courses.filter((c) => c.is_active).length });
     }
@@ -343,8 +422,11 @@ function allAsync(sql, params = []) {
       }
       return Promise.resolve(list);
     }
-    if (query.includes("SELECT * FROM COURSE_REGISTRATIONS")) {
+    if (query.includes("FROM COURSE_REGISTRATIONS")) {
       let rows = [...memory.courseRegistrations];
+      if (query.includes("LOWER(EMAIL) = ?")) {
+        rows = rows.filter((row) => String(row.email || "").trim().toLowerCase() === params[0]);
+      }
       if (query.includes("STATUS = ?")) {
         rows = rows.filter((r) => r.status === params[params.length - 1]);
       }
@@ -609,6 +691,29 @@ async function initDatabase() {
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  await runAsync(`
+    CREATE TABLE IF NOT EXISTS student_accounts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL UNIQUE,
+      username TEXT,
+      password_hash TEXT NOT NULL,
+      verified_at TEXT,
+      verification_token_hash TEXT,
+      verification_expires_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await runAsync(`ALTER TABLE student_accounts ADD COLUMN username TEXT`).catch(() => null);
+  await runAsync(
+    `UPDATE student_accounts SET username = 'student' || id
+     WHERE username IS NULL OR TRIM(username) = ''`
+  );
+  await runAsync(
+    `CREATE UNIQUE INDEX IF NOT EXISTS student_accounts_username_lower_idx
+     ON student_accounts (LOWER(username))`
+  );
 
   await runAsync(`
     CREATE TABLE IF NOT EXISTS audit_log (

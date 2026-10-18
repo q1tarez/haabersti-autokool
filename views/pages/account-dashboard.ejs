@@ -1,0 +1,58 @@
+<%- include("../partials/header", { title, hideStickyCta: true, currentPath: '/account' }) %>
+
+<section class="account-heading">
+  <div>
+    <h1><%= copy.courses %></h1>
+    <p class="section-lead"><%= username %> · <%= email %></p>
+  </div>
+  <form method="post" action="/account/logout">
+    <button type="submit" class="btn secondary"><%= copy.logout %></button>
+  </form>
+</section>
+
+<% if (courses.length) { %>
+  <section class="account-course-list" aria-label="<%= copy.courses %>">
+    <% courses.forEach(function (course) { %>
+      <article class="card account-course">
+        <h2><%= course.course_name %></h2>
+        <dl class="account-details">
+          <div>
+            <dt><%= copy.courseStatus %></dt>
+            <dd><%= course.status === "contacted" ? copy.statusContacted : course.status === "closed" ? copy.statusClosed : copy.statusNew %></dd>
+          </div>
+          <div>
+            <dt><%= copy.payment %></dt>
+            <dd><%= course.payment_status === "paid" ? copy.paid : course.payment_status === "unpaid" ? copy.unpaid : copy.pendingPayment %></dd>
+          </div>
+          <div>
+            <dt><%= copy.instructor %></dt>
+            <dd><%= course.instructorName || copy.unknown %></dd>
+          </div>
+          <div>
+            <dt><%= copy.courseDate %></dt>
+            <dd><%= course.start_date || copy.unknown %></dd>
+          </div>
+          <div>
+            <dt><%= copy.preferredTime %></dt>
+            <dd><%= course.preferredTime || copy.unknown %></dd>
+          </div>
+        </dl>
+      </article>
+    <% }); %>
+  </section>
+<% } else { %>
+  <p class="card account-empty"><%= copy.noCourses %></p>
+<% } %>
+
+<section class="account-followup">
+  <article class="card">
+    <h2><%= copy.schedule %></h2>
+    <p><%= copy.scheduleLater %></p>
+  </article>
+  <article class="card">
+    <h2><%= copy.attendance %></h2>
+    <p><%= copy.attendanceLater %></p>
+  </article>
+</section>
+
+<%- include("../partials/footer") %>

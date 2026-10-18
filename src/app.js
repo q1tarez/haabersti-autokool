@@ -121,9 +121,12 @@ app.use((req, res, next) => {
 
 // Attach rate limiters to routes
 app.use("/admin/login", loginLimiter);
+app.use("/account/login", loginLimiter);
 app.use("/contacts", formLimiter);
 app.use("/consultation", formLimiter);
 app.use("/register", formLimiter);
+app.use("/account/register", formLimiter);
+app.use("/account/verify", formLimiter);
 
 app.use("/api", apiRoutes);
 app.use("/", siteRoutes);

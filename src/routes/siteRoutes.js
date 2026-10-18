@@ -1,13 +1,17 @@
 const express = require("express");
+const crypto = require("crypto");
+const bcrypt = require("bcrypt");
 const { runAsync, allAsync, getAsync } = require("../db/database");
 const { courseRequiresInstructor, getInstructorsForLang, getInstructorById } = require("../data/drivingInstructors");
 const { courseRequiresTrainingOffer, mergeTrainingOfferRow } = require("../data/trainingOffers");
 const { sendBankTransferInstructionsMail } = require("../mail/bankTransferMail");
 const { notifyNewContact, notifyNewRegistration } = require("../mail/notifySchool");
 const { sendRegistrationReceivedMail } = require("../mail/registrationReceivedMail");
+const { sendMail, hasSmtpConfig } = require("../mail/transport");
 const { createMontonioPaymentUrl } = require("../lib/montonio");
 const { isOnlinePaymentEnabled } = require("../lib/onlinePayment");
 const { getTestimonialsForLang } = require("../lib/testimonials");
+const { signStudentSession, verifyStudentSession, COOKIE_MAX_AGE_MS } = require("../lib/signedCookie");
 const { courseForWhom } = require("../data/courseMeta");
 const { supportedLanguages, t } = require("../i18n");
 const { contactSchema, registrationSchema, validate } = require("../validation/schemas");
@@ -159,6 +163,486 @@ function siteBaseUrl(req) {
   if (process.env.VERCEL_URL) return `https://${String(process.env.VERCEL_URL).replace(/^https?:\/\//, "")}`;
   return `${req.protocol}://${req.get("host")}`;
 }
+
+const ACCOUNT_COPY = {
+  ru: {
+    loginTitle: "Вход в личный кабинет",
+    registerTitle: "Создать аккаунт ученика",
+    loginLead: "Войдите, чтобы посмотреть свои курсы и данные об оплате.",
+    registerLead: "Используйте тот же email, который указали при записи на курс. После регистрации подтвердите адрес по ссылке из письма.",
+    email: "Email",
+    password: "Пароль",
+    confirmPassword: "Повторите пароль",
+    login: "Войти",
+    register: "Создать аккаунт",
+    createAccount: "Создать аккаунт",
+    existingAccount: "Уже есть аккаунт?",
+    noAccount: "Нет аккаунта?",
+    signIn: "Войти",
+    signUp: "Зарегистрироваться",
+    username: "Имя пользователя",
+    loginIdentifier: "Имя пользователя или email",
+    usernameHelp: "3–30 символов: латинские буквы, цифры, точка, дефис или подчёркивание.",
+    invalidEmail: "Введите корректный email.",
+    invalidUsername: "Имя пользователя должно содержать 3–30 символов: латинские буквы, цифры, точку, дефис или подчёркивание.",
+    usernameExists: "Это имя пользователя уже занято. Выберите другое.",
+    invalidPassword: "Пароль должен быть не короче 10 символов и не длиннее 72 байт.",
+    passwordMismatch: "Пароли не совпадают.",
+    accountRequired: "Для этого email не найдена запись на курс. Используйте email из заявки или свяжитесь с автошколой.",
+    emailNotConfigured: "Не настроена отправка почты для подтверждения аккаунта. Пожалуйста, свяжитесь с автошколой.",
+    verificationSent: "Если email указан в заявке на курс, на него отправлена ссылка для подтверждения. Если аккаунт уже создан, войдите.",
+    loginFailed: "Неверный email или пароль.",
+    accountExists: "Аккаунт уже создан. Войдите, используя email и пароль.",
+    verifyTitle: "Подтвердить email",
+    verifyLead: "Нажмите кнопку, чтобы подтвердить адрес и включить личный кабинет.",
+    verifyAction: "Подтвердить email",
+    verifyEmailSubject: "Подтвердите email — Haabersti Autokool",
+    verifyEmailBody: "Подтвердите адрес электронной почты для личного кабинета.",
+    verifyInvalid: "Ссылка недействительна или срок её действия истёк. Начните регистрацию заново.",
+    verified: "Email подтверждён. Теперь можно войти.",
+    courses: "Мои курсы",
+    statusNew: "Новая",
+    statusContacted: "Связались",
+    statusClosed: "Закрыта",
+    courseStatus: "Статус заявки",
+    payment: "Оплата",
+    instructor: "Инструктор",
+    courseDate: "Дата начала курса",
+    preferredTime: "Пожелание по времени уроков",
+    noCourses: "У вас пока нет курсов, связанных с этим email.",
+    paid: "Оплачено",
+    unpaid: "Не оплачено",
+    pendingPayment: "Ожидает оплаты",
+    unknown: "Не указан",
+    schedule: "Расписание занятий",
+    scheduleLater: "Точные даты и время уроков пока не ведутся в личном кабинете. Указанное при записи время — пожелание, а не подтверждённое расписание. Свяжитесь с инструктором или автошколой.",
+    attendance: "Посещаемость и прогресс",
+    attendanceLater: "Информация о посещаемости появится здесь после запуска учёта уроков.",
+    logout: "Выйти",
+  },
+  en: {
+    loginTitle: "Student account sign in",
+    registerTitle: "Create a student account",
+    loginLead: "Sign in to view your courses and payment information.",
+    registerLead: "Use the same email address you used when registering for a course. Verify it using the link we email you.",
+    email: "Email",
+    password: "Password",
+    confirmPassword: "Confirm password",
+    login: "Sign in",
+    register: "Create account",
+    createAccount: "Create an account",
+    existingAccount: "Already have an account?",
+    noAccount: "New here?",
+    signIn: "Sign in",
+    signUp: "Create account",
+    username: "Username",
+    loginIdentifier: "Username or email",
+    usernameHelp: "3–30 characters: Latin letters, numbers, dot, hyphen, or underscore.",
+    invalidEmail: "Enter a valid email address.",
+    invalidUsername: "Username must be 3–30 characters: Latin letters, numbers, dot, hyphen, or underscore.",
+    usernameExists: "That username is already taken. Please choose another.",
+    invalidPassword: "Password must be at least 10 characters and no longer than 72 bytes.",
+    passwordMismatch: "Passwords do not match.",
+    accountRequired: "No course registration was found for this email. Use the email from your registration or contact the school.",
+    emailNotConfigured: "Account verification email is not configured. Please contact the school.",
+    verificationSent: "If this email is linked to a course registration, a verification link has been sent. If you already have an account, sign in.",
+    loginFailed: "Invalid email or password.",
+    accountExists: "An account already exists. Sign in using your email and password.",
+    verifyTitle: "Verify your email",
+    verifyLead: "Click below to confirm your email address and activate your student account.",
+    verifyAction: "Verify email",
+    verifyEmailSubject: "Verify your email — Haabersti Autokool",
+    verifyEmailBody: "Confirm your email address to activate your student account.",
+    verifyInvalid: "This link is invalid or expired. Please register again.",
+    verified: "Email verified. You can now sign in.",
+    courses: "My courses",
+    statusNew: "New",
+    statusContacted: "Contacted",
+    statusClosed: "Closed",
+    courseStatus: "Registration status",
+    payment: "Payment",
+    instructor: "Instructor",
+    courseDate: "Course start date",
+    preferredTime: "Preferred lesson time",
+    noCourses: "There are no courses linked to this email yet.",
+    paid: "Paid",
+    unpaid: "Unpaid",
+    pendingPayment: "Payment pending",
+    unknown: "Not specified",
+    schedule: "Lesson schedule",
+    scheduleLater: "Exact lesson dates and times are not managed in the account yet. The time selected during registration is a preference, not a confirmed schedule. Please contact your instructor or the school.",
+    attendance: "Attendance and progress",
+    attendanceLater: "Attendance information will appear here when lesson tracking is available.",
+    logout: "Sign out",
+  },
+  et: {
+    loginTitle: "Õpilase konto sisselogimine",
+    registerTitle: "Loo õpilase konto",
+    loginLead: "Logi sisse, et vaadata kursuseid ja makseteavet.",
+    registerLead: "Kasuta sama e-posti aadressi, mille märkisid kursusele registreerudes. Kinnita aadress e-kirjas oleva lingiga.",
+    email: "E-post",
+    password: "Parool",
+    confirmPassword: "Korda parooli",
+    login: "Logi sisse",
+    register: "Loo konto",
+    createAccount: "Loo konto",
+    existingAccount: "Konto on juba olemas?",
+    noAccount: "Uus kasutaja?",
+    signIn: "Logi sisse",
+    signUp: "Loo konto",
+    username: "Kasutajanimi",
+    loginIdentifier: "Kasutajanimi või e-post",
+    usernameHelp: "3–30 märki: ladina tähed, numbrid, punkt, sidekriips või alakriips.",
+    invalidEmail: "Sisesta korrektne e-posti aadress.",
+    invalidUsername: "Kasutajanimi peab olema 3–30 märki: ladina tähed, numbrid, punkt, sidekriips või alakriips.",
+    usernameExists: "See kasutajanimi on juba kasutusel. Vali teine.",
+    invalidPassword: "Parool peab olema vähemalt 10 märki ja kuni 72 baiti pikk.",
+    passwordMismatch: "Paroolid ei kattu.",
+    accountRequired: "Selle e-posti aadressiga kursuse registreeringut ei leitud. Kasuta registreerimisel antud aadressi või võta kooliga ühendust.",
+    emailNotConfigured: "Konto kinnitamiseks mõeldud e-posti saatmine pole seadistatud. Võta kooliga ühendust.",
+    verificationSent: "Kui see e-post on kursuse registreeringuga seotud, saadeti sellele kinnituslink. Kui sul on konto juba olemas, logi sisse.",
+    loginFailed: "Vale e-post või parool.",
+    accountExists: "Konto on juba loodud. Logi sisse e-posti ja parooliga.",
+    verifyTitle: "Kinnita e-post",
+    verifyLead: "Õpilaskonto aktiveerimiseks kinnita alloleva nupuga oma e-posti aadress.",
+    verifyAction: "Kinnita e-post",
+    verifyEmailSubject: "Kinnita e-post — Haabersti Autokool",
+    verifyEmailBody: "Õpilaskonto aktiveerimiseks kinnita oma e-posti aadress.",
+    verifyInvalid: "Link on kehtetu või aegunud. Palun alusta registreerimist uuesti.",
+    verified: "E-post on kinnitatud. Nüüd saad sisse logida.",
+    courses: "Minu kursused",
+    statusNew: "Uus",
+    statusContacted: "Ühendust võetud",
+    statusClosed: "Suletud",
+    courseStatus: "Registreeringu olek",
+    payment: "Makse",
+    instructor: "Sõiduõpetaja",
+    courseDate: "Kursuse alguskuupäev",
+    preferredTime: "Eelistatud sõidutunni aeg",
+    noCourses: "Selle e-postiga seotud kursuseid veel ei ole.",
+    paid: "Makstud",
+    unpaid: "Maksmata",
+    pendingPayment: "Makse ootel",
+    unknown: "Määramata",
+    schedule: "Tundide ajakava",
+    scheduleLater: "Tundide täpseid kuupäevi ja kellaaegu kontol veel ei hallata. Registreerimisel valitud aeg on soov, mitte kinnitatud tunniplaan. Palun võta ühendust õpetaja või kooliga.",
+    attendance: "Osalemine ja edenemine",
+    attendanceLater: "Osalemise teave lisatakse siia, kui tundide arvestus käivitub.",
+    logout: "Logi välja",
+  },
+};
+
+function accountCopy(lang) {
+  return ACCOUNT_COPY[lang] || ACCOUNT_COPY.et;
+}
+
+function renderAccountAuth(req, res, mode, options = {}) {
+  const copy = accountCopy(req.lang);
+  res.render("pages/account-auth", {
+    title: mode === "register" ? copy.registerTitle : copy.loginTitle,
+    currentPath: "/account",
+    hideStickyCta: true,
+    mode,
+    copy,
+    error: options.error || null,
+    notice: options.notice || null,
+    email: options.email || "",
+    username: options.username || "",
+    login: options.login || "",
+  });
+}
+
+function issueStudentSession(res, studentId) {
+  res.cookie("student_auth", signStudentSession(studentId), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: COOKIE_MAX_AGE_MS,
+    path: "/",
+  });
+}
+
+function readStudentSession(req) {
+  const token = req.cookies && req.cookies.student_auth;
+  return token ? verifyStudentSession(token) : null;
+}
+
+router.get("/account", (req, res) => {
+  res.redirect(303, readStudentSession(req) ? "/account/dashboard" : "/account/login");
+});
+
+router.get("/account/register", (req, res) => {
+  if (readStudentSession(req)) {
+    res.redirect(303, "/account/dashboard");
+    return;
+  }
+  renderAccountAuth(req, res, "register");
+});
+
+router.post("/account/register", async (req, res, next) => {
+  try {
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const username = String(req.body.username || "").trim().toLowerCase();
+    const password = String(req.body.password || "");
+    const confirmPassword = String(req.body.confirmPassword || "");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 200) {
+      renderAccountAuth(req, res, "register", { error: accountCopy(req.lang).invalidEmail, email });
+      return;
+    }
+    if (!/^[a-zA-Z0-9._-]{3,30}$/.test(username)) {
+      renderAccountAuth(req, res, "register", {
+        error: accountCopy(req.lang).invalidUsername,
+        email,
+        username,
+      });
+      return;
+    }
+    if (password.length < 10 || Buffer.byteLength(password, "utf8") > 72) {
+      renderAccountAuth(req, res, "register", {
+        error: accountCopy(req.lang).invalidPassword,
+        email,
+        username,
+      });
+      return;
+    }
+    if (password !== confirmPassword) {
+      renderAccountAuth(req, res, "register", {
+        error: accountCopy(req.lang).passwordMismatch,
+        email,
+        username,
+      });
+      return;
+    }
+    if (!hasSmtpConfig()) {
+      renderAccountAuth(req, res, "register", {
+        error: accountCopy(req.lang).emailNotConfigured,
+        email,
+        username,
+      });
+      return;
+    }
+
+    const registrations = await allAsync(
+      "SELECT id FROM course_registrations WHERE LOWER(email) = ?",
+      [email]
+    );
+    if (registrations.length === 0) {
+      renderAccountAuth(req, res, "register", {
+        error: accountCopy(req.lang).accountRequired,
+        email,
+        username,
+      });
+      return;
+    }
+
+    const existing = await getAsync("SELECT * FROM student_accounts WHERE email = ?", [email]);
+    const usernameOwner = await getAsync(
+      "SELECT id FROM student_accounts WHERE LOWER(username) = ?",
+      [username]
+    );
+    if (usernameOwner && (!existing || String(usernameOwner.id) !== String(existing.id))) {
+      renderAccountAuth(req, res, "register", {
+        error: accountCopy(req.lang).usernameExists,
+        email,
+        username,
+      });
+      return;
+    }
+    if (existing && existing.verified_at) {
+      renderAccountAuth(req, res, "login", {
+        notice: accountCopy(req.lang).accountExists,
+        email,
+        username,
+      });
+      return;
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const passwordHash = await bcrypt.hash(password, 12);
+    if (existing) {
+      await runAsync(
+        `UPDATE student_accounts
+         SET username = ?, password_hash = ?, verification_token_hash = ?, verification_expires_at = ?
+         WHERE id = ?`,
+        [username, passwordHash, tokenHash, expiresAt, existing.id]
+      );
+    } else {
+      await runAsync(
+        `INSERT INTO student_accounts
+         (email, username, password_hash, verification_token_hash, verification_expires_at)
+         VALUES (?, ?, ?, ?, ?)`,
+        [email, username, passwordHash, tokenHash, expiresAt]
+      );
+    }
+
+    const baseUrl = String(
+      process.env.PUBLIC_SITE_URL || process.env.SITE_URL || "https://haabersti-autokool.vercel.app"
+    ).trim().replace(/\/$/, "");
+    const verifyUrl = `${baseUrl}/account/verify/${token}`;
+    try {
+      await sendMail({
+        to: email,
+        subject: accountCopy(req.lang).verifyEmailSubject,
+        text: `${accountCopy(req.lang).verifyEmailBody} ${verifyUrl}\n${accountCopy(req.lang).verifyAction}`,
+        html: `<p>${accountCopy(req.lang).verifyEmailBody}</p><p><a href="${verifyUrl}">${accountCopy(req.lang).verifyAction}</a></p>`,
+      });
+    } catch (error) {
+      await runAsync(
+        `UPDATE student_accounts
+         SET verification_token_hash = NULL, verification_expires_at = NULL
+         WHERE verification_token_hash = ?`,
+        [tokenHash]
+      );
+      throw error;
+    }
+
+    renderAccountAuth(req, res, "login", {
+      notice: accountCopy(req.lang).verificationSent,
+      email,
+      username,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/account/login", (req, res) => {
+  if (readStudentSession(req)) {
+    res.redirect(303, "/account/dashboard");
+    return;
+  }
+  const notice = req.query.verified === "1" ? accountCopy(req.lang).verified : null;
+  renderAccountAuth(req, res, "login", { notice });
+});
+
+router.post("/account/login", async (req, res, next) => {
+  try {
+    const login = String(req.body.login || "").trim().toLowerCase();
+    const password = String(req.body.password || "");
+    const account =
+      login.length <= 200 && !/\s/.test(login)
+        ? await getAsync(
+            "SELECT * FROM student_accounts WHERE LOWER(email) = ? OR LOWER(username) = ?",
+            [login, login]
+          )
+        : null;
+    if (
+      !account ||
+      !account.verified_at ||
+      Buffer.byteLength(password, "utf8") > 72 ||
+      !(await bcrypt.compare(password, account.password_hash))
+    ) {
+      renderAccountAuth(req, res, "login", { error: accountCopy(req.lang).loginFailed, login });
+      return;
+    }
+    issueStudentSession(res, account.id);
+    res.redirect(303, "/account/dashboard");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/account/verify/:token", async (req, res, next) => {
+  try {
+    const token = String(req.params.token || "");
+    const tokenHash = /^[a-f0-9]{64}$/.test(token)
+      ? crypto.createHash("sha256").update(token).digest("hex")
+      : "";
+    const account = tokenHash
+      ? await getAsync("SELECT * FROM student_accounts WHERE verification_token_hash = ?", [tokenHash])
+      : null;
+    const valid = account && new Date(account.verification_expires_at).getTime() > Date.now();
+    res.render("pages/account-verify", {
+      title: accountCopy(req.lang).verifyTitle,
+      currentPath: "/account",
+      hideStickyCta: true,
+      copy: accountCopy(req.lang),
+      token: valid ? token : "",
+      invalid: !valid,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/account/verify/:token", async (req, res, next) => {
+  try {
+    const token = String(req.params.token || "");
+    if (!/^[a-f0-9]{64}$/.test(token)) {
+      res.redirect(303, "/account/login");
+      return;
+    }
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const account = await getAsync("SELECT * FROM student_accounts WHERE verification_token_hash = ?", [tokenHash]);
+    if (!account || new Date(account.verification_expires_at).getTime() <= Date.now()) {
+      renderAccountAuth(req, res, "login", { error: accountCopy(req.lang).verifyInvalid });
+      return;
+    }
+    const result = await runAsync(
+      `UPDATE student_accounts
+       SET verified_at = ?, verification_token_hash = NULL, verification_expires_at = NULL
+       WHERE id = ? AND verification_token_hash = ?`,
+      [new Date().toISOString(), account.id, tokenHash]
+    );
+    if (!result.changes) {
+      renderAccountAuth(req, res, "login", { error: accountCopy(req.lang).verifyInvalid });
+      return;
+    }
+    res.redirect(303, "/account/login?verified=1");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/account/logout", (_req, res) => {
+  res.clearCookie("student_auth", { httpOnly: true, sameSite: "lax", path: "/" });
+  res.redirect(303, "/account/login");
+});
+
+router.get("/account/dashboard", async (req, res, next) => {
+  try {
+    const session = readStudentSession(req);
+    if (!session) {
+      res.redirect(303, "/account/login");
+      return;
+    }
+    const account = await getAsync("SELECT * FROM student_accounts WHERE id = ?", [session.id]);
+    if (!account || !account.verified_at) {
+      res.clearCookie("student_auth", { path: "/" });
+      res.redirect(303, "/account/login");
+      return;
+    }
+
+    const rows = await allAsync(
+      `SELECT * FROM course_registrations
+       WHERE LOWER(email) = ?
+       ORDER BY created_at DESC`,
+      [account.email]
+    );
+    const instructors = getInstructorsForLang(req.lang);
+    const courses = rows.map((row) => ({
+      ...row,
+      instructorName: instructors.find((instructor) => instructor.id === row.instructor_id)?.name || "",
+      preferredTime:
+        /(?:Eelistatud sõidutunni aeg|Предпочтительное время обучения|Preferred lesson time):\s*([^;]+)/i.exec(
+          row.comment || ""
+        )?.[1]?.trim() || "",
+    }));
+    res.render("pages/account-dashboard", {
+      title: accountCopy(req.lang).courses,
+      currentPath: "/account",
+      hideStickyCta: true,
+      copy: accountCopy(req.lang),
+      email: account.email,
+      username: account.username,
+      courses,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.get("/instructors", (req, res) => {
   const titles = { et: "Instruktorid", ru: "Инструкторы", en: "Instructors" };

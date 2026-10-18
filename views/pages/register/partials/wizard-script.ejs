@@ -632,6 +632,10 @@
 
     nextBtn.addEventListener("click", () => {
       if (!validateCurrentStep()) return;
+      if (current === 3 && !needsTrainingOffer() && !needsInstructor()) {
+        beginRegistrationModals();
+        return;
+      }
       setStep(Math.min(current + 1, panels.length));
       persistWizardSnapshot();
     });

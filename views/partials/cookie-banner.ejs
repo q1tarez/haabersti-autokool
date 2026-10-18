@@ -11,10 +11,35 @@
 <script>
   (function () {
     var key = "haabersti_cookie_consent";
+    var maxAge = 365 * 24 * 60 * 60;
     var banner = document.getElementById("cookieBanner");
     if (!banner) return;
 
     var gaId = banner.dataset.gaId;
+
+    function saveConsent(value) {
+      var secure = window.location && window.location.protocol === "https:" ? "; Secure" : "";
+      document.cookie =
+        key + "=" + encodeURIComponent(value) + "; Max-Age=" + maxAge + "; Path=/; SameSite=Lax" + secure;
+    }
+
+    function readConsent() {
+      var match = document.cookie.match(/(?:^|;\s*)haabersti_cookie_consent=([^;]*)/);
+      if (match) return decodeURIComponent(match[1]);
+
+      try {
+        var legacyConsent = localStorage.getItem(key);
+        if (legacyConsent === "accepted" || legacyConsent === "rejected") {
+          saveConsent(legacyConsent);
+          localStorage.removeItem(key);
+          return legacyConsent;
+        }
+      } catch (error) {
+        console.error("Could not read analytics consent preference:", error);
+      }
+
+      return null;
+    }
 
     function loadAnalytics() {
       if (window.gtag) return;
@@ -31,12 +56,7 @@
       document.head.appendChild(script);
     }
 
-    var consent = null;
-    try {
-      consent = localStorage.getItem(key);
-    } catch (error) {
-      console.error("Could not read analytics consent preference:", error);
-    }
+    var consent = readConsent();
 
     if (consent === "accepted") {
       loadAnalytics();
@@ -48,7 +68,7 @@
 
     document.getElementById("cookieAccept").addEventListener("click", function () {
       try {
-        localStorage.setItem(key, "accepted");
+        saveConsent("accepted");
       } catch (error) {
         console.error("Could not save analytics consent preference:", error);
       }
@@ -58,7 +78,7 @@
 
     document.getElementById("cookieReject").addEventListener("click", function () {
       try {
-        localStorage.setItem(key, "rejected");
+        saveConsent("rejected");
       } catch (error) {
         console.error("Could not save analytics consent preference:", error);
       }

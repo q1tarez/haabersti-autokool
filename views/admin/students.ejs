@@ -53,15 +53,15 @@
         <% const pay = item.payment_status === "paid" ? "paid" : "unpaid"; %>
         <% const st = item.status || "new"; %>
         <tr class="student-row student-row--<%= st %>">
-          <td class="admin-col-date"><%= formatEtDateTime(item.created_at) %></td>
-          <td><strong><%= item.full_name %></strong></td>
-          <td>
+          <td class="admin-col-date" data-label="Дата"><%= formatEtDateTime(item.created_at) %></td>
+          <td data-label="Ученик"><strong><%= item.full_name %></strong></td>
+          <td data-label="Контакты">
             IK: <%= item.isikukood || "-" %><br />
             <%= item.phone %><br />
             <%= item.email %>
           </td>
-          <td><%= item.course_name %><br /><small>Start: <%= item.start_date || "-" %></small></td>
-          <td>
+          <td data-label="Курс"><%= item.course_name %><br /><small>Start: <%= item.start_date || "-" %></small></td>
+          <td data-label="Комментарий">
             <p><%= item.comment || "—" %></p>
             <form method="POST" action="/admin/students/<%= item.id %>/note" class="admin-note-form">
               <label class="visually-hidden">Внутренняя заметка</label>
@@ -69,7 +69,7 @@
               <button class="btn secondary" type="submit">Заметка</button>
             </form>
           </td>
-          <td class="admin-col-payment">
+          <td class="admin-col-payment" data-label="Оплата">
             <form method="POST" action="/admin/students/<%= item.id %>/payment" class="inline-form admin-student-form">
               <select name="payment_status" aria-label="Статус оплаты">
                 <option value="unpaid" <%= pay === "unpaid" ? "selected" : "" %>>Не оплачено</option>
@@ -84,7 +84,7 @@
               </form>
             <% } %>
           </td>
-          <td class="admin-col-status">
+          <td class="admin-col-status" data-label="Статус">
             <span class="status-pill status-pill--<%= st %>"><%= st %></span>
             <form method="POST" action="/admin/students/<%= item.id %>/status" class="inline-form admin-student-form">
               <select name="status" class="status-select status-select--<%= st %>" aria-label="Статус заявки">
@@ -95,7 +95,7 @@
               <button class="btn secondary" type="submit">OK</button>
             </form>
           </td>
-          <td class="table-actions admin-col-actions">
+          <td class="table-actions admin-col-actions" data-label="Действия">
             <form
               method="POST"
               action="/admin/students/<%= item.id %>/delete"

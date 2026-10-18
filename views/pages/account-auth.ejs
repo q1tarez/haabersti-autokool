@@ -1,0 +1,74 @@
+<%- include("../partials/header", { title, hideStickyCta: true, currentPath: '/account' }) %>
+
+<section class="card account-card">
+  <h1><%= mode === "register" ? copy.registerTitle : copy.loginTitle %></h1>
+  <p class="section-lead"><%= mode === "register" ? copy.registerLead : copy.loginLead %></p>
+  <% if (error) { %>
+    <p class="form-error" role="alert"><%= error %></p>
+  <% } %>
+  <% if (notice) { %>
+    <p class="thanks-notice thanks-notice--ok" role="status"><%= notice %></p>
+  <% } %>
+  <form class="account-form" method="post" action="<%= mode === 'register' ? '/account/register' : '/account/login' %>">
+    <% if (mode === "register") { %>
+      <label>
+        <span><%= copy.username %></span>
+        <input
+          type="text"
+          name="username"
+          value="<%= username || '' %>"
+          autocomplete="username"
+          minlength="3"
+          maxlength="30"
+          pattern="[A-Za-z0-9._-]{3,30}"
+          aria-describedby="accountUsernameHelp"
+          required
+        />
+        <small id="accountUsernameHelp"><%= copy.usernameHelp %></small>
+      </label>
+      <label>
+        <span><%= copy.email %></span>
+        <input type="email" name="email" value="<%= email || '' %>" autocomplete="email" maxlength="200" required />
+      </label>
+    <% } else { %>
+      <label>
+        <span><%= copy.loginIdentifier %></span>
+        <input
+          type="text"
+          name="login"
+          value="<%= login || email || username || '' %>"
+          autocomplete="username"
+          maxlength="200"
+          required
+        />
+      </label>
+    <% } %>
+    <label>
+      <span><%= copy.password %></span>
+      <input
+        type="password"
+        name="password"
+        autocomplete="<%= mode === 'register' ? 'new-password' : 'current-password' %>"
+        minlength="<%= mode === 'register' ? 10 : 1 %>"
+        maxlength="72"
+        required
+      />
+    </label>
+    <% if (mode === "register") { %>
+      <label>
+        <span><%= copy.confirmPassword %></span>
+        <input type="password" name="confirmPassword" autocomplete="new-password" minlength="10" maxlength="72" required />
+      </label>
+    <% } %>
+    <button class="btn" type="submit"><%= mode === "register" ? copy.createAccount : copy.login %></button>
+  </form>
+  <p class="account-switch">
+    <% if (mode === "register") { %>
+      <%= copy.existingAccount %> <a href="/account/login"><%= copy.signIn %></a>
+    <% } else { %>
+      <%= copy.noAccount %> <a href="/account/register"><%= copy.signUp %></a>
+    <% } %>
+  </p>
+</section>
+
+<%- include("../partials/footer") %>
