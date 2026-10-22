@@ -175,4 +175,74 @@ describe("student lesson storage", () => {
     expect(accounts).toHaveLength(1);
     expect(accounts[0]).not.toHaveProperty("password_hash");
   });
+
+  test("instructors can view only their own weekly schedule", async () => {
+    const ownStudent = await db.runAsync(
+      `INSERT INTO course_registrations
+       (full_name, isikukood, phone, email, course_id, course_name, start_date, comment)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["Assigned Student", null, "5551000", "assigned@example.com", "b-category", "B course", "", ""]
+    );
+    const otherStudent = await db.runAsync(
+      `INSERT INTO course_registrations
+       (full_name, isikukood, phone, email, course_id, course_name, start_date, comment)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["Other Instructor Student", null, "5552000", "other@example.com", "b-category", "B course", "", ""]
+    );
+    const instructorResult = await db.runAsync(
+      "INSERT INTO admins (username, password_hash, role, instructor_id) VALUES (?, ?, 'instructor', ?)",
+      ["schedule-instructor", "test-hash", "teacher-own"]
+    );
+    const instructorCookie = `admin_auth=${signAdminSession(
+      instructorResult.lastID,
+      "schedule-instructor"
+    )}`;
+    await db.runAsync(
+      `INSERT INTO student_lessons
+       (registration_id, starts_at, duration_minutes, instructor_id, status, internal_note)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [ownStudent.lastID, "2026-10-19T10:00", 45, "teacher-own", "planned", "Meet at the school"]
+    );
+    await db.runAsync(
+      `INSERT INTO student_lessons
+       (registration_id, starts_at, duration_minutes, instructor_id, status, internal_note)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [otherStudent.lastID, "2026-10-19T11:00", 45, "teacher-other", "planned", ""]
+    );
+
+    const schedule = await request(app)
+      .get("/admin/my-schedule?week=2026-10-19")
+      .set("Cookie", instructorCookie)
+      .expect(200);
+    expect(schedule.text).toContain("Assigned Student");
+    expect(schedule.text).toContain("Meet at the school");
+    expect(schedule.text).not.toContain("Other Instructor Student");
+    expect(schedule.text).not.toContain("other@example.com");
+    await request(app).get("/admin/lessons").set("Cookie", instructorCookie).expect(403);
+  });
+
+  test("keeps a student signed in when navigating from the account to the public site", async () => {
+    const passwordHash = await require("bcrypt").hash("remember-test-password", 4);
+    const account = await db.runAsync(
+      `INSERT INTO student_accounts
+       (email, username, password_hash, verification_token_hash, verification_expires_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      ["remember@example.com", "rememberstudent", passwordHash, "token", "2026-10-20T00:00:00Z"]
+    );
+    await db.runAsync(
+      "UPDATE student_accounts SET verified_at = ? WHERE id = ? AND verification_token_hash = ?",
+      ["2026-10-19T12:00:00Z", account.lastID, "token"]
+    );
+
+    const browser = request.agent(app);
+    const login = await browser
+      .post("/account/login")
+      .type("form")
+      .send({ login: "rememberstudent", password: "remember-test-password" })
+      .expect(303);
+    expect(login.headers["set-cookie"].join(";")).toContain("Max-Age=2592000");
+    await browser.get("/").expect(200);
+    await browser.get("/account").expect(303).expect("Location", "/account/dashboard");
+    await browser.get("/account/dashboard").expect(200);
+  });
 });

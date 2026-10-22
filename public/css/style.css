@@ -318,6 +318,12 @@ h1 {
   margin: 0;
 }
 
+.account-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .account-course-list,
 .account-followup {
   display: grid;
@@ -369,6 +375,10 @@ h1 {
   .account-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .account-heading-actions {
+    flex-wrap: wrap;
   }
 }
 

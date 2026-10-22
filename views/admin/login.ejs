@@ -5,6 +5,9 @@
   <% if (error) { %>
     <p class="alert error"><%= error %></p>
   <% } %>
+  <% if (notice) { %>
+    <p class="admin-alert admin-alert--ok"><%= notice %></p>
+  <% } %>
   <form class="form" method="POST" action="/admin/login">
     <label for="username"><%= t("username") %></label>
     <input id="username" name="username" type="text" required autocomplete="username" />
@@ -14,6 +17,8 @@
 
     <button class="btn" type="submit"><%= t("signIn") %></button>
   </form>
+  <p><a href="/admin/password/forgot"><%= adminT("passwordRecoveryTitle") %></a></p>
+  <p><a href="/admin/instructor/login"><%= adminT("instructorLoginLink") %></a></p>
 </section>
 
 <%- include("../partials/admin-footer", { adminLogin: true }) %>

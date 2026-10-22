@@ -9,19 +9,29 @@ async function initializeAdmins({ getAsync, runAsync }) {
   const validPassword = password.length >= 12 && Buffer.byteLength(password, "utf8") <= 72;
   await runAsync("CREATE TABLE IF NOT EXISTS security_migrations (id TEXT PRIMARY KEY, applied_at TEXT DEFAULT CURRENT_TIMESTAMP)");
 
-  // Explicit environment credentials are the supported recovery and rotation mechanism.
+  // Environment credentials create the first admin; existing passwords change only by explicit override.
   if (username && validPassword) {
     const existing = await getAsync("SELECT id FROM admins WHERE username = ?", [username]);
-    const hash = await bcrypt.hash(password, 12);
     if (!existing) {
+      const hash = await bcrypt.hash(password, 12);
       await runAsync("INSERT INTO admins (username, password_hash) VALUES (?, ?)", [username, hash]);
-    } else {
-      await runAsync("UPDATE admins SET password_hash = ? WHERE id = ?", [hash, existing.id]);
+    } else if (String(process.env.ADMIN_FORCE_PASSWORD_RESET || "") === "1") {
+      const hash = await bcrypt.hash(password, 12);
+      await runAsync(
+        "UPDATE admins SET password_hash = ?, auth_version = auth_version + 1 WHERE id = ?",
+        [hash, existing.id]
+      );
     }
   }
 
   const migration = await getAsync("SELECT id FROM security_migrations WHERE id = ?", ["remove-embedded-admin-credentials"]);
   if (!migration) {
+    if (!username || !validPassword) {
+      console.warn(
+        "[security] Skipped legacy admin credential rotation because valid ADMIN_USERNAME and ADMIN_PASSWORD are not configured."
+      );
+      return;
+    }
     for (const legacyUsername of previouslySeededUsernames) {
       const row = await getAsync("SELECT id FROM admins WHERE username = ?", [legacyUsername]);
       if (!row) continue;

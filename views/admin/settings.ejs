@@ -1,0 +1,50 @@
+<%- include("../partials/admin-header", { title }) %>
+
+<header class="admin-page-header">
+  <h1><%= adminT("settingsTitle") %></h1>
+</header>
+
+<% if (notice === "email_pending") { %><p class="admin-alert admin-alert--ok"><%= adminT("settingsEmailPending") %></p><% } %>
+<% if (notice === "email") { %><p class="admin-alert admin-alert--ok"><%= adminT("settingsEmailVerified") %></p><% } %>
+<% if (error === "password") { %><p class="admin-alert admin-alert--error"><%= adminT("settingsPasswordError") %></p><% } %>
+<% if (error === "email") { %><p class="admin-alert admin-alert--error"><%= adminT("settingsEmailError") %></p><% } %>
+<% if (error === "email_used") { %><p class="admin-alert admin-alert--error"><%= adminT("settingsEmailUsed") %></p><% } %>
+<% if (error === "smtp") { %><p class="admin-alert admin-alert--error"><%= adminT("settingsEmailServiceUnavailable") %></p><% } %>
+<% if (error === "password_rules") { %><p class="admin-alert admin-alert--error"><%= adminT("settingsPasswordRules") %></p><% } %>
+<% if (error === "password_mismatch") { %><p class="admin-alert admin-alert--error"><%= adminT("settingsPasswordMismatch") %></p><% } %>
+
+<section class="card admin-form-card">
+  <h2><%= adminT("settingsEmailTitle") %></h2>
+  <p><%= adminT("settingsEmailHelp") %></p>
+  <% if (admin.email && admin.email_verified_at) { %>
+    <p><strong><%= adminT("settingsCurrentEmail") %>:</strong> <%= admin.email %></p>
+  <% } else { %>
+    <p><%= adminT("settingsNoEmail") %></p>
+  <% } %>
+  <% if (admin.email_pending) { %>
+    <p><strong><%= adminT("settingsPendingEmail") %>:</strong> <%= admin.email_pending %></p>
+  <% } %>
+  <% if (!smtpConfigured) { %><p class="admin-alert admin-alert--error"><%= adminT("settingsEmailServiceUnavailable") %></p><% } %>
+  <form method="POST" action="/admin/settings/email" class="admin-form-stack">
+    <label for="adminEmail"><%= adminT("settingsEmailInput") %></label>
+    <input id="adminEmail" name="email" type="email" maxlength="200" autocomplete="email" required />
+    <label for="emailCurrentPassword"><%= adminT("settingsCurrentPassword") %></label>
+    <input id="emailCurrentPassword" name="password" type="password" autocomplete="current-password" required />
+    <button class="btn" type="submit" <%= smtpConfigured ? "" : "disabled" %>><%= adminT("settingsSendVerification") %></button>
+  </form>
+</section>
+
+<section class="card admin-form-card">
+  <h2><%= adminT("settingsPasswordTitle") %></h2>
+  <form method="POST" action="/admin/settings/password" class="admin-form-stack">
+    <label for="currentPassword"><%= adminT("settingsCurrentPassword") %></label>
+    <input id="currentPassword" name="currentPassword" type="password" autocomplete="current-password" required />
+    <label for="newPassword"><%= adminT("settingsNewPassword") %></label>
+    <input id="newPassword" name="newPassword" type="password" minlength="12" maxlength="72" autocomplete="new-password" required />
+    <label for="confirmPassword"><%= adminT("settingsConfirmPassword") %></label>
+    <input id="confirmPassword" name="confirmPassword" type="password" minlength="12" maxlength="72" autocomplete="new-password" required />
+    <button class="btn" type="submit"><%= adminT("settingsSavePassword") %></button>
+  </form>
+</section>
+
+<%- include("../partials/admin-footer") %>

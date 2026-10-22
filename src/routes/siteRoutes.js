@@ -11,7 +11,18 @@ const { sendMail, hasSmtpConfig } = require("../mail/transport");
 const { createMontonioPaymentUrl } = require("../lib/montonio");
 const { isOnlinePaymentEnabled } = require("../lib/onlinePayment");
 const { getTestimonialsForLang } = require("../lib/testimonials");
-const { signStudentSession, verifyStudentSession, COOKIE_MAX_AGE_MS } = require("../lib/signedCookie");
+const {
+  signStudentSession,
+  verifyStudentSession,
+  signAdminSession,
+  verifyAdminSession,
+  signPending2fa,
+  STUDENT_COOKIE_MAX_AGE_MS,
+  adminSessionMaxAgeMs,
+  PENDING_2FA_MS,
+} = require("../lib/signedCookie");
+const { loadAdminRecord } = require("../middleware/adminAccess");
+const { logAudit } = require("../lib/auditLog");
 const { courseForWhom } = require("../data/courseMeta");
 const { supportedLanguages, t } = require("../i18n");
 const { contactSchema, registrationSchema, validate } = require("../validation/schemas");
@@ -164,6 +175,14 @@ function siteBaseUrl(req) {
   return `${req.protocol}://${req.get("host")}`;
 }
 
+function passwordResetBaseUrl(req) {
+  const explicit = String(process.env.PUBLIC_SITE_URL || process.env.SITE_URL || "").trim().replace(/\/$/, "");
+  if (explicit) return explicit;
+  if (process.env.VERCEL_URL) return `https://${String(process.env.VERCEL_URL).replace(/^https?:\/\//, "")}`;
+  if (process.env.NODE_ENV === "production") return "https://haabersti-autokool.vercel.app";
+  return `${req.protocol}://${req.get("host")}`;
+}
+
 const ACCOUNT_COPY = {
   ru: {
     loginTitle: "Вход в личный кабинет",
@@ -190,7 +209,24 @@ const ACCOUNT_COPY = {
     passwordMismatch: "Пароли не совпадают.",
     emailNotConfigured: "Не настроена отправка почты для подтверждения аккаунта. Пожалуйста, свяжитесь с автошколой.",
     verificationSent: "На указанный адрес отправлена ссылка для подтверждения. Курсы появятся в кабинете, если при записи был указан этот же email.",
-    loginFailed: "Неверный email или пароль.",
+    loginFailed: "Неверный логин или пароль.",
+    forgotPassword: "Забыли пароль?",
+    passwordForgotTitle: "Восстановление пароля",
+    passwordForgotLead: "Укажите подтверждённый адрес email аккаунта. Мы отправим ссылку для создания нового пароля.",
+    passwordForgotSent: "Если подтверждённый email связан с аккаунтом, на него отправлена ссылка для восстановления.",
+    passwordResetTitle: "Задайте новый пароль",
+    passwordResetLead: "Ссылка действует 30 минут и может быть использована только один раз.",
+    newPassword: "Новый пароль",
+    confirmNewPassword: "Повторите новый пароль",
+    sendResetLink: "Отправить ссылку",
+    saveNewPassword: "Сохранить пароль",
+    passwordResetInvalid: "Ссылка недействительна или истекла. Запросите новую ссылку.",
+    passwordResetSuccess: "Пароль изменён. Войдите с новым паролем.",
+    passwordRecoveryUnavailable: "Восстановление пароля временно недоступно. Пожалуйста, свяжитесь с автошколой.",
+    passwordResetEmailSubject: "Сброс пароля — Haabersti Autokool",
+    passwordResetEmailBody: "Чтобы создать новый пароль для личного кабинета, откройте ссылку:",
+    passwordResetLength: "Пароль должен быть не короче 10 символов и не длиннее 72 байт.",
+    adminSignIn: "Вход для сотрудников",
     accountExists: "Аккаунт уже создан. Войдите, используя email и пароль.",
     verifyTitle: "Подтвердить email",
     verifyLead: "Нажмите кнопку, чтобы подтвердить адрес и включить личный кабинет.",
@@ -256,7 +292,24 @@ const ACCOUNT_COPY = {
     passwordMismatch: "Passwords do not match.",
     emailNotConfigured: "Account verification email is not configured. Please contact the school.",
     verificationSent: "A verification link has been sent to this address. Courses will appear in your account if you used the same email when registering.",
-    loginFailed: "Invalid email or password.",
+    loginFailed: "Invalid username or password.",
+    forgotPassword: "Forgot password?",
+    passwordForgotTitle: "Reset your password",
+    passwordForgotLead: "Enter the verified email address for your account. We will send a link to create a new password.",
+    passwordForgotSent: "If a verified account uses that email, a password reset link has been sent.",
+    passwordResetTitle: "Set a new password",
+    passwordResetLead: "This link expires in 30 minutes and can only be used once.",
+    newPassword: "New password",
+    confirmNewPassword: "Confirm new password",
+    sendResetLink: "Send reset link",
+    saveNewPassword: "Save password",
+    passwordResetInvalid: "This link is invalid or expired. Request a new reset link.",
+    passwordResetSuccess: "Your password has been changed. Sign in with your new password.",
+    passwordRecoveryUnavailable: "Password recovery is temporarily unavailable. Please contact the school.",
+    passwordResetEmailSubject: "Password reset — Haabersti Autokool",
+    passwordResetEmailBody: "To create a new password for your student account, open this link:",
+    passwordResetLength: "Password must be at least 10 characters and no longer than 72 bytes.",
+    adminSignIn: "Staff sign in",
     accountExists: "An account already exists. Sign in using your email and password.",
     verifyTitle: "Verify your email",
     verifyLead: "Click below to confirm your email address and activate your student account.",
@@ -322,7 +375,24 @@ const ACCOUNT_COPY = {
     passwordMismatch: "Paroolid ei kattu.",
     emailNotConfigured: "Konto kinnitamiseks mõeldud e-posti saatmine pole seadistatud. Võta kooliga ühendust.",
     verificationSent: "Sellele aadressile saadeti kinnituslink. Kursused ilmuvad kontole, kui kasutasid registreerumisel sama e-posti aadressi.",
-    loginFailed: "Vale e-post või parool.",
+    loginFailed: "Vale kasutajanimi või parool.",
+    forgotPassword: "Unustasid parooli?",
+    passwordForgotTitle: "Parooli taastamine",
+    passwordForgotLead: "Sisesta oma konto kinnitatud e-posti aadress. Saadame lingi uue parooli määramiseks.",
+    passwordForgotSent: "Kui konto on selle kinnitatud e-posti aadressiga seotud, saadeti parooli taastamise link.",
+    passwordResetTitle: "Määra uus parool",
+    passwordResetLead: "Link aegub 30 minuti pärast ja seda saab kasutada ainult üks kord.",
+    newPassword: "Uus parool",
+    confirmNewPassword: "Korda uut parooli",
+    sendResetLink: "Saada taastamislink",
+    saveNewPassword: "Salvesta parool",
+    passwordResetInvalid: "Link on kehtetu või aegunud. Küsi uus link.",
+    passwordResetSuccess: "Parool on muudetud. Logi sisse uue parooliga.",
+    passwordRecoveryUnavailable: "Parooli taastamine pole ajutiselt saadaval. Võta kooliga ühendust.",
+    passwordResetEmailSubject: "Parooli taastamine — Haabersti Autokool",
+    passwordResetEmailBody: "Uue parooli määramiseks ava see link:",
+    passwordResetLength: "Parool peab olema vähemalt 10 märki ja kuni 72 baiti pikk.",
+    adminSignIn: "Töötajate sisselogimine",
     accountExists: "Konto on juba loodud. Logi sisse e-posti ja parooliga.",
     verifyTitle: "Kinnita e-post",
     verifyLead: "Õpilaskonto aktiveerimiseks kinnita alloleva nupuga oma e-posti aadress.",
@@ -385,12 +455,12 @@ function renderAccountAuth(req, res, mode, options = {}) {
   });
 }
 
-function issueStudentSession(res, studentId) {
-  res.cookie("student_auth", signStudentSession(studentId), {
+function issueStudentSession(res, studentId, authVersion = 0) {
+  res.cookie("student_auth", signStudentSession(studentId, authVersion), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    maxAge: COOKIE_MAX_AGE_MS,
+    maxAge: STUDENT_COOKIE_MAX_AGE_MS,
     path: "/",
   });
 }
@@ -400,8 +470,22 @@ function readStudentSession(req) {
   return token ? verifyStudentSession(token) : null;
 }
 
-router.get("/account", (req, res) => {
-  res.redirect(303, readStudentSession(req) ? "/account/dashboard" : "/account/login");
+router.get("/account", async (req, res, next) => {
+  try {
+    const adminToken = req.cookies && req.cookies.admin_auth;
+    const adminSession = adminToken ? verifyAdminSession(adminToken) : null;
+    if (adminSession) {
+      const admin = await loadAdminRecord(adminSession);
+      if (admin && Number(adminSession.authVersion) === admin.authVersion) {
+        res.redirect(303, "/admin/dashboard");
+        return;
+      }
+      res.clearCookie("admin_auth", { path: "/" });
+    }
+    res.redirect(303, readStudentSession(req) ? "/account/dashboard" : "/account/login");
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.get("/account/register", (req, res) => {
@@ -529,11 +613,16 @@ router.post("/account/register", async (req, res, next) => {
 });
 
 router.get("/account/login", (req, res) => {
-  if (readStudentSession(req)) {
+  if (readStudentSession(req) && req.query.admin !== "1") {
     res.redirect(303, "/account/dashboard");
     return;
   }
-  const notice = req.query.verified === "1" ? accountCopy(req.lang).verified : null;
+  const notice =
+    req.query.verified === "1"
+      ? accountCopy(req.lang).verified
+      : req.query.passwordReset === "1"
+        ? accountCopy(req.lang).passwordResetSuccess
+        : null;
   renderAccountAuth(req, res, "login", { notice });
 });
 
@@ -541,6 +630,39 @@ router.post("/account/login", async (req, res, next) => {
   try {
     const login = String(req.body.login || "").trim().toLowerCase();
     const password = String(req.body.password || "");
+    const admin =
+      login.length <= 100 && !/\s/.test(login)
+        ? await getAsync("SELECT * FROM admins WHERE LOWER(username) = ?", [login])
+        : null;
+    if (admin) {
+      const passwordValid =
+        Buffer.byteLength(password, "utf8") <= 72 && (await bcrypt.compare(password, admin.password_hash));
+      const validAdmin = passwordValid ? await loadAdminRecord({ id: admin.id }) : null;
+      if (validAdmin) {
+        if (String(admin.totp_secret || "").trim()) {
+          res.cookie("admin_2fa_pending", signPending2fa(admin.id), {
+            httpOnly: true,
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
+            maxAge: PENDING_2FA_MS,
+            path: "/admin",
+          });
+          res.redirect(303, "/admin/login/2fa");
+          return;
+        }
+        const maxAge = adminSessionMaxAgeMs(admin.role);
+        res.cookie("admin_auth", signAdminSession(admin.id, admin.username, admin.auth_version, maxAge), {
+          httpOnly: true,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          maxAge,
+          path: "/",
+        });
+        await logAudit({ admin: { id: admin.id, username: admin.username } }, { action: "login" });
+        res.redirect(303, "/admin/dashboard");
+        return;
+      }
+    }
     const account =
       login.length <= 200 && !/\s/.test(login)
         ? await getAsync(
@@ -557,8 +679,183 @@ router.post("/account/login", async (req, res, next) => {
       renderAccountAuth(req, res, "login", { error: accountCopy(req.lang).loginFailed, login });
       return;
     }
-    issueStudentSession(res, account.id);
+    issueStudentSession(res, account.id, account.auth_version);
     res.redirect(303, "/account/dashboard");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/account/password/forgot", (req, res) => {
+  res.render("pages/account-password-forgot", {
+    title: accountCopy(req.lang).passwordForgotTitle,
+    currentPath: "/account",
+    hideStickyCta: true,
+    copy: accountCopy(req.lang),
+    error: null,
+    notice: null,
+  });
+});
+
+router.post("/account/password/forgot", async (req, res, next) => {
+  const copy = accountCopy(req.lang);
+  const renderResult = (options = {}) => {
+    res.render("pages/account-password-forgot", {
+      title: copy.passwordForgotTitle,
+      currentPath: "/account",
+      hideStickyCta: true,
+      copy,
+      error: options.error || null,
+      notice: options.notice || null,
+    });
+  };
+  try {
+    if (!hasSmtpConfig()) {
+      res.status(503);
+      renderResult({ error: copy.passwordRecoveryUnavailable });
+      return;
+    }
+
+    const email = String(req.body.email || "").trim().toLowerCase();
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 200) {
+      const account = await getAsync(
+        "SELECT * FROM student_accounts WHERE LOWER(email) = ? AND verified_at IS NOT NULL",
+        [email]
+      );
+      if (account) {
+        const token = crypto.randomBytes(32).toString("hex");
+        const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+        await runAsync(
+          `UPDATE student_accounts
+           SET password_reset_token_hash = ?, password_reset_expires_at = ?
+           WHERE id = ? AND verified_at IS NOT NULL`,
+          [tokenHash, expiresAt, account.id]
+        );
+        const resetUrl = `${passwordResetBaseUrl(req)}/account/password/reset/${token}`;
+        try {
+          await sendMail({
+            to: email,
+            subject: copy.passwordResetEmailSubject,
+            text: `${copy.passwordResetEmailBody}\n${resetUrl}`,
+            html: `<p>${copy.passwordResetEmailBody}</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>${copy.passwordResetLead}</p>`,
+          });
+        } catch (error) {
+          await runAsync(
+            `UPDATE student_accounts
+             SET password_reset_token_hash = NULL, password_reset_expires_at = NULL
+             WHERE password_reset_token_hash = ?`,
+            [tokenHash]
+          );
+          throw error;
+        }
+      }
+    }
+    renderResult({ notice: copy.passwordForgotSent });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/account/password/reset/:token", async (req, res, next) => {
+  try {
+    const token = String(req.params.token || "");
+    const tokenHash = /^[a-f0-9]{64}$/.test(token)
+      ? crypto.createHash("sha256").update(token).digest("hex")
+      : "";
+    const account = tokenHash
+      ? await getAsync(
+          `SELECT * FROM student_accounts
+           WHERE password_reset_token_hash = ? AND password_reset_expires_at > ?
+             AND verified_at IS NOT NULL`,
+          [tokenHash, new Date().toISOString()]
+        )
+      : null;
+    res.status(account ? 200 : 400).render("pages/account-password-reset", {
+      title: accountCopy(req.lang).passwordResetTitle,
+      currentPath: "/account",
+      hideStickyCta: true,
+      copy: accountCopy(req.lang),
+      token: account ? token : "",
+      invalid: !account,
+      error: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/account/password/reset/:token", async (req, res, next) => {
+  const copy = accountCopy(req.lang);
+  const token = String(req.params.token || "");
+  const tokenHash = /^[a-f0-9]{64}$/.test(token)
+    ? crypto.createHash("sha256").update(token).digest("hex")
+    : "";
+  const renderInvalid = (error = null) => {
+    res.status(400).render("pages/account-password-reset", {
+      title: copy.passwordResetTitle,
+      currentPath: "/account",
+      hideStickyCta: true,
+      copy,
+      token: "",
+      invalid: true,
+      error,
+    });
+  };
+  try {
+    const now = new Date().toISOString();
+    const account = tokenHash
+      ? await getAsync(
+          `SELECT * FROM student_accounts
+           WHERE password_reset_token_hash = ? AND password_reset_expires_at > ?
+             AND verified_at IS NOT NULL`,
+          [tokenHash, now]
+        )
+      : null;
+    if (!account) {
+      renderInvalid();
+      return;
+    }
+    const password = String(req.body.password || "");
+    const confirmPassword = String(req.body.confirmPassword || "");
+    if (password.length < 10 || Buffer.byteLength(password, "utf8") > 72) {
+      res.status(400).render("pages/account-password-reset", {
+        title: copy.passwordResetTitle,
+        currentPath: "/account",
+        hideStickyCta: true,
+        copy,
+        token,
+        invalid: false,
+        error: copy.passwordResetLength,
+      });
+      return;
+    }
+    if (password !== confirmPassword) {
+      res.status(400).render("pages/account-password-reset", {
+        title: copy.passwordResetTitle,
+        currentPath: "/account",
+        hideStickyCta: true,
+        copy,
+        token,
+        invalid: false,
+        error: copy.passwordMismatch,
+      });
+      return;
+    }
+    const passwordHash = await bcrypt.hash(password, 12);
+    const result = await runAsync(
+      `UPDATE student_accounts
+       SET password_hash = ?, password_reset_token_hash = NULL,
+           password_reset_expires_at = NULL, auth_version = auth_version + 1
+       WHERE id = ? AND password_reset_token_hash = ?
+         AND password_reset_expires_at > ? AND verified_at IS NOT NULL`,
+      [passwordHash, account.id, tokenHash, now]
+    );
+    if (!result.changes) {
+      renderInvalid();
+      return;
+    }
+    res.redirect(303, "/account/login?passwordReset=1");
   } catch (error) {
     next(error);
   }
@@ -629,7 +926,11 @@ router.post("/account/notifications/:id/read", async (req, res, next) => {
       return;
     }
     const account = await getAsync("SELECT * FROM student_accounts WHERE id = ?", [session.id]);
-    if (!account || !account.verified_at) {
+    if (
+      !account ||
+      !account.verified_at ||
+      Number(session.authVersion) !== (Number(account.auth_version) || 0)
+    ) {
       res.clearCookie("student_auth", { path: "/" });
       res.redirect(303, "/account/login");
       return;
@@ -652,7 +953,11 @@ router.get("/account/dashboard", async (req, res, next) => {
       return;
     }
     const account = await getAsync("SELECT * FROM student_accounts WHERE id = ?", [session.id]);
-    if (!account || !account.verified_at) {
+    if (
+      !account ||
+      !account.verified_at ||
+      Number(session.authVersion) !== (Number(account.auth_version) || 0)
+    ) {
       res.clearCookie("student_auth", { path: "/" });
       res.redirect(303, "/account/login");
       return;

@@ -1,6 +1,12 @@
 const crypto = require("crypto");
 
 const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const INSTRUCTOR_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+const STUDENT_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+function adminSessionMaxAgeMs(role) {
+  return role === "instructor" ? INSTRUCTOR_COOKIE_MAX_AGE_MS : COOKIE_MAX_AGE_MS;
+}
 
 function getSecret() {
   const configuredSecret = String(process.env.SESSION_SECRET || "").trim();
@@ -15,9 +21,14 @@ function getSecret() {
   return configuredSecret || "dev-insecure-change-me";
 }
 
-function signAdminSession(adminId, username) {
-  const exp = Date.now() + COOKIE_MAX_AGE_MS;
-  const payload = `${adminId}:${username}:${exp}`;
+function signAdminSession(adminId, username, authVersion = 0, maxAgeMs = COOKIE_MAX_AGE_MS) {
+  const exp = Date.now() + maxAgeMs;
+  const payload = JSON.stringify({
+    id: String(adminId),
+    username: String(username),
+    exp,
+    authVersion: Number(authVersion) || 0,
+  });
   const sig = crypto.createHmac("sha256", getSecret()).update(payload).digest("base64url");
   return `${Buffer.from(payload, "utf8").toString("base64url")}.${sig}`;
 }
@@ -40,20 +51,37 @@ function verifyAdminSession(token) {
   if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
     return null;
   }
-  const parts = payload.split(":");
-  if (parts.length < 3) return null;
-  const exp = Number(parts[parts.length - 1]);
-  const adminId = parts[0];
-  const username = parts.slice(1, -1).join(":");
-  if (!adminId || !username || !Number.isFinite(exp) || Date.now() > exp) {
+  let session;
+  try {
+    const parsed = JSON.parse(payload);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      session = {
+        id: String(parsed.id || ""),
+        username: String(parsed.username || ""),
+        exp: Number(parsed.exp),
+        authVersion: Number(parsed.authVersion) || 0,
+      };
+    }
+  } catch {
+    const parts = payload.split(":");
+    if (parts.length >= 3) {
+      session = {
+        id: parts[0],
+        username: parts.slice(1, -1).join(":"),
+        exp: Number(parts[parts.length - 1]),
+        authVersion: 0,
+      };
+    }
+  }
+  if (!session || !session.id || !session.username || !Number.isFinite(session.exp) || Date.now() > session.exp) {
     return null;
   }
-  return { id: adminId, username, exp };
+  return session;
 }
 
-function signStudentSession(studentId) {
-  const exp = Date.now() + COOKIE_MAX_AGE_MS;
-  const payload = `student:${studentId}:${exp}`;
+function signStudentSession(studentId, authVersion = 0) {
+  const exp = Date.now() + STUDENT_COOKIE_MAX_AGE_MS;
+  const payload = `student:${studentId}:${Number(authVersion) || 0}:${exp}`;
   const sig = crypto.createHmac("sha256", getStudentSecret()).update(payload).digest("base64url");
   return `${Buffer.from(payload, "utf8").toString("base64url")}.${sig}`;
 }
@@ -81,11 +109,12 @@ function verifyStudentSession(token) {
     return null;
   }
   const parts = payload.split(":");
-  if (parts.length !== 3 || parts[0] !== "student") return null;
+  if (![3, 4].includes(parts.length) || parts[0] !== "student") return null;
   const id = parts[1];
-  const exp = Number(parts[2]);
+  const authVersion = parts.length === 4 ? Number(parts[2]) || 0 : 0;
+  const exp = Number(parts[parts.length - 1]);
   if (!id || !Number.isFinite(exp) || Date.now() > exp) return null;
-  return { id, exp };
+  return { id, exp, authVersion };
 }
 
 const PENDING_2FA_MS = 10 * 60 * 1000;
@@ -132,5 +161,8 @@ module.exports = {
   signPending2fa,
   verifyPending2fa,
   COOKIE_MAX_AGE_MS,
+  INSTRUCTOR_COOKIE_MAX_AGE_MS,
+  STUDENT_COOKIE_MAX_AGE_MS,
+  adminSessionMaxAgeMs,
   PENDING_2FA_MS,
 };

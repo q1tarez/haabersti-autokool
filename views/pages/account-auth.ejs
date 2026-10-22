@@ -62,6 +62,9 @@
     <% } %>
     <button class="btn" type="submit"><%= mode === "register" ? copy.createAccount : copy.login %></button>
   </form>
+  <% if (mode !== "register") { %>
+    <p class="account-switch"><a href="/account/password/forgot"><%= copy.forgotPassword %></a></p>
+  <% } %>
   <p class="account-switch">
     <% if (mode === "register") { %>
       <%= copy.existingAccount %> <a href="/account/login"><%= copy.signIn %></a>

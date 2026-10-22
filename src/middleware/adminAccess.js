@@ -5,7 +5,7 @@ const { isDirector } = require("../lib/studentScope");
 
 async function loadAdminRecord(session) {
   const row = await getAsync(
-    "SELECT id, username, role, instructor_id, totp_secret FROM admins WHERE id = ?",
+    "SELECT id, username, role, instructor_id, totp_secret, auth_version FROM admins WHERE id = ?",
     [session.id]
   );
   if (!row) return null;
@@ -20,6 +20,7 @@ async function loadAdminRecord(session) {
     role,
     instructorId,
     hasTotp: Boolean(String(row.totp_secret || "").trim()),
+    authVersion: Number(row.auth_version) || 0,
   };
 }
 
@@ -37,7 +38,7 @@ function requireAdmin(req, res, next) {
   }
   loadAdminRecord(session)
     .then((admin) => {
-      if (!admin) {
+      if (!admin || Number(session.authVersion) !== admin.authVersion) {
         res.clearCookie("admin_auth", { path: "/" });
         res.redirect("/admin/login");
         return;

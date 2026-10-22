@@ -5,6 +5,27 @@
 </header>
 
 <% if (saved) { %><p class="admin-alert admin-alert--ok">Сохранено.</p><% } %>
+<% if (created) { %><p class="admin-alert admin-alert--ok"><%= adminT("instructorAccountCreated") %></p><% } %>
+<% if (error === "invalid") { %><p class="admin-alert admin-alert--error"><%= adminT("instructorCreateInvalid") %></p><% } %>
+<% if (error === "instructor" || error === "username") { %><p class="admin-alert admin-alert--error"><%= adminT("instructorCreateConflict") %></p><% } %>
+
+<section class="card admin-form-card">
+  <h2><%= adminT("createInstructorTitle") %></h2>
+  <form method="POST" action="/admin/team/create-instructor" class="admin-form-stack">
+    <label for="instructorUsername"><%= adminT("instructorUsername") %></label>
+    <input id="instructorUsername" name="username" type="text" minlength="3" maxlength="100" pattern="[A-Za-z0-9._-]{3,100}" autocomplete="off" required />
+    <label for="instructorPassword"><%= adminT("instructorPassword") %></label>
+    <input id="instructorPassword" name="password" type="password" minlength="12" maxlength="72" autocomplete="new-password" required />
+    <label for="instructorSelect"><%= adminT("instructorSelect") %></label>
+    <select id="instructorSelect" name="instructor_id" required>
+      <option value="">—</option>
+      <% instructors.forEach((iid) => { %>
+        <option value="<%= iid %>"><%= iid %></option>
+      <% }) %>
+    </select>
+    <button class="btn" type="submit"><%= adminT("createInstructor") %></button>
+  </form>
+</section>
 
 <div class="card table-wrap admin-table-card">
   <table class="admin-table">

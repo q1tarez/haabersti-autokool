@@ -19,7 +19,7 @@
       <button class="btn danger" type="submit"><%= adminT("securityDisable") %></button>
     </form>
   <% } else if (setup) { %>
-    <p>Отсканируйте QR в Google Authenticator / Authy или введите секрет вручную:</p>
+    <p>QR-код не отображается. Откройте ссылку на устройстве с Authenticator или введите секрет вручную:</p>
     <p><code class="admin-totp-secret"><%= setup.secret %></code></p>
     <p><a href="<%= setup.url %>" class="btn secondary">otpauth:// ссылка</a></p>
     <form method="POST" action="/admin/security/enable" class="admin-form-stack">

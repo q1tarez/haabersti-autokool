@@ -1,0 +1,46 @@
+<%- include("../partials/admin-header", { title }) %>
+
+<header class="admin-page-header">
+  <h1><%= title %></h1>
+  <p class="section-lead"><%= adminT("myScheduleLead") %></p>
+</header>
+
+<section class="card admin-week-calendar" aria-labelledby="instructorWeekTitle">
+  <div class="admin-week-calendar-heading">
+    <div>
+      <h2 id="instructorWeekTitle"><%= weekStart %></h2>
+    </div>
+    <nav class="admin-week-nav" aria-label="<%= adminT("myScheduleTitle") %>">
+      <a class="btn secondary" href="/admin/my-schedule?week=<%= previousWeek %>">‹ <%= adminT("schedulePreviousWeek") %></a>
+      <a class="btn secondary" href="/admin/my-schedule"><%= adminT("scheduleThisWeek") %></a>
+      <a class="btn secondary" href="/admin/my-schedule?week=<%= nextWeek %>"><%= adminT("scheduleNextWeek") %> ›</a>
+    </nav>
+  </div>
+  <div class="admin-week-grid">
+    <% weekDays.forEach((day) => { %>
+      <section class="admin-week-day <%= day.date === weekStart ? 'admin-week-day--start' : '' %>">
+        <h3><%= day.label %></h3>
+        <% if (day.lessons.length) { %>
+          <% day.lessons.forEach((lesson) => { %>
+            <article class="admin-week-event">
+              <strong><%= String(lesson.starts_at).slice(11, 16) %> · <%= lesson.student?.full_name || "—" %></strong>
+              <span><%= lesson.student?.course_name || "" %></span>
+              <small><%= lesson.duration_minutes %> <%= adminT("scheduleDuration").toLowerCase() %> ·
+                <%= adminT(`scheduleStatus${lesson.status.charAt(0).toUpperCase()}${lesson.status.slice(1)}`) %>
+              </small>
+              <% if (lesson.internal_note) { %><small><%= adminT("scheduleNote") %>: <%= lesson.internal_note %></small><% } %>
+            </article>
+          <% }) %>
+        <% } else { %>
+          <p class="admin-week-empty"><%= adminT("scheduleNoLessons") %></p>
+        <% } %>
+      </section>
+    <% }) %>
+  </div>
+</section>
+
+<% if (!lessonCount) { %>
+  <p class="card admin-lesson-empty"><%= adminT("scheduleEmptyWeek") %></p>
+<% } %>
+
+<%- include("../partials/admin-footer") %>

@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const multer = require("multer");
 const { getAsync, allAsync, runAsync } = require("../db/database");
@@ -10,7 +11,7 @@ const {
   verifyAdminSession,
   signPending2fa,
   verifyPending2fa,
-  COOKIE_MAX_AGE_MS,
+  adminSessionMaxAgeMs,
   PENDING_2FA_MS,
 } = require("../lib/signedCookie");
 const { verifyTotp, generateSecret, otpauthUrl } = require("../lib/totp");
@@ -22,6 +23,7 @@ const { logAudit } = require("../lib/auditLog");
 const { sendPaymentReminderMail } = require("../mail/paymentReminderMail");
 const { getSystemStatus } = require("../lib/systemStatus");
 const { hasSmtpConfig, sendMail } = require("../mail/transport");
+const { getSiteUrl } = require("../data/siteContact");
 const { mergeInstructorImported } = require("../data/drivingInstructors");
 const { refreshInstructorsFromDatabase } = require("../data/instructorSync");
 const { formBodyToDrivingInstructor, stripIdForPayload, LOCATION_SLUGS } = require("../data/instructorAdminForm");
@@ -94,12 +96,41 @@ function slugify(text) {
     .replace(/(^-|-$)/g, "");
 }
 
+function authBaseUrl(req) {
+  const configured = getSiteUrl() || String(process.env.SITE_URL || "").trim().replace(/\/$/, "");
+  if (configured) return configured;
+  if (process.env.VERCEL_URL) return `https://${String(process.env.VERCEL_URL).replace(/^https?:\/\//, "")}`;
+  if (process.env.NODE_ENV === "production") return "https://haabersti-autokool.vercel.app";
+  return `${req.protocol}://${req.get("host")}`;
+}
+
+function tokenHash(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function validAdminPassword(password) {
+  return password.length >= 12 && Buffer.byteLength(password, "utf8") <= 72;
+}
+
+function renderAdminLogin(req, res, error = null) {
+  res.render("admin/login", {
+    title: req.t("adminLoginTitle"),
+    error,
+    notice:
+      req.query.passwordChanged === "1"
+        ? res.locals.adminT("passwordChanged")
+        : req.query.emailVerified === "1"
+          ? res.locals.adminT("settingsEmailVerified")
+          : null,
+  });
+}
+
 router.get("/", (req, res) => {
   res.redirect(303, "/admin/login");
 });
 
 router.get("/login", (req, res) => {
-  res.render("admin/login", { title: req.t("adminLoginTitle"), error: null });
+  renderAdminLogin(req, res);
 });
 
 router.post("/login", async (req, res, next) => {
@@ -108,13 +139,13 @@ router.post("/login", async (req, res, next) => {
     const admin = await getAsync("SELECT * FROM admins WHERE username = ?", [username]);
 
     if (!admin) {
-      res.status(401).render("admin/login", { title: req.t("adminLoginTitle"), error: req.t("wrongCredentials") });
+      res.status(401).render("admin/login", { title: req.t("adminLoginTitle"), error: req.t("wrongCredentials"), notice: null });
       return;
     }
 
     const isValid = await bcrypt.compare(password, admin.password_hash);
     if (!isValid) {
-      res.status(401).render("admin/login", { title: req.t("adminLoginTitle"), error: req.t("wrongCredentials") });
+      res.status(401).render("admin/login", { title: req.t("adminLoginTitle"), error: req.t("wrongCredentials"), notice: null });
       return;
     }
 
@@ -130,14 +161,68 @@ router.post("/login", async (req, res, next) => {
       return;
     }
 
-    res.cookie("admin_auth", signAdminSession(admin.id, admin.username), {
+    const maxAge = adminSessionMaxAgeMs(admin.role);
+    res.cookie("admin_auth", signAdminSession(admin.id, admin.username, admin.auth_version, maxAge), {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
-      maxAge: COOKIE_MAX_AGE_MS,
+      maxAge,
       path: "/",
     });
     await logAudit({ admin: { id: admin.id, username: admin.username } }, { action: "login" });
+    res.redirect(303, "/admin/dashboard");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/instructor/login", (req, res) => {
+  res.render("admin/instructor-login", {
+    title: res.locals.adminT("instructorLoginTitle"),
+    error: null,
+  });
+});
+
+router.post("/instructor/login", async (req, res, next) => {
+  try {
+    const username = String(req.body.username || "").trim();
+    const password = String(req.body.password || "");
+    const admin = username.length <= 100
+      ? await getAsync("SELECT * FROM admins WHERE LOWER(username) = ?", [username.toLowerCase()])
+      : null;
+    const validPassword =
+      admin &&
+      Buffer.byteLength(password, "utf8") <= 72 &&
+      (await bcrypt.compare(password, admin.password_hash));
+    const isInstructor =
+      validPassword && admin.role === "instructor" && String(admin.instructor_id || "").trim();
+    if (!isInstructor) {
+      res.status(401).render("admin/instructor-login", {
+        title: res.locals.adminT("instructorLoginTitle"),
+        error: res.locals.adminT("wrongCredentials"),
+      });
+      return;
+    }
+    if (String(admin.totp_secret || "").trim()) {
+      res.cookie("admin_2fa_pending", signPending2fa(admin.id), {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: PENDING_2FA_MS,
+        path: "/admin",
+      });
+      res.redirect(303, "/admin/login/2fa");
+      return;
+    }
+    const maxAge = adminSessionMaxAgeMs(admin.role);
+    res.cookie("admin_auth", signAdminSession(admin.id, admin.username, admin.auth_version, maxAge), {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge,
+      path: "/",
+    });
+    await logAudit({ admin: { id: admin.id, username: admin.username } }, { action: "instructor_login" });
     res.redirect(303, "/admin/dashboard");
   } catch (error) {
     next(error);
@@ -179,15 +264,149 @@ router.post("/login/2fa", async (req, res, next) => {
       return;
     }
     res.clearCookie("admin_2fa_pending", { path: "/admin" });
-    res.cookie("admin_auth", signAdminSession(admin.id, admin.username), {
+    const maxAge = adminSessionMaxAgeMs(admin.role);
+    res.cookie("admin_auth", signAdminSession(admin.id, admin.username, admin.auth_version, maxAge), {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
-      maxAge: COOKIE_MAX_AGE_MS,
+      maxAge,
       path: "/",
     });
     await logAudit({ admin: { id: admin.id, username: admin.username } }, { action: "login_2fa" });
     res.redirect(303, "/admin/dashboard");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/password/forgot", (req, res) => {
+  res.render("admin/password-forgot", {
+    title: res.locals.adminT("passwordRecoveryTitle"),
+    error: null,
+    notice: null,
+  });
+});
+
+router.post("/password/forgot", async (req, res, next) => {
+  try {
+    const email = String(req.body.email || "").trim().toLowerCase();
+    if (!hasSmtpConfig()) {
+      res.status(503).render("admin/password-forgot", {
+        title: res.locals.adminT("passwordRecoveryTitle"),
+        error: res.locals.adminT("emailServiceUnavailable"),
+        notice: null,
+      });
+      return;
+    }
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 200) {
+      const admin = await getAsync(
+        "SELECT id, username, email FROM admins WHERE LOWER(email) = ? AND email_verified_at IS NOT NULL",
+        [email]
+      );
+      if (admin) {
+        const token = crypto.randomBytes(32).toString("hex");
+        const hash = tokenHash(token);
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+        await runAsync(
+          "UPDATE admins SET password_reset_token_hash = ?, password_reset_expires_at = ? WHERE id = ?",
+          [hash, expiresAt, admin.id]
+        );
+        const resetUrl = `${authBaseUrl(req)}/admin/password/reset/${token}`;
+        try {
+          await sendMail({
+            to: admin.email,
+            subject: "Восстановление пароля — Haabersti Autokool",
+            text: `Для сброса пароля перейдите по ссылке (она действует 30 минут): ${resetUrl}`,
+            html: `<p>Для сброса пароля перейдите по ссылке (она действует 30 минут):</p><p><a href="${resetUrl}">Сбросить пароль</a></p>`,
+          });
+        } catch (error) {
+          await runAsync(
+            "UPDATE admins SET password_reset_token_hash = NULL, password_reset_expires_at = NULL WHERE id = ? AND password_reset_token_hash = ?",
+            [admin.id, hash]
+          );
+          throw error;
+        }
+      }
+    }
+    res.render("admin/password-forgot", {
+      title: res.locals.adminT("passwordRecoveryTitle"),
+      error: null,
+      notice: res.locals.adminT("passwordRecoverySent"),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/password/reset/:token", async (req, res, next) => {
+  try {
+    const token = String(req.params.token || "");
+    const hash = /^[a-f0-9]{64}$/.test(token) ? tokenHash(token) : "";
+    const admin = hash
+      ? await getAsync(
+          "SELECT id FROM admins WHERE password_reset_token_hash = ? AND password_reset_expires_at > ?",
+          [hash, new Date().toISOString()]
+        )
+      : null;
+    res.render("admin/password-reset", {
+      title: res.locals.adminT("passwordResetTitle"),
+      token: admin ? token : "",
+      error: null,
+      invalid: !admin,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/password/reset/:token", async (req, res, next) => {
+  try {
+    const token = String(req.params.token || "");
+    const hash = /^[a-f0-9]{64}$/.test(token) ? tokenHash(token) : "";
+    const password = String(req.body.password || "");
+    const confirmPassword = String(req.body.confirmPassword || "");
+    const admin = hash
+      ? await getAsync(
+          "SELECT id FROM admins WHERE password_reset_token_hash = ? AND password_reset_expires_at > ?",
+          [hash, new Date().toISOString()]
+        )
+      : null;
+    if (!admin) {
+      res.status(400).render("admin/password-reset", {
+        title: res.locals.adminT("passwordResetTitle"),
+        token: "",
+        error: null,
+        invalid: true,
+      });
+      return;
+    }
+    if (!validAdminPassword(password) || password !== confirmPassword) {
+      res.status(400).render("admin/password-reset", {
+        title: res.locals.adminT("passwordResetTitle"),
+        token,
+        error: res.locals.adminT(password !== confirmPassword ? "passwordMismatch" : "passwordRequirements"),
+        invalid: false,
+      });
+      return;
+    }
+    const result = await runAsync(
+      `UPDATE admins
+       SET password_hash = ?, auth_version = auth_version + 1,
+           password_reset_token_hash = NULL, password_reset_expires_at = NULL
+       WHERE id = ? AND password_reset_token_hash = ? AND password_reset_expires_at > ?`,
+      [await bcrypt.hash(password, 12), admin.id, hash, new Date().toISOString()]
+    );
+    if (!result.changes) {
+      res.status(400).render("admin/password-reset", {
+        title: res.locals.adminT("passwordResetTitle"),
+        token: "",
+        error: null,
+        invalid: true,
+      });
+      return;
+    }
+    await logAudit({ admin: { id: admin.id } }, { action: "password_reset" });
+    res.redirect(303, "/admin/login?passwordChanged=1");
   } catch (error) {
     next(error);
   }
@@ -620,6 +839,70 @@ router.get("/lessons", requireAdmin, requireDirector, async (req, res, next) => 
       weekDays,
       notice: String(req.query.notice || ""),
       smtpConfigured: hasSmtpConfig(),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/my-schedule", requireAdmin, async (req, res, next) => {
+  if (req.admin.role !== "instructor" || !req.admin.instructorId) {
+    res.status(403).send("Access denied");
+    return;
+  }
+  try {
+    const weekStartDate = getWeekStart(String(req.query.week || ""));
+    const weekStart = isoDate(weekStartDate);
+    const nextWeekStartDate = new Date(weekStartDate);
+    nextWeekStartDate.setUTCDate(nextWeekStartDate.getUTCDate() + 7);
+    const weekEnd = isoDate(nextWeekStartDate);
+    const lessons = await allAsync(
+      `SELECT * FROM student_lessons
+       WHERE instructor_id = ? AND starts_at >= ? AND starts_at < ?
+       ORDER BY starts_at ASC`,
+      [req.admin.instructorId, `${weekStart}T00:00`, `${weekEnd}T00:00`]
+    );
+    const registrationIds = [...new Set(lessons.map((lesson) => Number(lesson.registration_id)))];
+    const registrations = registrationIds.length
+      ? await allAsync(
+          `SELECT id, full_name, course_name FROM course_registrations
+           WHERE id IN (${registrationIds.map(() => "?").join(", ")})`,
+          registrationIds
+        )
+      : [];
+    const registrationById = new Map(registrations.map((row) => [String(row.id), row]));
+    const lessonRows = lessons.map((lesson) => ({
+      ...lesson,
+      student: registrationById.get(String(lesson.registration_id)) || null,
+    }));
+    const locale = res.locals.adminLang === "et" ? "et-EE" : "ru-RU";
+    const weekDays = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(weekStartDate);
+      date.setUTCDate(date.getUTCDate() + index);
+      const key = isoDate(date);
+      return {
+        date: key,
+        label: new Intl.DateTimeFormat(locale, {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+          timeZone: "UTC",
+        }).format(date),
+        lessons: lessonRows.filter((lesson) => String(lesson.starts_at || "").slice(0, 10) === key),
+      };
+    });
+    const previousWeek = new Date(weekStartDate);
+    previousWeek.setUTCDate(previousWeek.getUTCDate() - 7);
+    const nextWeek = new Date(weekStartDate);
+    nextWeek.setUTCDate(nextWeek.getUTCDate() + 7);
+
+    res.render("admin/instructor-schedule", {
+      title: res.locals.adminT("myScheduleTitle"),
+      weekStart,
+      previousWeek: isoDate(previousWeek),
+      nextWeek: isoDate(nextWeek),
+      weekDays,
+      lessonCount: lessonRows.length,
     });
   } catch (error) {
     next(error);
@@ -1126,6 +1409,202 @@ router.post("/contacts/:id/reply", requireAdmin, requireDirector, async (req, re
   }
 });
 
+router.get("/settings", requireAdmin, async (req, res, next) => {
+  try {
+    const row = await getAsync(
+      "SELECT username, email, email_pending, email_verified_at FROM admins WHERE id = ?",
+      [req.admin.id]
+    );
+    res.render("admin/settings", {
+      title: res.locals.adminT("settingsTitle"),
+      admin: row,
+      error: req.query.error || null,
+      notice: req.query.saved || null,
+      smtpConfigured: hasSmtpConfig(),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/settings/email", requireAdmin, async (req, res, next) => {
+  try {
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const password = String(req.body.password || "");
+    const account = await getAsync(
+      "SELECT password_hash, email, email_verified_at FROM admins WHERE id = ?",
+      [req.admin.id]
+    );
+    if (!account || !(await bcrypt.compare(password, account.password_hash))) {
+      res.redirect(303, "/admin/settings?error=password");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 200) {
+      res.redirect(303, "/admin/settings?error=email");
+      return;
+    }
+    if (!hasSmtpConfig()) {
+      res.redirect(303, "/admin/settings?error=smtp");
+      return;
+    }
+    const owner = await getAsync(
+      "SELECT id FROM admins WHERE (LOWER(email) = ? OR LOWER(email_pending) = ?) AND id <> ?",
+      [email, email, req.admin.id]
+    );
+    if (owner) {
+      res.redirect(303, "/admin/settings?error=email_used");
+      return;
+    }
+    if (String(account.email || "").toLowerCase() === email && account.email_verified_at) {
+      res.redirect(303, "/admin/settings?saved=email");
+      return;
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const hash = tokenHash(token);
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    await runAsync(
+      `UPDATE admins
+       SET email_pending = ?, email_verification_token_hash = ?, email_verification_expires_at = ?
+       WHERE id = ?`,
+      [email, hash, expiresAt, req.admin.id]
+    );
+    const verifyUrl = `${authBaseUrl(req)}/admin/email/verify/${token}`;
+    try {
+      await sendMail({
+        to: email,
+        subject: "Подтвердите email — Haabersti Autokool",
+        text: `Для подтверждения адреса и включения восстановления пароля перейдите по ссылке: ${verifyUrl}`,
+        html: `<p>Для подтверждения адреса и включения восстановления пароля перейдите по ссылке:</p><p><a href="${verifyUrl}">Подтвердить email</a></p>`,
+      });
+    } catch (error) {
+      await runAsync(
+        `UPDATE admins
+         SET email_pending = NULL, email_verification_token_hash = NULL, email_verification_expires_at = NULL
+         WHERE id = ? AND email_verification_token_hash = ?`,
+        [req.admin.id, hash]
+      );
+      throw error;
+    }
+    await logAudit(req, { action: "admin_email_verification_requested" });
+    res.redirect(303, "/admin/settings?saved=email_pending");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/email/verify/:token", async (req, res, next) => {
+  try {
+    const token = String(req.params.token || "");
+    const hash = /^[a-f0-9]{64}$/.test(token) ? tokenHash(token) : "";
+    const admin = hash
+      ? await getAsync(
+          "SELECT id, email_pending FROM admins WHERE email_verification_token_hash = ? AND email_verification_expires_at > ?",
+          [hash, new Date().toISOString()]
+        )
+      : null;
+    res.render("admin/email-verify", {
+      title: res.locals.adminT("emailVerificationTitle"),
+      token: admin ? token : "",
+      email: admin ? admin.email_pending : "",
+      invalid: !admin,
+      error: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/email/verify/:token", async (req, res, next) => {
+  try {
+    const token = String(req.params.token || "");
+    const hash = /^[a-f0-9]{64}$/.test(token) ? tokenHash(token) : "";
+    const admin = hash
+      ? await getAsync(
+          "SELECT id, email_pending FROM admins WHERE email_verification_token_hash = ? AND email_verification_expires_at > ?",
+          [hash, new Date().toISOString()]
+        )
+      : null;
+    if (!admin) {
+      res.status(400).render("admin/email-verify", {
+        title: res.locals.adminT("emailVerificationTitle"),
+        token: "",
+        email: "",
+        invalid: true,
+        error: null,
+      });
+      return;
+    }
+    const otherAccount = await getAsync(
+      "SELECT id FROM admins WHERE LOWER(email) = ? AND id <> ?",
+      [String(admin.email_pending).toLowerCase(), admin.id]
+    );
+    if (otherAccount) {
+      res.status(409).render("admin/email-verify", {
+        title: res.locals.adminT("emailVerificationTitle"),
+        token: "",
+        email: "",
+        invalid: false,
+        error: res.locals.adminT("emailAlreadyLinked"),
+      });
+      return;
+    }
+    const now = new Date().toISOString();
+    const result = await runAsync(
+      `UPDATE admins
+       SET email = email_pending, email_verified_at = ?, email_pending = NULL,
+           email_verification_token_hash = NULL, email_verification_expires_at = NULL,
+           password_reset_token_hash = NULL, password_reset_expires_at = NULL
+       WHERE id = ? AND email_verification_token_hash = ? AND email_verification_expires_at > ?`,
+      [now, admin.id, hash, now]
+    );
+    if (!result.changes) {
+      res.status(400).render("admin/email-verify", {
+        title: res.locals.adminT("emailVerificationTitle"),
+        token: "",
+        email: "",
+        invalid: true,
+        error: null,
+      });
+      return;
+    }
+    await logAudit({ admin: { id: admin.id } }, { action: "admin_email_verified" });
+    res.redirect(303, "/admin/login?emailVerified=1");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/settings/password", requireAdmin, async (req, res, next) => {
+  try {
+    const currentPassword = String(req.body.currentPassword || "");
+    const newPassword = String(req.body.newPassword || "");
+    const confirmPassword = String(req.body.confirmPassword || "");
+    const account = await getAsync("SELECT password_hash FROM admins WHERE id = ?", [req.admin.id]);
+    if (!account || !(await bcrypt.compare(currentPassword, account.password_hash))) {
+      res.redirect(303, "/admin/settings?error=password");
+      return;
+    }
+    if (!validAdminPassword(newPassword)) {
+      res.redirect(303, "/admin/settings?error=password_rules");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      res.redirect(303, "/admin/settings?error=password_mismatch");
+      return;
+    }
+    await runAsync(
+      "UPDATE admins SET password_hash = ?, auth_version = auth_version + 1 WHERE id = ?",
+      [await bcrypt.hash(newPassword, 12), req.admin.id]
+    );
+    await logAudit(req, { action: "admin_password_changed" });
+    res.clearCookie("admin_auth", { path: "/" });
+    res.redirect(303, "/admin/login?passwordChanged=1");
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get("/security", requireAdmin, async (req, res, next) => {
   try {
     const row = await getAsync("SELECT totp_secret FROM admins WHERE id = ?", [req.admin.id]);
@@ -1197,7 +1676,44 @@ router.get("/team", requireAdmin, requireDirector, async (req, res, next) => {
       admins,
       instructors: instructors.map((r) => r.id),
       saved: req.query.saved === "1",
+      created: req.query.created === "1",
+      error: req.query.error || null,
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/team/create-instructor", requireAdmin, requireDirector, async (req, res, next) => {
+  try {
+    const username = String(req.body.username || "").trim();
+    const password = String(req.body.password || "");
+    const instructorId = String(req.body.instructor_id || "").trim();
+    if (!/^[A-Za-z0-9._-]{3,100}$/.test(username) || !validAdminPassword(password)) {
+      res.redirect(303, "/admin/team?error=invalid");
+      return;
+    }
+    const instructor = await getAsync("SELECT id FROM instructors WHERE id = ?", [instructorId]);
+    if (!instructor) {
+      res.redirect(303, "/admin/team?error=instructor");
+      return;
+    }
+    const existing = await getAsync("SELECT id FROM admins WHERE LOWER(username) = ?", [username.toLowerCase()]);
+    if (existing) {
+      res.redirect(303, "/admin/team?error=username");
+      return;
+    }
+    const result = await runAsync(
+      "INSERT INTO admins (username, password_hash, role, instructor_id) VALUES (?, ?, 'instructor', ?)",
+      [username, await bcrypt.hash(password, 12), instructorId]
+    );
+    await logAudit(req, {
+      action: "instructor_account_created",
+      entityType: "admin",
+      entityId: result.lastID,
+      details: { username, instructorId },
+    });
+    res.redirect(303, "/admin/team?created=1");
   } catch (error) {
     next(error);
   }

@@ -25,7 +25,10 @@
       <a href="/admin/monitoring" class="<%= isNavActive('/monitoring') ? 'is-active' : '' %>"><%= at("navMonitoring") %></a>
       <a href="/admin/audit-log" class="<%= isNavActive('/audit-log') ? 'is-active' : '' %>"><%= at("navAudit") %></a>
       <a href="/admin/team" class="<%= isNavActive('/team') ? 'is-active' : '' %>"><%= at("navTeam") %></a>
+    <% } else { %>
+      <a href="/admin/my-schedule" class="<%= isNavActive('/my-schedule') ? 'is-active' : '' %>"><%= at("myScheduleTitle") %></a>
     <% } %>
+    <a href="/admin/settings" class="<%= isNavActive('/settings') ? 'is-active' : '' %>"><%= at("navSettings") %></a>
     <a href="/admin/security" class="<%= isNavActive('/security') ? 'is-active' : '' %>"><%= at("navSecurity") %></a>
   </nav>
   <div class="admin-lang-switch">

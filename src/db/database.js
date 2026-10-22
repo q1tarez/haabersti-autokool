@@ -101,11 +101,113 @@ function runAsync(sql, params = []) {
     return neonRun(sql, params);
   }
   if (useMemoryDb) {
-    const query = sql.trim().toUpperCase();
+    const query = sql.trim().replace(/\s+/g, " ").toUpperCase();
 
     if (query.startsWith("INSERT INTO ADMINS")) {
-      memory.admins.push({ id: memory.admins.length + 1, username: params[0], password_hash: params[1] });
-      return Promise.resolve({ lastID: memory.admins.length });
+      const row = {
+        id: memory.admins.length + 1,
+        username: params[0],
+        password_hash: params[1],
+        role: query.includes("'INSTRUCTOR'") ? "instructor" : "director",
+        instructor_id: query.includes("'INSTRUCTOR'") ? params[2] || null : null,
+        auth_version: 0,
+        totp_secret: null,
+        email: null,
+        email_pending: null,
+        email_verified_at: null,
+        email_verification_token_hash: null,
+        email_verification_expires_at: null,
+        password_reset_token_hash: null,
+        password_reset_expires_at: null,
+        created_at: new Date().toISOString(),
+      };
+      if (memory.admins.some((admin) => admin.username.toLowerCase() === row.username.toLowerCase())) {
+        return Promise.reject(new Error("Admin username already exists"));
+      }
+      memory.admins.push(row);
+      return Promise.resolve({ lastID: row.id, changes: 1 });
+    }
+    if (query.startsWith("UPDATE ADMINS SET PASSWORD_HASH = ?")) {
+      const isReset = query.includes("PASSWORD_RESET_TOKEN_HASH = NULL");
+      const adminId = isReset ? params[1] : params[params.length - 1];
+      const admin = memory.admins.find((row) => String(row.id) === String(adminId));
+      if (admin) {
+        if (
+          isReset &&
+          (admin.password_reset_token_hash !== params[2] ||
+            new Date(admin.password_reset_expires_at).getTime() <= new Date(params[3]).getTime())
+        ) {
+          return Promise.resolve({ changes: 0 });
+        }
+        admin.password_hash = params[0];
+        if (query.includes("AUTH_VERSION = AUTH_VERSION + 1")) admin.auth_version += 1;
+        if (isReset) {
+          admin.password_reset_token_hash = null;
+          admin.password_reset_expires_at = null;
+        }
+      }
+      return Promise.resolve({ changes: admin ? 1 : 0 });
+    }
+    if (query.startsWith("UPDATE ADMINS SET EMAIL_PENDING = ?")) {
+      const admin = memory.admins.find((row) => String(row.id) === String(params[3]));
+      if (admin) {
+        admin.email_pending = params[0];
+        admin.email_verification_token_hash = params[1];
+        admin.email_verification_expires_at = params[2];
+      }
+      return Promise.resolve({ changes: admin ? 1 : 0 });
+    }
+    if (query.startsWith("UPDATE ADMINS SET EMAIL_PENDING = NULL")) {
+      const admin = memory.admins.find(
+        (row) => String(row.id) === String(params[0]) && row.email_verification_token_hash === params[1]
+      );
+      if (admin) {
+        admin.email_pending = null;
+        admin.email_verification_token_hash = null;
+        admin.email_verification_expires_at = null;
+      }
+      return Promise.resolve({ changes: admin ? 1 : 0 });
+    }
+    if (query.startsWith("UPDATE ADMINS SET EMAIL = EMAIL_PENDING")) {
+      const admin = memory.admins.find(
+        (row) => String(row.id) === String(params[1]) && row.email_verification_token_hash === params[2]
+      );
+      if (admin) {
+        admin.email = admin.email_pending;
+        admin.email_verified_at = params[0];
+        admin.email_pending = null;
+        admin.email_verification_token_hash = null;
+        admin.email_verification_expires_at = null;
+        admin.password_reset_token_hash = null;
+        admin.password_reset_expires_at = null;
+      }
+      return Promise.resolve({ changes: admin ? 1 : 0 });
+    }
+    if (query.startsWith("UPDATE ADMINS SET PASSWORD_RESET_TOKEN_HASH = ?")) {
+      const admin = memory.admins.find((row) => String(row.id) === String(params[2]));
+      if (admin) {
+        admin.password_reset_token_hash = params[0];
+        admin.password_reset_expires_at = params[1];
+      }
+      return Promise.resolve({ changes: admin ? 1 : 0 });
+    }
+    if (query.startsWith("UPDATE ADMINS SET PASSWORD_RESET_TOKEN_HASH = NULL")) {
+      const admin = memory.admins.find(
+        (row) => String(row.id) === String(params[0]) && row.password_reset_token_hash === params[1]
+      );
+      if (admin) {
+        admin.password_reset_token_hash = null;
+        admin.password_reset_expires_at = null;
+      }
+      return Promise.resolve({ changes: admin ? 1 : 0 });
+    }
+    if (query.startsWith("UPDATE ADMINS SET ROLE = ?")) {
+      const admin = memory.admins.find((row) => String(row.id) === String(params[2]));
+      if (admin) {
+        admin.role = params[0];
+        admin.instructor_id = params[1] || null;
+      }
+      return Promise.resolve({ changes: admin ? 1 : 0 });
     }
     if (query.startsWith("INSERT INTO STUDENT_ACCOUNTS")) {
       const account = {
@@ -113,9 +215,12 @@ function runAsync(sql, params = []) {
         email: params[0],
         username: params[1],
         password_hash: params[2],
+        auth_version: 0,
         verified_at: null,
         verification_token_hash: params[3],
         verification_expires_at: params[4],
+        password_reset_token_hash: null,
+        password_reset_expires_at: null,
         created_at: new Date().toISOString(),
       };
       if (memory.studentAccounts.some((row) => row.username.toLowerCase() === account.username.toLowerCase())) {
@@ -215,6 +320,40 @@ function runAsync(sql, params = []) {
       if (account) {
         account.verification_token_hash = null;
         account.verification_expires_at = null;
+      }
+      return Promise.resolve({ changes: account ? 1 : 0 });
+    }
+    if (query.startsWith("UPDATE STUDENT_ACCOUNTS SET PASSWORD_RESET_TOKEN_HASH = NULL")) {
+      const account = memory.studentAccounts.find((row) => row.password_reset_token_hash === params[0]);
+      if (account) {
+        account.password_reset_token_hash = null;
+        account.password_reset_expires_at = null;
+      }
+      return Promise.resolve({ changes: account ? 1 : 0 });
+    }
+    if (query.startsWith("UPDATE STUDENT_ACCOUNTS SET PASSWORD_RESET_TOKEN_HASH = ?")) {
+      const account = memory.studentAccounts.find(
+        (row) => String(row.id) === String(params[2]) && row.verified_at
+      );
+      if (account) {
+        account.password_reset_token_hash = params[0];
+        account.password_reset_expires_at = params[1];
+      }
+      return Promise.resolve({ changes: account ? 1 : 0 });
+    }
+    if (query.startsWith("UPDATE STUDENT_ACCOUNTS SET PASSWORD_HASH = ?")) {
+      const account = memory.studentAccounts.find(
+        (row) =>
+          String(row.id) === String(params[1]) &&
+          row.password_reset_token_hash === params[2] &&
+          new Date(row.password_reset_expires_at).getTime() > new Date(params[3]).getTime() &&
+          row.verified_at
+      );
+      if (account) {
+        account.password_hash = params[0];
+        account.password_reset_token_hash = null;
+        account.password_reset_expires_at = null;
+        account.auth_version = (Number(account.auth_version) || 0) + 1;
       }
       return Promise.resolve({ changes: account ? 1 : 0 });
     }
@@ -394,13 +533,43 @@ function getAsync(sql, params = []) {
     return neonGet(sql, params);
   }
   if (useMemoryDb) {
-    const query = sql.trim().toUpperCase();
+    const query = sql.trim().replace(/\s+/g, " ").toUpperCase();
     if (query.includes("FROM ADMINS WHERE ID = ?")) {
       return Promise.resolve(memory.admins.find((admin) => String(admin.id) === String(params[0])));
+    }
+    if (query.includes("FROM ADMINS WHERE LOWER(USERNAME)")) {
+      const row = memory.admins.find((a) => a.username.toLowerCase() === String(params[0]).toLowerCase());
+      return Promise.resolve(row || undefined);
     }
     if (query.includes("FROM ADMINS WHERE USERNAME")) {
       const row = memory.admins.find((a) => a.username === params[0]);
       return Promise.resolve(row || undefined);
+    }
+    if (query.includes("FROM ADMINS WHERE (LOWER(EMAIL)")) {
+      const row = memory.admins.find((a) =>
+        String(a.id) !== String(params[2]) &&
+        ((a.email && a.email.toLowerCase() === params[0]) ||
+          (a.email_pending && a.email_pending.toLowerCase() === params[1]))
+      );
+      return Promise.resolve(row || undefined);
+    }
+    if (query.includes("FROM ADMINS WHERE LOWER(EMAIL)")) {
+      const row = memory.admins.find(
+        (a) =>
+          a.email &&
+          a.email.toLowerCase() === String(params[0]).toLowerCase() &&
+          (!query.includes("ID <> ?") || String(a.id) !== String(params[1])) &&
+          (!query.includes("EMAIL_VERIFIED_AT IS NOT NULL") || a.email_verified_at)
+      );
+      return Promise.resolve(row || undefined);
+    }
+    if (query.includes("FROM ADMINS WHERE EMAIL_VERIFICATION_TOKEN_HASH")) {
+      const row = memory.admins.find((a) => a.email_verification_token_hash === params[0]);
+      return Promise.resolve(row && new Date(row.email_verification_expires_at).getTime() > new Date(params[1]).getTime() ? row : undefined);
+    }
+    if (query.includes("FROM ADMINS WHERE PASSWORD_RESET_TOKEN_HASH")) {
+      const row = memory.admins.find((a) => a.password_reset_token_hash === params[0]);
+      return Promise.resolve(row && new Date(row.password_reset_expires_at).getTime() > new Date(params[1]).getTime() ? row : undefined);
     }
     if (query.startsWith("SELECT * FROM STUDENT_ACCOUNTS WHERE EMAIL = ?")) {
       return Promise.resolve(memory.studentAccounts.find((row) => row.email === params[0]));
@@ -414,8 +583,22 @@ function getAsync(sql, params = []) {
         (account) => account.email === params[0] || account.username.toLowerCase() === params[1]
       ));
     }
+    if (query.startsWith("SELECT * FROM STUDENT_ACCOUNTS WHERE LOWER(EMAIL) = ? AND VERIFIED_AT IS NOT NULL")) {
+      return Promise.resolve(memory.studentAccounts.find(
+        (account) => account.email.toLowerCase() === params[0] && account.verified_at
+      ));
+    }
     if (query.startsWith("SELECT * FROM STUDENT_ACCOUNTS WHERE VERIFICATION_TOKEN_HASH = ?")) {
       return Promise.resolve(memory.studentAccounts.find((row) => row.verification_token_hash === params[0]));
+    }
+    if (query.startsWith("SELECT * FROM STUDENT_ACCOUNTS WHERE PASSWORD_RESET_TOKEN_HASH = ?")) {
+      const account = memory.studentAccounts.find(
+        (row) =>
+          row.password_reset_token_hash === params[0] &&
+          new Date(row.password_reset_expires_at).getTime() > new Date(params[1]).getTime() &&
+          row.verified_at
+      );
+      return Promise.resolve(account);
     }
     if (query.startsWith("SELECT * FROM STUDENT_ACCOUNTS WHERE ID = ?")) {
       return Promise.resolve(memory.studentAccounts.find((row) => String(row.id) === String(params[0])));
@@ -483,7 +666,15 @@ function allAsync(sql, params = []) {
     return neonAll(sql, params);
   }
   if (useMemoryDb) {
-    const query = sql.trim().toUpperCase();
+    const query = sql.trim().replace(/\s+/g, " ").toUpperCase();
+    if (query.startsWith("SELECT ID, USERNAME, ROLE, INSTRUCTOR_ID, CREATED_AT FROM ADMINS")) {
+      return Promise.resolve(
+        [...memory.admins].sort((a, b) => a.username.localeCompare(b.username))
+      );
+    }
+    if (query.startsWith("SELECT ID FROM INSTRUCTORS ORDER BY ID")) {
+      return Promise.resolve(memory.instructors.map((row) => ({ id: row.id })));
+    }
     if (query.includes("SELECT * FROM COURSES")) {
       const list = [...memory.courses].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
       if (query.includes("WHERE IS_ACTIVE = 1")) {
@@ -493,6 +684,10 @@ function allAsync(sql, params = []) {
     }
     if (query.includes("FROM COURSE_REGISTRATIONS")) {
       let rows = [...memory.courseRegistrations];
+      if (query.includes("ID IN (")) {
+        const ids = params.map(String);
+        rows = rows.filter((row) => ids.includes(String(row.id)));
+      }
       if (query.includes("LOWER(EMAIL) = ?")) {
         rows = rows.filter((row) => String(row.email || "").trim().toLowerCase() === params[0]);
       }
@@ -531,6 +726,19 @@ function allAsync(sql, params = []) {
     }
     if (query.includes("FROM STUDENT_LESSONS")) {
       let rows = [...memory.studentLessons];
+      if (query.includes("INSTRUCTOR_ID = ?")) {
+        rows = rows.filter((row) => String(row.instructor_id || "") === String(params[0]));
+      }
+      if (query.includes("STARTS_AT >= ?")) {
+        const fromIndex = query.indexOf("STARTS_AT >= ?") < query.indexOf("INSTRUCTOR_ID = ?") ? 0 : 1;
+        const from = String(params[fromIndex] || "");
+        rows = rows.filter((row) => String(row.starts_at) >= from);
+      }
+      if (query.includes("STARTS_AT < ?")) {
+        const toIndex = query.indexOf("STARTS_AT < ?") < query.indexOf("INSTRUCTOR_ID = ?") ? 0 : 2;
+        const to = String(params[toIndex] || "");
+        rows = rows.filter((row) => String(row.starts_at) < to);
+      }
       if (query.includes("REGISTRATION_ID IN (")) {
         const ids = params.map(Number);
         rows = rows.filter((row) => ids.includes(Number(row.registration_id)));
@@ -625,6 +833,15 @@ async function initDatabase() {
           username,
           password_hash: passwordHash,
           role: "director",
+          auth_version: 0,
+          totp_secret: null,
+          email: null,
+          email_pending: null,
+          email_verified_at: null,
+          email_verification_token_hash: null,
+          email_verification_expires_at: null,
+          password_reset_token_hash: null,
+          password_reset_expires_at: null,
           created_at: new Date().toISOString(),
         });
       }
@@ -768,6 +985,7 @@ async function initDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
+      auth_version INTEGER NOT NULL DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -809,6 +1027,9 @@ async function initDatabase() {
       verified_at TEXT,
       verification_token_hash TEXT,
       verification_expires_at TEXT,
+      auth_version INTEGER NOT NULL DEFAULT 0,
+      password_reset_token_hash TEXT,
+      password_reset_expires_at TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -841,6 +1062,9 @@ async function initDatabase() {
   await runAsync(`CREATE INDEX IF NOT EXISTS student_notifications_email_idx ON student_notifications (email)`);
 
   await runAsync(`ALTER TABLE student_accounts ADD COLUMN username TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE student_accounts ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 0`).catch(() => null);
+  await runAsync(`ALTER TABLE student_accounts ADD COLUMN password_reset_token_hash TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE student_accounts ADD COLUMN password_reset_expires_at TEXT`).catch(() => null);
   await runAsync(
     `UPDATE student_accounts SET username = 'student' || id
      WHERE username IS NULL OR TRIM(username) = ''`
@@ -898,6 +1122,17 @@ async function initDatabase() {
   await runAsync(`UPDATE admins SET role = 'director' WHERE role IS NULL OR role = ''`).catch(() => null);
   await runAsync(`ALTER TABLE admins ADD COLUMN instructor_id TEXT`).catch(() => null);
   await runAsync(`ALTER TABLE admins ADD COLUMN totp_secret TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 0`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN email TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN email_pending TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN email_verified_at TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN email_verification_token_hash TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN email_verification_expires_at TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN password_reset_token_hash TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN password_reset_expires_at TEXT`).catch(() => null);
+  await runAsync(
+    "CREATE UNIQUE INDEX IF NOT EXISTS admins_email_lower_idx ON admins (LOWER(email)) WHERE email IS NOT NULL AND TRIM(email) <> ''"
+  );
   await runAsync(`ALTER TABLE course_registrations ADD COLUMN instructor_id TEXT`).catch(() => null);
   await runAsync(`ALTER TABLE contacts ADD COLUMN email TEXT`).catch(() => null);
   await runAsync(`ALTER TABLE course_registrations ADD COLUMN internal_note TEXT`).catch(() => null);

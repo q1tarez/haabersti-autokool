@@ -1,0 +1,19 @@
+<%- include("../partials/admin-header", { title, adminLogin: true }) %>
+
+<section class="card auth-box admin-auth-box">
+  <h1><%= adminT("instructorLoginTitle") %></h1>
+  <p><%= adminT("instructorLoginLead") %></p>
+  <% if (error) { %>
+    <p class="alert error"><%= error %></p>
+  <% } %>
+  <form class="form" method="POST" action="/admin/instructor/login">
+    <label for="username"><%= adminT("instructorUsername") %></label>
+    <input id="username" name="username" type="text" required autocomplete="username" />
+    <label for="password"><%= adminT("password") %></label>
+    <input id="password" name="password" type="password" required autocomplete="current-password" />
+    <button class="btn" type="submit"><%= adminT("signIn") %></button>
+  </form>
+  <p><a href="/admin/password/forgot"><%= adminT("passwordRecoveryTitle") %></a></p>
+</section>
+
+<%- include("../partials/admin-footer", { adminLogin: true }) %>

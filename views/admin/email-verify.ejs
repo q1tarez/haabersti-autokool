@@ -1,0 +1,16 @@
+<%- include("../partials/admin-header", { title, adminLogin: true }) %>
+
+<section class="card auth-box admin-auth-box">
+  <h1><%= adminT("emailVerificationTitle") %></h1>
+  <% if (error) { %><p class="alert error"><%= error %></p><% } %>
+  <% if (invalid) { %>
+    <p class="alert error"><%= adminT("emailVerificationInvalid") %></p>
+  <% } else { %>
+    <p><%= email %></p>
+    <form method="POST" action="/admin/email/verify/<%= token %>">
+      <button class="btn" type="submit"><%= adminT("emailVerificationAction") %></button>
+    </form>
+  <% } %>
+</section>
+
+<%- include("../partials/admin-footer", { adminLogin: true }) %>

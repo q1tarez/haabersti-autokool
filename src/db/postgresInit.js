@@ -11,6 +11,7 @@ async function runPostgresMigrations(db) {
       id SERIAL PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
+      auth_version INTEGER NOT NULL DEFAULT 0,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
@@ -53,6 +54,9 @@ async function runPostgresMigrations(db) {
       verified_at TIMESTAMPTZ,
       verification_token_hash TEXT,
       verification_expires_at TIMESTAMPTZ,
+      auth_version INTEGER NOT NULL DEFAULT 0,
+      password_reset_token_hash TEXT,
+      password_reset_expires_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
@@ -82,6 +86,9 @@ async function runPostgresMigrations(db) {
   await runAsync(`CREATE INDEX IF NOT EXISTS student_lessons_registration_idx ON student_lessons (registration_id)`);
   await runAsync(`CREATE INDEX IF NOT EXISTS student_notifications_email_idx ON student_notifications (email)`);
   await runAsync(`ALTER TABLE student_accounts ADD COLUMN IF NOT EXISTS username TEXT`);
+  await runAsync(`ALTER TABLE student_accounts ADD COLUMN IF NOT EXISTS auth_version INTEGER NOT NULL DEFAULT 0`);
+  await runAsync(`ALTER TABLE student_accounts ADD COLUMN IF NOT EXISTS password_reset_token_hash TEXT`);
+  await runAsync(`ALTER TABLE student_accounts ADD COLUMN IF NOT EXISTS password_reset_expires_at TIMESTAMPTZ`);
   await runAsync(
     `UPDATE student_accounts SET username = 'student' || id::TEXT
      WHERE username IS NULL OR TRIM(username) = ''`
@@ -153,6 +160,17 @@ async function runPostgresMigrations(db) {
   await runAsync(`UPDATE admins SET role = 'director' WHERE role IS NULL OR TRIM(role) = ''`).catch(() => null);
   await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS instructor_id TEXT`).catch(() => null);
   await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS totp_secret TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS auth_version INTEGER NOT NULL DEFAULT 0`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS email TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS email_pending TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS email_verification_token_hash TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMPTZ`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS password_reset_token_hash TEXT`).catch(() => null);
+  await runAsync(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS password_reset_expires_at TIMESTAMPTZ`).catch(() => null);
+  await runAsync(
+    "CREATE UNIQUE INDEX IF NOT EXISTS admins_email_lower_idx ON admins (LOWER(email)) WHERE email IS NOT NULL AND TRIM(email) <> ''"
+  );
   await runAsync(`ALTER TABLE course_registrations ADD COLUMN IF NOT EXISTS instructor_id TEXT`).catch(() => null);
   await runAsync(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS email TEXT`).catch(() => null);
   await runAsync(
